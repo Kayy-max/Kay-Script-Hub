@@ -143,42 +143,52 @@ local isAttached = false
 local attachmentConnection = nil
 local respawnConnection = nil
 
+local fakeSeat = nil
+local seatWeld = nil
+
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
+    if fakeSeat then fakeSeat:Destroy() fakeSeat = nil end
+    
     local myChar = LocalPlayer.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        -- [1] MATIKAN FISIKAL HUMANOID SECARA AGRESIF (Mencegah Perebutan Kendali Client-Server)
-        myHumanoid.PlatformStand = true
-        myHumanoid:ChangeState(Enum.HumanoidStateType.None) -- Mematikan internal pergerakan kaki
+        -- [1] BUAT KURSI LOKAL TRANSPARAN (Kunci utama sinkronisasi network server)
+        fakeSeat = Instance.new("Seat")
+        fakeSeat.Size = Vector3.new(1, 1, 1)
+        fakeSeat.Transparency = 1
+        fakeSeat.CanCollide = false
+        fakeSeat.Massless = true
+        fakeSeat.Parent = workspace
         
-        -- [2] BUAT KARAKTER RINGAN & ANTI-TABRAKAN TOTAL (Menghilangkan getaran akibat gesekan part)
+        -- Matikan tabrakan karakter kita agar tidak merusak jalan target
         for _, part in pairs(myChar:GetDescendants()) do
             if part:IsA("BasePart") then 
                 part.CanCollide = false
-                part.Massless = true -- Menghilangkan berat part agar tidak membebani target
-                part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Gesekan nol
+                part.Massless = true
             end
         end
         
-        -- [3] INSTANT REPLICATION RE-ANCHOR (Sinkronisasi dengan simulasi fisika Roblox yang paling dasar)
-        attachmentConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
+        -- [2] PAKSA DUDUK UNTUK MENDAPATKAN REPLIKASI INSTAN
+        fakeSeat:Sit(myHumanoid)
+        
+        -- [3] UPDATE POSISI KURSI SECARA REAL-TIME SEBELUM FRAME DIRENDER
+        attachmentConnection = RS.PreRender:Connect(function()
+            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") or not fakeSeat then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
             
-            -- Hapus total velocity bawaan agar server mereplikasi koordinat murni, bukan arah gerak (Bypass Interpolasi Lag)
-            myHRP.AssemblyLinearVelocity = Vector3.zero
-            myHRP.AssemblyAngularVelocity = Vector3.zero
-            myHRP.Velocity = Vector3.zero
-            myHRP.RotVelocity = Vector3.zero
+            -- Kursi lokal dipaksa mengikuti CFrame target, otomatis menyeret karakter kita tanpa interpolasi lag
+            fakeSeat.AssemblyLinearVelocity = Vector3.zero
+            fakeSeat.AssemblyAngularVelocity = Vector3.zero
+            fakeSeat.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
-            -- Menempelkan posisi secara instan murni berbasis matriks CFrame
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            -- Mengunci posisi karakter agar tidak lepas dari animasi duduk
+            myHRP.CFrame = fakeSeat.CFrame
         end)
     end
 end
@@ -187,6 +197,7 @@ local function detach()
     isAttached = false
     if attachmentConnection then attachmentConnection:Disconnect() end
     if respawnConnection then respawnConnection:Disconnect() end
+    if fakeSeat then fakeSeat:Destroy() fakeSeat = nil end
     
     local myChar = LocalPlayer.Character
     if myChar then
@@ -194,16 +205,10 @@ local function detach()
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         
         if myHumanoid then 
-            myHumanoid.PlatformStand = false 
-            myHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp) -- Kembalikan kondisi berdiri normal
+            myHumanoid.PlatformStand = false
+            myHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
         
-        if myHRP then 
-            myHRP.AssemblyLinearVelocity = Vector3.zero 
-            myHRP.AssemblyAngularVelocity = Vector3.zero
-        end
-        
-        -- Kembalikan berat dan tabrakan karakter ke semula
         for _, part in pairs(myChar:GetDescendants()) do
             if part:IsA("BasePart") then 
                 part.CanCollide = true 
@@ -212,23 +217,6 @@ local function detach()
         end
     end
 end
-
-local function detach()
-    isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    if myChar then
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-        if myHumanoid then myHumanoid.PlatformStand = false end
-        if myHRP then myHRP.Velocity = Vector3.new(0, 0, 0) end
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
-        end
-    end
-end
-
 local function attachToPlayer()
     local targetPlayer = game.Players:FindFirstChild(targetName)
     if not targetPlayer then return end
