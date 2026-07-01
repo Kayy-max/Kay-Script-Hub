@@ -121,6 +121,7 @@ local HomePage = CreateTab("Home")
 local WelcomeLabel = Instance.new("TextLabel")
 WelcomeLabel.Size, WelcomeLabel.BackgroundTransparency, WelcomeLabel.Text, WelcomeLabel.TextColor3, WelcomeLabel.Font, WelcomeLabel.TextSize, WelcomeLabel.Parent = UDim2.new(1, 0, 0, 45), 1, "Kay Hub V8 (Theme Engine)\nFitur Lengkap, Kode Ringkas & No Delay!", Color3.fromRGB(180, 180, 180), Enum.Font.SourceSans, 14, HomePage
 
+CreateToggle(MainFeaturesPage, "Instan Interact", function(state)
 -- 1. -- Ini Pokonya Buat Instan Interect
 local oldGui = game.CoreGui:FindFirstChild("KayInstantInteractGUI") or game.Players.LocalPlayer.PlayerGui:FindFirstChild("KayInstantInteractGUI")
 if oldGui then oldGui:Destroy() end
@@ -288,6 +289,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+CreateToggle(MainFeaturesPage, "Kay PiggyBack", function(state)
 -- 2. -- Hapus GUI lama agar tidak menumpuk
 local oldGui = game.CoreGui:FindFirstChild("PiggybackFEGUI") or game.Players.LocalPlayer.PlayerGui:FindFirstChild("PiggybackFEGUI")
 if oldGui then oldGui:Destroy() end
