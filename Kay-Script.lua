@@ -217,7 +217,7 @@ end)
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0
 
--- Fitur Tambahan 2: Piggyback FE di Tab Home
+-- Fitit Tambahan 2: Piggyback FE di Tab Home
 local PiggyTitle = Instance.new("TextLabel", HomePage)
 PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left
 
@@ -302,7 +302,7 @@ SpeedToggleBtn.MouseButton1Click:Connect(function()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
 
--- Loops Logika Fitur
+-- Loops Logika Fitur (Speed Walk & Noclip)
 RS.Stepped:Connect(function()
     if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue end
     if NoclipEnabled and LocalPlayer.Character then
@@ -340,21 +340,33 @@ end)
 -- 3. Fitur Noclip, Airwalk & Inf Jump
 CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
 
+-- UPDATE LOGIKA AIR WALK (STABLE & ANTI LAG)
 local AirWalkConnection
 CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     AirWalkEnabled = state
-    if AirWalkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        AirWalkPlatform = AirWalkPlatform or Instance.new("Part", workspace)
-        AirWalkPlatform.Size, AirWalkPlatform.Transparency, AirWalkPlatform.Anchored = Vector3.new(35, 2, 35), 1, true
-        AirWalkConnection = RS.PreSimulation:Connect(function()
-            local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if Root and AirWalkPlatform then
-                AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, AirWalkPlatform.Position.Y, Root.Position.Z)
-                if Root.Position.Y < AirWalkPlatform.Position.Y + 2.5 then Root.CFrame = CFrame.new(Root.Position.X, AirWalkPlatform.Position.Y + 2.5, Root.Position.Z) end
+    if AirWalkConnection then AirWalkConnection:Disconnect() end
+    if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
+    
+    if AirWalkEnabled then
+        -- Membuat part pijakan udara yang presisi
+        AirWalkPlatform = Instance.new("Part")
+        AirWalkPlatform.Size = Vector3.new(15, 0.5, 15)
+        AirWalkPlatform.Transparency = 1
+        AirWalkPlatform.Anchored = true
+        AirWalkPlatform.CanCollide = true
+        AirWalkPlatform.Parent = workspace
+        
+        AirWalkConnection = RS.Heartbeat:Connect(function()
+            local Char = LocalPlayer.Character
+            local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+            if AirWalkEnabled and Root and AirWalkPlatform then
+                -- Menaruh platform tepat 3.1 unit di bawah root part agar pas di bawah kaki karakter
+                AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, Root.Position.Y - 3.1, Root.Position.Z)
+            else
+                if AirWalkConnection then AirWalkConnection:Disconnect() end
+                if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
             end
         end)
-    else
-        if AirWalkConnection then AirWalkConnection:Disconnect() end if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
     end
 end)
 
@@ -385,4 +397,4 @@ local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Dimuat.")
+print("[SYSTEM] Kay Hub Pro V8 Slim Dimuat dengan Perbaikan Air Walk.")
