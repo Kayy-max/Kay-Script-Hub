@@ -194,6 +194,18 @@ local function attachToPlayer()
     end)
 end
 
+local offset = targetRoot.CFrame * CFrame.new(0, 0, 1)
+
+          pcall(function()
+            sethiddenproperty(root, "PhysicsRepRootPart", targetRoot)
+        end)
+
+        root.CFrame = offset
+        root.Velocity = Vector3.new()
+        root.AssemblyLinearVelocity = Vector3.new()
+        root.AssemblyAngularVelocity = Vector3.new()
+        root.RotVelocity = Vector3.new()
+
 -- =========================================================
 -- HALAMAN UTAMA & FITUR-FITUR
 -- =========================================================
