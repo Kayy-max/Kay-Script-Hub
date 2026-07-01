@@ -152,18 +152,34 @@ local function startLoop(targetChar)
     
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
+        
+        -- Menonaktifkan tabrakan fisik agar tidak menghambat target
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        
+        -- Loop Utama Menggunakan Trik PhysicsRepRootPart + Offset Navigasi UI
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
-            myHRP.Velocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
+            -- Penggabungan Kode: Mengkalkulasi matriks posisi berdasarkan tombol navigasi UI
+            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
+            -- Memaksa sinkronisasi Network Ownership lewat sethiddenproperty
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
+            end)
+            
+            -- Pembersihan instan velocity agar replikasi di POV teman 100% mulus tanpa delay
+            myHRP.CFrame = offset
+            myHRP.Velocity = Vector3.new()
+            myHRP.AssemblyLinearVelocity = Vector3.new()
+            myHRP.AssemblyAngularVelocity = Vector3.new()
+            myHRP.RotVelocity = Vector3.new()
         end)
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
     end
 end
 
@@ -176,9 +192,34 @@ local function detach()
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
-        if myHRP then myHRP.Velocity = Vector3.new(0, 0, 0) end
+        
+        -- Kembalikan PhysicsRepRootPart ke objek aslinya (Nil) saat lepas
+        if myHRP then 
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
+            end)
+            myHRP.Velocity = Vector3.new(0, 0, 0) 
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        end
+        
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = true end
+        end
+    end
+end
+
+local function forceUpdatePosition()
+    if isAttached then
+        local targetPlayer = game.Players:FindFirstChild(targetName)
+        if targetPlayer and targetPlayer.Character then
+            local myChar = LocalPlayer.Character
+            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHRP and targetHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            end
         end
     end
 end
@@ -193,18 +234,6 @@ local function attachToPlayer()
         if isAttached then task.wait(0.5) startLoop(newCharacter) end
     end)
 end
-
-local offset = targetRoot.CFrame * CFrame.new(0, 0, 1)
-
-          pcall(function()
-            sethiddenproperty(root, "PhysicsRepRootPart", targetRoot)
-        end)
-
-        root.CFrame = offset
-        root.Velocity = Vector3.new()
-        root.AssemblyLinearVelocity = Vector3.new()
-        root.AssemblyAngularVelocity = Vector3.new()
-        root.RotVelocity = Vector3.new()
 
 -- =========================================================
 -- HALAMAN UTAMA & FITUR-FITUR
@@ -229,7 +258,7 @@ end)
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0
 
--- Fitit Tambahan 2: Piggyback FE di Tab Home
+-- Fitur Tambahan 2: Piggyback FE di Tab Home
 local PiggyTitle = Instance.new("TextLabel", HomePage)
 PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left
 
@@ -257,7 +286,7 @@ AttachBtn.MouseButton1Click:Connect(function()
 end)
 DetachBtn.MouseButton1Click:Connect(detach)
 
--- Container Tombol Navigasi Posisi Piggyback
+-- Container Tombol Navigasi Posisi Piggyback + Sinkronisasi Instan
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
@@ -267,7 +296,10 @@ local function createNav(txt, cb)
     local b = Instance.new("TextButton", NavFrame)
     b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = Color3.fromRGB(40, 40, 45), txt, Color3.fromRGB(220, 220, 220), Enum.Font.SourceSansBold, 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(cb)
+    b.MouseButton1Click:Connect(function()
+        cb()
+        forceUpdatePosition() -- Memaksa posisi langsung update saat tombol ditekan
+    end)
 end
 createNav("NAIK", function() posY = posY + 0.2 end)
 createNav("TURUN", function() posY = posY - 0.2 end)
@@ -360,7 +392,6 @@ CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
     
     if AirWalkEnabled then
-        -- Membuat part pijakan udara yang presisi
         AirWalkPlatform = Instance.new("Part")
         AirWalkPlatform.Size = Vector3.new(15, 0.5, 15)
         AirWalkPlatform.Transparency = 1
@@ -372,7 +403,6 @@ CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
             local Char = LocalPlayer.Character
             local Root = Char and Char:FindFirstChild("HumanoidRootPart")
             if AirWalkEnabled and Root and AirWalkPlatform then
-                -- Menaruh platform tepat 3.1 unit di bawah root part agar pas di bawah kaki karakter
                 AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, Root.Position.Y - 3.1, Root.Position.Z)
             else
                 if AirWalkConnection then AirWalkConnection:Disconnect() end
@@ -409,4 +439,4 @@ local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Dimuat dengan Perbaikan Air Walk.")
+print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat dengan Modifikasi Anti-Delay.")
