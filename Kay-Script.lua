@@ -115,33 +115,16 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
--- HALAMAN UTAMA & FITUR-FITUR
+-- LOGIKA UTAMA FITUR TAMBAHAN (INTERACT & PIGGYBACK)
 -- =========================================================
-local HomePage = CreateTab("Home")
-local WelcomeLabel = Instance.new("TextLabel")
-WelcomeLabel.Size, WelcomeLabel.BackgroundTransparency, WelcomeLabel.Text, WelcomeLabel.TextColor3, WelcomeLabel.Font, WelcomeLabel.TextSize, WelcomeLabel.Parent = UDim2.new(1, 0, 0, 45), 1, "Kay Hub V8 (Theme Engine)\nFitur Lengkap, Kode Ringkas & No Delay!", Color3.fromRGB(180, 180, 180), Enum.Font.SourceSans, 14, HomePage
-
-CreateToggle(MainFeaturesPage, "Instan Interact", function(state)
--- 1. -- Ini Pokonya Buat Instan Interect
-local oldGui = game.CoreGui:FindFirstChild("KayInstantInteractGUI") or game.Players.LocalPlayer.PlayerGui:FindFirstChild("KayInstantInteractGUI")
-if oldGui then oldGui:Destroy() end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KayInstantInteractGUI"
-pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-if not ScreenGui.Parent then ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui") end
-
+-- [ Variabel Fitur 1: Instant Interact ]
 local ProximityPromptService = game:GetService("ProximityPromptService")
-local UserInputService = game:GetService("UserInputService")
 local isInstantActive = false
 local promptConnection = nil
 
--- Fungsi Mekanisme Interaksi Instan
 local function makeInstant(prompt)
     if prompt:IsA("ProximityPrompt") then
-        if not prompt:GetAttribute("OriginalHold") then
-            prompt:SetAttribute("OriginalHold", prompt.HoldDuration)
-        end
+        if not prompt:GetAttribute("OriginalHold") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) end
         prompt.HoldDuration = 0
     end
 end
@@ -153,218 +136,42 @@ local function resetToNormal(prompt)
     end
 end
 
-local function activateInstant()
-    isInstantActive = true
-    for _, prompt in pairs(game.Workspace:GetDescendants()) do makeInstant(prompt) end
-    promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-        if isInstantActive then makeInstant(prompt) end
-    end)
-end
-
-local function deactivateInstant()
-    isInstantActive = false
-    if promptConnection then promptConnection:Disconnect() end
-    for _, prompt in pairs(game.Workspace:GetDescendants()) do resetToNormal(prompt) end
-end
-
--- ================= GUI DESIGN =================
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 200, 0, 110)
-MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true -- Aktifkan drag bawaan
-
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "KAY INSTANT INTERACT"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 13
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
-local Padding = Instance.new("UIPadding", Title)
-Padding.PaddingLeft = UDim.new(0, 10)
-
--- TOMBOL OPEN (BISA DIGESER JUGA PAS DI-MINIMIZE)
-local OpenBtn = Instance.new("TextButton", ScreenGui)
-OpenBtn.Size = UDim2.new(0, 110, 0, 35)
-OpenBtn.Position = UDim2.new(0.02, 0, 0.2, 0)
-OpenBtn.Text = "📜 Open Interact"
-OpenBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.TextSize = 12
-OpenBtn.BorderSizePixel = 0
-OpenBtn.Visible = false
-OpenBtn.Active = true
-OpenBtn.Draggable = true -- MEMBUAT POP-UP MINIMIZE BISA DIATUR KEMANA AJA
-
-local MiniBtn = Instance.new("TextButton", MainFrame)
-MiniBtn.Size = UDim2.new(0, 25, 0, 25)
-MiniBtn.Position = UDim2.new(1, -55, 0, 2.5)
-MiniBtn.Text = "_"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniBtn.Font = Enum.Font.SourceSansBold
-MiniBtn.BorderSizePixel = 0
-
-local CloseBtn = Instance.new("TextButton", MainFrame)
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(1, -27, 0, 2.5)
-CloseBtn.Text = "X"
-CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.BorderSizePixel = 0
-
-local BtnToggle = Instance.new("TextButton", MainFrame)
-BtnToggle.Size = UDim2.new(0.9, 0, 0, 45)
-BtnToggle.Position = UDim2.new(0.05, 0, 0.45, 0)
-BtnToggle.Text = "STATUS: OFF"
-BtnToggle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-BtnToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnToggle.Font = Enum.Font.SourceSansBold
-BtnToggle.TextSize = 14
-
--- ================= SYSTEM SMOOTH DRAG (MOBILE BYPASS) =================
-local function setupSmoothDrag(guiObject)
-    local dragging, dragInput, dragStart, startPos
-    guiObject.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = guiObject.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    guiObject.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            guiObject.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-end
-
--- Pasang fitur geser mulus ke Menu Utama & Tombol Pop-up Minimize
-setupSmoothDrag(MainFrame)
-setupSmoothDrag(OpenBtn)
-
--- ================= EVENT HANDLING =================
-BtnToggle.MouseButton1Click:Connect(function()
-    if not isInstantActive then
-        activateInstant()
-        BtnToggle.Text = "STATUS: INSTAN ON"
-        BtnToggle.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-    else
-        deactivateInstant()
-        BtnToggle.Text = "STATUS: OFF"
-        BtnToggle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    end
-end)
-
--- Pas di-minimize, posisi tombol "Open" disamakan dengan posisi menu terakhir biar rapi, tapi tetap bisa kamu geser setelahnya
-MiniBtn.MouseButton1Click:Connect(function()
-    OpenBtn.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
-    MainFrame.Visible = false
-    OpenBtn.Visible = true
-end)
-
-OpenBtn.MouseButton1Click:Connect(function()
-    -- Memastikan klik biasa membuka menu, bukan sekadar mendeteksi geseran tangan
-    MainFrame.Position = UDim2.new(OpenBtn.Position.X.Scale, OpenBtn.Position.X.Offset, OpenBtn.Position.Y.Scale, OpenBtn.Position.Y.Offset)
-    MainFrame.Visible = true
-    OpenBtn.Visible = false
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    deactivateInstant()
-    ScreenGui:Destroy()
-end)
-
-CreateToggle(MainFeaturesPage, "Kay PiggyBack", function(state)
--- 2. -- Hapus GUI lama agar tidak menumpuk
-local oldGui = game.CoreGui:FindFirstChild("PiggybackFEGUI") or game.Players.LocalPlayer.PlayerGui:FindFirstChild("PiggybackFEGUI")
-if oldGui then oldGui:Destroy() end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PiggybackFEGUI"
-pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-if not ScreenGui.Parent then ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui") end
-
--- Konfigurasi Posisi Default
+-- [ Variabel Fitur 2: Piggyback FE ]
 local targetName = ""
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached = false
-
-local localPlayer = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local attachmentConnection = nil
 local respawnConnection = nil
 
--- Fungsi Loop Posisi (Bypass FE)
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
-    
-    local myChar = localPlayer.Character
+    local myChar = LocalPlayer.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
-        
-        attachmentConnection = RunService.Heartbeat:Connect(function()
+        attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
-            
             myHRP.Velocity = Vector3.new(0, 0, 0)
             myHRP.RotVelocity = Vector3.new(0, 0, 0)
             myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
         end)
-        
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end
 
--- Fungsi Mulai Nempel & Pantau Respawn
-local function attachToPlayer()
-    local targetPlayer = game.Players:FindFirstChild(targetName)
-    if not targetPlayer then return end
-    
-    isAttached = true
-    if respawnConnection then respawnConnection:Disconnect() end
-    
-    if targetPlayer.Character then
-        startLoop(targetPlayer.Character)
-    end
-    
-    respawnConnection = targetPlayer.CharacterAdded:Connect(function(newCharacter)
-        if isAttached then
-            task.wait(0.5) 
-            startLoop(newCharacter)
-        end
-    end)
-end
-
--- Fungsi Lepas Total
 local function detach()
     isAttached = false
     if attachmentConnection then attachmentConnection:Disconnect() end
     if respawnConnection then respawnConnection:Disconnect() end
-    
-    local myChar = localPlayer.Character
+    local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
@@ -376,137 +183,94 @@ local function detach()
     end
 end
 
--- ================= GUI DESIGN =================
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 220, 0, 280)
-MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-
--- SUDAH DIGANTI JADI KAY PIGGYBACK
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.Text = "KAY PIGGYBACK FE BYPASS"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 14
-
--- Tombol Kecil buat Buka Kembali (Awalnya Sembunyi)
-local OpenBtn = Instance.new("TextButton", ScreenGui)
-OpenBtn.Size = UDim2.new(0, 110, 0, 30)
-OpenBtn.Position = UDim2.new(0.02, 0, 0.2, 0)
-OpenBtn.Text = "KAY PIGGYBACK"
-OpenBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
-OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.TextSize = 12
-OpenBtn.Visible = false
-
--- Tombol Minimize di Dalam MainFrame (Pojok Kanan Atas)
-local MiniBtn = Instance.new("TextButton", MainFrame)
-MiniBtn.Size = UDim2.new(0, 25, 0, 25)
-MiniBtn.Position = UDim2.new(1, -30, 0, 2.5)
-MiniBtn.Text = "_"
-MiniBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 40)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniBtn.Font = Enum.Font.SourceSansBold
-MiniBtn.TextSize = 14
-
-local TextBox = Instance.new("TextBox", MainFrame)
-TextBox.Size = UDim2.new(0.9, 0, 0, 35)
-TextBox.Position = UDim2.new(0.05, 0, 0.15, 0)
-TextBox.PlaceholderText = "Nama Player (Sensitif Kapital)"
-TextBox.Text = ""
-TextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TextBox.TextColor3 = Color3.fromRGB(0, 0, 0)
-TextBox.TextSize = 14
-
-local BtnAttach = Instance.new("TextButton", MainFrame)
-BtnAttach.Size = UDim2.new(0.42, 0, 0, 35)
-BtnAttach.Position = UDim2.new(0.05, 0, 0.3, 0)
-BtnAttach.Text = "TEMPEL"
-BtnAttach.BackgroundColor3 = Color3.fromRGB(0, 180, 100)
-BtnAttach.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnAttach.Font = Enum.Font.SourceSansBold
-
-local BtnDetach = Instance.new("TextButton", MainFrame)
-BtnDetach.Size = UDim2.new(0.42, 0, 0, 35)
-BtnDetach.Position = UDim2.new(0.53, 0, 0.3, 0)
-BtnDetach.Text = "LEPAS"
-BtnDetach.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-BtnDetach.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnDetach.Font = Enum.Font.SourceSansBold
-
-local LabelCtrl = Instance.new("TextLabel", MainFrame)
-LabelCtrl.Size = UDim2.new(1, 0, 0, 20)
-LabelCtrl.Position = UDim2.new(0, 0, 0.45, 0)
-LabelCtrl.Text = "--- NAVIGASI POSISI ---"
-LabelCtrl.TextColor3 = Color3.fromRGB(200, 200, 200)
-LabelCtrl.BackgroundTransparency = 1
-LabelCtrl.TextSize = 11
-
-local function createNavBtn(text, pos, callback)
-    local btn = Instance.new("TextButton", MainFrame)
-    btn.Size = UDim2.new(0.25, 0, 0, 30)
-    btn.Position = pos
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(70, 75, 90)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
+local function attachToPlayer()
+    local targetPlayer = game.Players:FindFirstChild(targetName)
+    if not targetPlayer then return end
+    isAttached = true
+    if respawnConnection then respawnConnection:Disconnect() end
+    if targetPlayer.Character then startLoop(targetPlayer.Character) end
+    respawnConnection = targetPlayer.CharacterAdded:Connect(function(newCharacter)
+        if isAttached then task.wait(0.5) startLoop(newCharacter) end
+    end)
 end
 
-createNavBtn("NAIK", UDim2.new(0.05, 0, 0.55, 0), function() posY = posY + 0.2 end)
-createNavBtn("TURUN", UDim2.new(0.05, 0, 0.68, 0), function() posY = posY - 0.2 end)
+-- =========================================================
+-- HALAMAN UTAMA & FITUR-FITUR
+-- =========================================================
+local HomePage = CreateTab("Home")
 
-createNavBtn("DEPAN", UDim2.new(0.375, 0, 0.55, 0), function() posZ = posZ - 0.2 end)
-createNavBtn("BELAKANG", UDim2.new(0.375, 0, 0.68, 0), function() posZ = posZ + 0.2 end)
+-- Fitur Tambahan 1: Instant Interact di Tab Home
+CreateToggle(HomePage, "Instant Interact", function(state)
+    isInstantActive = state
+    if isInstantActive then
+        for _, prompt in pairs(game.Workspace:GetDescendants()) do makeInstant(prompt) end
+        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+            if isInstantActive then makeInstant(prompt) end
+        end)
+    else
+        if promptConnection then promptConnection:Disconnect() end
+        for _, prompt in pairs(game.Workspace:GetDescendants()) do resetToNormal(prompt) end
+    end
+end)
 
-createNavBtn("KIRI", UDim2.new(0.7, 0, 0.55, 0), function() posX = posX - 0.2 end)
-createNavBtn("KANAN", UDim2.new(0.7, 0, 0.68, 0), function() posX = posX + 0.2 end)
+-- Garis Pembatas (Sederhana)
+local Line = Instance.new("Frame", HomePage)
+Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0
 
-createNavBtn("PUTAR", UDim2.new(0.05, 0, 0.82, 0), function() rotY = (rotY + 90) % 360 end)
+-- Fitur Tambahan 2: Piggyback FE di Tab Home
+local PiggyTitle = Instance.new("TextLabel", HomePage)
+PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left
 
-local BtnClose = Instance.new("TextButton", MainFrame)
-BtnClose.Size = UDim2.new(0.42, 0, 0, 30)
-BtnClose.Position = UDim2.new(0.53, 0, 0.82, 0)
-BtnClose.Text = "TUTUP GUI"
-BtnClose.BackgroundColor3 = Color3.fromRGB(110, 110, 120)
-BtnClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+-- TextBox Input Nama Player
+local PBTextBox = Instance.new("TextBox", HomePage)
+PBTextBox.Size, PBTextBox.BackgroundColor3, PBTextBox.TextColor3, PBTextBox.PlaceholderText, PBTextBox.Text, PBTextBox.TextSize, PBTextBox.Font = UDim2.new(1, -10, 0, 30), Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255), "Nama Player (Case Sensitive)", "", 13, Enum.Font.SourceSans
+Instance.new("UICorner", PBTextBox).CornerRadius = UDim.new(0, 6)
 
--- Event Handling Aksi
-BtnAttach.MouseButton1Click:Connect(function()
-    targetName = TextBox.Text
+-- Container Tombol Tempel & Lepas
+local PBActionFrame = Instance.new("Frame", HomePage)
+PBActionFrame.Size, PBActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 35), 1
+Instance.new("UIListLayout", PBActionFrame).FillDirection, Instance.new("UIListLayout", PBActionFrame).Padding = Enum.FillDirection.Horizontal, UDim.new(0, 10)
+
+local AttachBtn = Instance.new("TextButton", PBActionFrame)
+AttachBtn.Size, AttachBtn.BackgroundColor3, AttachBtn.Text, AttachBtn.TextColor3, AttachBtn.Font, AttachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(0, 150, 80), "TEMPEL", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
+Instance.new("UICorner", AttachBtn).CornerRadius = UDim.new(0, 6)
+
+local DetachBtn = Instance.new("TextButton", PBActionFrame)
+DetachBtn.Size, DetachBtn.BackgroundColor3, DetachBtn.Text, DetachBtn.TextColor3, DetachBtn.Font, DetachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(180, 40, 40), "LEPAS", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
+Instance.new("UICorner", DetachBtn).CornerRadius = UDim.new(0, 6)
+
+AttachBtn.MouseButton1Click:Connect(function()
+    targetName = PBTextBox.Text
     attachToPlayer()
 end)
+DetachBtn.MouseButton1Click:Connect(detach)
 
-BtnDetach.MouseButton1Click:Connect(function()
-    detach()
-end)
+-- Container Tombol Navigasi Posisi Piggyback
+local NavFrame = Instance.new("Frame", HomePage)
+NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
+local NavGrid = Instance.new("UIGridLayout", NavFrame)
+NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.23, 0, 0, 28), UDim2.new(0.02, 0, 0.1, 0)
 
-BtnClose.MouseButton1Click:Connect(function()
-    detach()
-    ScreenGui:Destroy()
-end)
+local function createNav(txt, cb)
+    local b = Instance.new("TextButton", NavFrame)
+    b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = Color3.fromRGB(40, 40, 45), txt, Color3.fromRGB(220, 220, 220), Enum.Font.SourceSansBold, 11
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    b.MouseButton1Click:Connect(cb)
+end
+createNav("NAIK", function() posY = posY + 0.2 end)
+createNav("TURUN", function() posY = posY - 0.2 end)
+createNav("DEPAN", function() posZ = posZ - 0.2 end)
+createNav("BELAKANG", function() posZ = posZ + 0.2 end)
+createNav("KIRI", function() posX = posX - 0.2 end)
+createNav("KANAN", function() posX = posX + 0.2 end)
+createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
--- Event Handling Minimize / Maximize
-MiniBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    OpenBtn.Visible = true
-end)
-
-OpenBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    OpenBtn.Visible = false
-end)
-
+-- =========================================================
+-- TAB FEATURES & LOOPS LOGIKA
+-- =========================================================
 local MainFeaturesPage = CreateTab("Features")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, AirWalkEnabled, AirWalkPlatform, NoclipEnabled = 16, false, false, false, 60, false, nil, false
 
--- 1. Speed Walk Frame & Slider
 local SpeedFrame = Instance.new("Frame")
 SpeedFrame.Size, SpeedFrame.BackgroundColor3, SpeedFrame.Parent = UDim2.new(1, -10, 0, 75), Color3.fromRGB(30, 30, 30), MainFeaturesPage
 Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 6)
@@ -574,10 +338,10 @@ CreateToggle(MainFeaturesPage, "Fly", function(state)
 end)
 
 -- 3. Fitur Noclip, Airwalk & Inf Jump
-CreateToggle(MainFeaturesPage, "Noclip", function(state) NoclipEnabled = state end)
+CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
 
 local AirWalkConnection
-CreateToggle(MainFeaturesPage, "Air Walk", function(state)
+CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     AirWalkEnabled = state
     if AirWalkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         AirWalkPlatform = AirWalkPlatform or Instance.new("Part", workspace)
