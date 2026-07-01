@@ -151,63 +151,33 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        -- [1] MATIKAN FISIKAL HUMANOID SECARA AGRESIF (Mencegah Perebutan Kendali Client-Server)
+        -- Mengubah state agar server tidak mencoba mengalkulasi fisika jatuh/berjalan
+        myHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
         myHumanoid.PlatformStand = true
-        myHumanoid:ChangeState(Enum.HumanoidStateType.None) -- Mematikan internal pergerakan kaki
         
-        -- [2] BUAT KARAKTER RINGAN & ANTI-TABRAKAN TOTAL (Menghilangkan getaran akibat gesekan part)
-        for _, part in pairs(myChar:GetDescendants()) do
-            if part:IsA("BasePart") then 
-                part.CanCollide = false
-                part.Massless = true -- Menghilangkan berat part agar tidak membebani target
-                part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- Gesekan nol
-            end
-        end
-        
-        -- [3] INSTANT REPLICATION RE-ANCHOR (Sinkronisasi dengan simulasi fisika Roblox yang paling dasar)
-        attachmentConnection = RS.Heartbeat:Connect(function()
+        -- Menggunakan PreRender (bawaan baru menggantikan RenderStepped untuk sinkronisasi kamera & posisi)
+        attachmentConnection = RS.PreRender:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
             
-            -- Hapus total velocity bawaan agar server mereplikasi koordinat murni, bukan arah gerak (Bypass Interpolasi Lag)
+            -- Paksa kecepatan rakitan fisika ke 0 agar replikasi server ke player lain instan tanpa interpolasi lag
             myHRP.AssemblyLinearVelocity = Vector3.zero
             myHRP.AssemblyAngularVelocity = Vector3.zero
+            
+            -- Backup untuk game versi lama (Legacy velocity)
             myHRP.Velocity = Vector3.zero
             myHRP.RotVelocity = Vector3.zero
             
-            -- Menempelkan posisi secara instan murni berbasis matriks CFrame
+            -- Replikasi CFrame instan tepat sebelum frame dirender
             myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
         end)
-    end
-end
-
-local function detach()
-    isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
-    
-    local myChar = LocalPlayer.Character
-    if myChar then
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         
-        if myHumanoid then 
-            myHumanoid.PlatformStand = false 
-            myHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp) -- Kembalikan kondisi berdiri normal
-        end
-        
-        if myHRP then 
-            myHRP.AssemblyLinearVelocity = Vector3.zero 
-            myHRP.AssemblyAngularVelocity = Vector3.zero
-        end
-        
-        -- Kembalikan berat dan tabrakan karakter ke semula
+        -- Matikan semua tabrakan part agar tidak terjadi gesekan fisika yang bikin bergetar di layar teman
         for _, part in pairs(myChar:GetDescendants()) do
             if part:IsA("BasePart") then 
-                part.CanCollide = true 
-                part.Massless = false
+                part.CanCollide = false 
             end
         end
     end
