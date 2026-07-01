@@ -151,18 +151,34 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
+        -- Mengubah state agar server tidak mencoba mengalkulasi fisika jatuh/berjalan
+        myHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
         myHumanoid.PlatformStand = true
-        attachmentConnection = RS.Heartbeat:Connect(function()
+        
+        -- Menggunakan PreRender (bawaan baru menggantikan RenderStepped untuk sinkronisasi kamera & posisi)
+        attachmentConnection = RS.PreRender:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
-            myHRP.Velocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+            
+            -- Paksa kecepatan rakitan fisika ke 0 agar replikasi server ke player lain instan tanpa interpolasi lag
+            myHRP.AssemblyLinearVelocity = Vector3.zero
+            myHRP.AssemblyAngularVelocity = Vector3.zero
+            
+            -- Backup untuk game versi lama (Legacy velocity)
+            myHRP.Velocity = Vector3.zero
+            myHRP.RotVelocity = Vector3.zero
+            
+            -- Replikasi CFrame instan tepat sebelum frame dirender
             myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
         end)
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
+        
+        -- Matikan semua tabrakan part agar tidak terjadi gesekan fisika yang bikin bergetar di layar teman
+        for _, part in pairs(myChar:GetDescendants()) do
+            if part:IsA("BasePart") then 
+                part.CanCollide = false 
+            end
         end
     end
 end
