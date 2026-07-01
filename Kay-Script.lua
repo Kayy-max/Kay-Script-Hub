@@ -151,38 +151,38 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        -- Mengubah state agar server tidak mencoba mengalkulasi fisika jatuh/berjalan
-        myHumanoid:ChangeState(Enum.HumanoidStateType.Physics)
         myHumanoid.PlatformStand = true
-        
-        -- Menggunakan PreRender (bawaan baru menggantikan RenderStepped untuk sinkronisasi kamera & posisi)
-        attachmentConnection = RS.PreRender:Connect(function()
+        attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
-            
-            -- Paksa kecepatan rakitan fisika ke 0 agar replikasi server ke player lain instan tanpa interpolasi lag
-            myHRP.AssemblyLinearVelocity = Vector3.zero
-            myHRP.AssemblyAngularVelocity = Vector3.zero
-            
-            -- Backup untuk game versi lama (Legacy velocity)
-            myHRP.Velocity = Vector3.zero
-            myHRP.RotVelocity = Vector3.zero
-            
-            -- Replikasi CFrame instan tepat sebelum frame dirender
+            myHRP.Velocity = Vector3.new(0, 0, 0)
+            myHRP.RotVelocity = Vector3.new(0, 0, 0)
             myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
         end)
-        
-        -- Matikan semua tabrakan part agar tidak terjadi gesekan fisika yang bikin bergetar di layar teman
-        for _, part in pairs(myChar:GetDescendants()) do
-            if part:IsA("BasePart") then 
-                part.CanCollide = false 
-            end
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
     end
 end
-    
+
+local function detach()
+    isAttached = false
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if respawnConnection then respawnConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        if myHumanoid then myHumanoid.PlatformStand = false end
+        if myHRP then myHRP.Velocity = Vector3.new(0, 0, 0) end
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
+        end
+    end
+end
+
 local function attachToPlayer()
     local targetPlayer = game.Players:FindFirstChild(targetName)
     if not targetPlayer then return end
