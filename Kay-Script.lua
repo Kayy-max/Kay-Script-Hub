@@ -10,7 +10,8 @@ pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.BackgroundColor3, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 420, 0, 280), UDim2.new(0.3, 0, 0.25, 0), Color3.fromRGB(20, 20, 20), true, true, KayHub
+MainFrame.Size, MainFrame.Position, MainFrame.BackgroundColor3, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 420, 0, 280), UDim2.new(0.3, 0, 0.25, 0), Color3.fromRGB(20, 20, 20), true, true, MainFrame
+MainFrame.Parent = KayHub
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 -- Fungsi Drag & Drop Otomatis (Aman & Ringkas)
@@ -136,7 +137,7 @@ local function resetToNormal(prompt)
     end
 end
 
--- [ Variabel Fitur 2: Piggyback FE ]
+-- [ Variabel Fitur 2: Piggyback FE dengan Physics Constraints ]
 local targetName = ""
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached = false
@@ -151,7 +152,6 @@ local targetAttachment = nil
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
     
-    -- Bersihkan sisa objek jika ada loop sebelumnya
     if alignPos then alignPos:Destroy() end
     if alignOri then alignOri:Destroy() end
     if myAttachment then myAttachment:Destroy() end
@@ -163,7 +163,6 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        -- [1] MATIKAN FISIKAL BIAR TIDAK BERTABRAKAN DAN BERGETAR
         myHumanoid.PlatformStand = true
         for _, part in pairs(myChar:GetDescendants()) do
             if part:IsA("BasePart") then 
@@ -172,24 +171,20 @@ local function startLoop(targetChar)
             end
         end
         
-        -- [2] BUAT ATTACHMENT SEBAGAI JANGKAR MAGNET
         myAttachment = Instance.new("Attachment", myHRP)
         targetAttachment = Instance.new("Attachment", targetHRP)
         
-        -- Atur posisi koordinat nempelnya di sini (mengikuti offset yang kamu mau)
         targetAttachment.Position = Vector3.new(posX, posY, posZ)
         targetAttachment.Orientation = Vector3.new(0, rotY, 0)
         
-        -- [3] GUNAKAN ALIGNPOSITION (Gaya Tarik Fisika Instan / Tanpa Delay)
         alignPos = Instance.new("AlignPosition")
-        alignPos.MaxForce = 999999999 -- Gaya tak terbatas agar tidak keduluan server
-        alignPos.Responsiveness = 200 -- Angka respons tertinggi (instan)
+        alignPos.MaxForce = 999999999
+        alignPos.Responsiveness = 200
         alignPos.Mode = Enum.PositionAlignmentMode.TwoAttachment
         alignPos.Attachment0 = myAttachment
         alignPos.Attachment1 = targetAttachment
         alignPos.Parent = myHRP
         
-        -- [4] GUNAKAN ALIGNORIENTATION (Mengunci Arah Hadap Karakter)
         alignOri = Instance.new("AlignOrientation")
         alignOri.MaxTorque = 999999999
         alignOri.Responsiveness = 200
@@ -198,7 +193,6 @@ local function startLoop(targetChar)
         alignOri.Attachment1 = targetAttachment
         alignOri.Parent = myHRP
         
-        -- Loop pembersihan velocity agar replikasi lancar murni ditarik constraint
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
@@ -208,7 +202,34 @@ local function startLoop(targetChar)
             myHRP.AssemblyAngularVelocity = Vector3.zero
         end)
     end
+end
+
+local function detach()
+    isAttached = false
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if respawnConnection then respawnConnection:Disconnect() end
     
+    if alignPos then alignPos:Destroy() alignPos = nil end
+    if alignOri then alignOri:Destroy() alignOri = nil end
+    if myAttachment then myAttachment:Destroy() myAttachment = nil end
+    if targetAttachment then targetAttachment:Destroy() targetAttachment = nil end
+    
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        if myHumanoid then 
+            myHumanoid.PlatformStand = false
+            myHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
+        for _, part in pairs(myChar:GetDescendants()) do
+            if part:IsA("BasePart") then 
+                part.CanCollide = true 
+                part.Massless = false
+            end
+        end
+    end
+end
+
 local function attachToPlayer()
     local targetPlayer = game.Players:FindFirstChild(targetName)
     if not targetPlayer then return end
@@ -243,7 +264,7 @@ end)
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0
 
--- Fitit Tambahan 2: Piggyback FE di Tab Home
+-- Fitur Tambahan 2: Piggyback FE di Tab Home
 local PiggyTitle = Instance.new("TextLabel", HomePage)
 PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left
 
@@ -283,13 +304,20 @@ local function createNav(txt, cb)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(cb)
 end
-createNav("NAIK", function() posY = posY + 0.2 end)
-createNav("TURUN", function() posY = posY - 0.2 end)
-createNav("DEPAN", function() posZ = posZ - 0.2 end)
-createNav("BELAKANG", function() posZ = posZ + 0.2 end)
-createNav("KIRI", function() posX = posX - 0.2 end)
-createNav("KANAN", function() posX = posX + 0.2 end)
-createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
+createNav("NAIK", function() posY = posY + 0.2 CheckAndRefreshConstraints() end)
+createNav("TURUN", function() posY = posY - 0.2 CheckAndRefreshConstraints() end)
+createNav("DEPAN", function() posZ = posZ - 0.2 CheckAndRefreshConstraints() end)
+createNav("BELAKANG", function() posZ = posZ + 0.2 CheckAndRefreshConstraints() end)
+createNav("KIRI", function() posX = posX - 0.2 CheckAndRefreshConstraints() end)
+createNav("KANAN", function() posX = posX + 0.2 CheckAndRefreshConstraints() end)
+createNav("PUTAR", function() rotY = (rotY + 90) % 360 CheckAndRefreshConstraints() end)
+
+function CheckAndRefreshConstraints()
+    if isAttached and targetAttachment then
+        targetAttachment.Position = Vector3.new(posX, posY, posZ)
+        targetAttachment.Orientation = Vector3.new(0, rotY, 0)
+    end
+end
 
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
@@ -366,7 +394,7 @@ end)
 -- 3. Fitur Noclip, Airwalk & Inf Jump
 CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
 
--- UPDATE LOGIKA AIR WALK (STABLE & ANTI LAG)
+-- LOGIKA AIR WALK (STABLE)
 local AirWalkConnection
 CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     AirWalkEnabled = state
@@ -374,7 +402,6 @@ CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
     
     if AirWalkEnabled then
-        -- Membuat part pijakan udara yang presisi
         AirWalkPlatform = Instance.new("Part")
         AirWalkPlatform.Size = Vector3.new(15, 0.5, 15)
         AirWalkPlatform.Transparency = 1
@@ -386,7 +413,6 @@ CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
             local Char = LocalPlayer.Character
             local Root = Char and Char:FindFirstChild("HumanoidRootPart")
             if AirWalkEnabled and Root and AirWalkPlatform then
-                -- Menaruh platform tepat 3.1 unit di bawah root part agar pas di bawah kaki karakter
                 AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, Root.Position.Y - 3.1, Root.Position.Z)
             else
                 if AirWalkConnection then AirWalkConnection:Disconnect() end
@@ -423,4 +449,4 @@ local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Dimuat dengan Perbaikan Air Walk.")
+print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat.")
