@@ -117,162 +117,124 @@ end
 -- =========================================================
 -- LOGIKA UTAMA FITUR TAMBAHAN (INTERACT & PIGGYBACK)
 -- =========================================================
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
+-- [ Variabel Fitur 1: Instant Interact ]
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local isInstantActive = false
+local promptConnection = nil
 
--- Variabel Status
-local autoEmoteEnabled = true
-local currentEmoteTrack = nil
-local lockLoop = nil
+local function makeInstant(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        if not prompt:GetAttribute("OriginalHold") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) end
+        prompt.HoldDuration = 0
+    end
+end
 
--- Layout Utama
-local MainLayout = Instance.new("UIListLayout", HomePage)
-MainLayout.Padding = UDim.new(0, 5)
-MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+local function resetToNormal(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        local original = prompt:GetAttribute("OriginalHold")
+        if original then prompt.HoldDuration = original end
+    end
+end
 
--- 1. TextBox Pencarian
-local SearchBox = Instance.new("TextBox", HomePage)
-SearchBox.Size = UDim2.new(1, -10, 0, 30)
-SearchBox.PlaceholderText = "Cari player..."
-SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-SearchBox.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
+-- [ Variabel Fitur 2: Piggyback FE ]
+local targetName = ""
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
+local isAttached = false
+local attachmentConnection = nil
+local respawnConnection = nil
 
--- 2. Dropdown
-local DropdownBtn = Instance.new("TextButton", HomePage)
-DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
-DropdownBtn.Text = "▼ Pilih Player ▼"
-DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
+local function startLoop(targetChar)
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
+    
+    if myHRP and targetHRP and myHumanoid then
+        myHumanoid.PlatformStand = true
+        
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        
+        attachmentConnection = RS.Heartbeat:Connect(function()
+            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
+                if attachmentConnection then attachmentConnection:Disconnect() end
+                return
+            end
+            
+            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
+            end)
+            
+            myHRP.CFrame = offset
+            myHRP.Velocity = Vector3.new()
+            myHRP.AssemblyLinearVelocity = Vector3.new()
+            myHRP.AssemblyAngularVelocity = Vector3.new()
+            myHRP.RotVelocity = Vector3.new()
+        end)
+    end
+end
 
-local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
-PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
-PlayerListFrame.Visible = false
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PlayerListFrame.ScrollBarThickness = 5
-Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
-local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local function detach()
+    isAttached = false
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if respawnConnection then respawnConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        if myHumanoid then myHumanoid.PlatformStand = false end
+        
+        if myHRP then 
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
+            end)
+            myHRP.Velocity = Vector3.new(0, 0, 0) 
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        end
+        
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
+        end
+    end
+end
 
-DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
-
-local CloseListBtn = Instance.new("TextButton", PlayerListFrame)
-CloseListBtn.Size = UDim2.new(1, -10, 0, 30)
-CloseListBtn.Text = "▲ TUTUP LIST ▲"
-CloseListBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-CloseListBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseListBtn.LayoutOrder = -1
-Instance.new("UICorner", CloseListBtn).CornerRadius = UDim.new(0, 4)
-CloseListBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
-
-local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end end
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
-                local btn = Instance.new("TextButton", PlayerListFrame)
-                btn.Size = UDim2.new(1, -10, 0, 30)
-                btn.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-                btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                btn.TextColor3 = Color3.new(1, 1, 1)
-                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-                btn.MouseButton1Click:Connect(function()
-                    targetName = player.Name
-                    DropdownBtn.Text = "▼ " .. player.Name .. " ▼"
-                    PlayerListFrame.Visible = false
-                end)
+local function forceUpdatePosition()
+    if isAttached then
+        local targetPlayer = game.Players:FindFirstChild(targetName)
+        if targetPlayer and targetPlayer.Character then
+            local myChar = LocalPlayer.Character
+            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHRP and targetHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             end
         end
     end
 end
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
-refreshPlayerList()
 
--- 3. Tombol Aksi
-local PBActionFrame = Instance.new("Frame", HomePage)
-PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
-PBActionFrame.BackgroundTransparency = 1
-Instance.new("UIListLayout", PBActionFrame).FillDirection = Enum.FillDirection.Horizontal
-local function createActionBtn(txt, color, callback)
-    local b = Instance.new("TextButton", PBActionFrame)
-    b.Size = UDim2.new(0.48, 0, 1, 0)
-    b.BackgroundColor3 = color
-    b.Text = txt
-    b.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-    b.MouseButton1Click:Connect(callback)
+local function attachToPlayer()
+    local targetPlayer = game.Players:FindFirstChild(targetName)
+    if not targetPlayer then return end
+    isAttached = true
+    if respawnConnection then respawnConnection:Disconnect() end
+    if targetPlayer.Character then startLoop(targetPlayer.Character) end
+    respawnConnection = targetPlayer.CharacterAdded:Connect(function(newCharacter)
+        if isAttached then task.wait(0.5) startLoop(newCharacter) end
+    end)
 end
-createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function()
-    attachToPlayer()
-    removeWelds()
-    if autoEmoteEnabled then
-        local target = Players:FindFirstChild(targetName)
-        local char = LocalPlayer.Character
-        if target and target.Character and char and char:FindFirstChild("HumanoidRootPart") then
-            if currentEmoteTrack then currentEmoteTrack:Stop() end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://107480602323379"
-            currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
-            currentEmoteTrack:Play()
-            lockLoop = RunService.RenderStepped:Connect(function()
-                local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                local cRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if tRoot and cRoot then
-                    cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
-                elseif lockLoop then lockLoop:Disconnect() end
-            end)
-        end
-    end
-end)
-createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function()
-    detach()
-    if currentEmoteTrack then currentEmoteTrack:Stop() end
-    if lockLoop then lockLoop:Disconnect() end
-end)
 
--- 4. Navigasi & Toggle Emote
-local NavFrame = Instance.new("Frame", HomePage)
-NavFrame.Size = UDim2.new(1, -10, 0, 130)
-NavFrame.BackgroundTransparency = 1
-local NavGrid = Instance.new("UIGridLayout", NavFrame)
-NavGrid.CellSize = UDim2.new(0.31, 0, 0, 28)
-NavGrid.CellPadding = UDim2.new(0.03, 0, 0.1, 0)
+-- =========================================================
+-- HALAMAN UTAMA & FITUR-FITUR
+-- =========================================================
+local HomePage = CreateTab("Home")
 
-local function createNav(txt, cb)
-    local b = Instance.new("TextButton", NavFrame)
-    b.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    b.Text = txt
-    b.TextColor3 = Color3.fromRGB(220, 220, 220)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(cb)
-end
-createNav("NAIK", function() posY = posY + 0.2 end)
-createNav("TURUN", function() posY = posY - 0.2 end)
-createNav("DEPAN", function() posZ = posZ - 0.2 end)
-createNav("BELAKANG", function() posZ = posZ + 0.2 end)
-createNav("KIRI", function() posX = posX - 0.2 end)
-createNav("KANAN", function() posX = posX + 0.2 end)
-createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
-
-local ToggleBtn = Instance.new("TextButton", NavFrame)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "AUTO EMOTE: ON"
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
-ToggleBtn.MouseButton1Click:Connect(function()
-    autoEmoteEnabled = not autoEmoteEnabled
-    ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
-end)
-
--- Garis & Instant Interact
-local Line = Instance.new("Frame", HomePage)
-Line.Size = UDim2.new(1, -10, 0, 2)
-Line.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Line.BorderSizePixel = 0
-
+-- Fitur Tambahan 1: Instant Interact di Tab Home
 CreateToggle(HomePage, "Instant Interact", function(state)
     isInstantActive = state
     if isInstantActive then
@@ -286,34 +248,30 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
--- =========================================================
--- HALAMAN UTAMA & FITUR-FITUR
--- =========================================================
-local HomePage = CreateTab("Home")
+-- Garis Pembatas UI
+local Line = Instance.new("Frame")
+Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0, HomePage
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 
--- Variabel Status
+-- Variabel Status & Animasi
 local autoEmoteEnabled = true
 local currentEmoteTrack = nil
-local lockLoop = nil
 
 -- Layout Utama
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- 1. TextBox Pencarian
-local SearchBox = Instance.new("Cari player...", HomePage)
+-- 1. TextBox & Dropdown
+local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 SearchBox.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
--- 2. Dropdown
 local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
 DropdownBtn.Text = "▼ Pilih Player ▼"
@@ -321,29 +279,18 @@ DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 
--- Wadah List
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
 PlayerListFrame.Visible = false
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerListFrame.ScrollBarThickness = 5
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
-local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
 DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
-local CloseListBtn = Instance.new("TextButton", PlayerListFrame)
-CloseListBtn.Size = UDim2.new(1, -10, 0, 30)
-CloseListBtn.Text = "▲ TUTUP LIST ▲"
-CloseListBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-CloseListBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseListBtn.LayoutOrder = -1
-Instance.new("UICorner", CloseListBtn).CornerRadius = UDim.new(0, 4)
-CloseListBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
-
 local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end end
+    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
@@ -365,6 +312,33 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
+-- 2. Fungsi Attach & Detach (Integrasi Emote)
+local function runAttachLogic()
+    attachToPlayer() -- Panggil fungsi asli kamu
+    
+    if autoEmoteEnabled then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            if currentEmoteTrack then currentEmoteTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://107480602323379"
+            currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
+            currentEmoteTrack:Play()
+            
+            posX, posZ = 0, -1.2
+            if forceUpdatePosition then forceUpdatePosition() end
+        end
+    end
+end
+
+local function runDetachLogic()
+    detach() -- Panggil fungsi asli kamu
+    if currentEmoteTrack then
+        currentEmoteTrack:Stop()
+        currentEmoteTrack = nil
+    end
+end
+
 -- 3. Tombol Aksi
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
@@ -379,33 +353,8 @@ local function createActionBtn(txt, color, callback)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     b.MouseButton1Click:Connect(callback)
 end
-createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function()
-    attachToPlayer()
-    removeWelds()
-    if autoEmoteEnabled then
-        local target = Players:FindFirstChild(targetName)
-        local char = LocalPlayer.Character
-        if target and target.Character and char and char:FindFirstChild("HumanoidRootPart") then
-            if currentEmoteTrack then currentEmoteTrack:Stop() end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://107480602323379"
-            currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
-            currentEmoteTrack:Play()
-            lockLoop = RunService.RenderStepped:Connect(function()
-                local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                local cRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if tRoot and cRoot then
-                    cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
-                elseif lockLoop then lockLoop:Disconnect() end
-            end)
-        end
-    end
-end)
-createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function()
-    detach()
-    if currentEmoteTrack then currentEmoteTrack:Stop() end
-    if lockLoop then lockLoop:Disconnect() end
-end)
+createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), runAttachLogic)
+createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), runDetachLogic)
 
 -- 4. Navigasi & Toggle Emote
 local NavFrame = Instance.new("Frame", HomePage)
@@ -420,7 +369,7 @@ local function createNav(txt, cb)
     b.Text = txt
     b.TextColor3 = Color3.fromRGB(220, 220, 220)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(cb)
+    b.MouseButton1Click:Connect(function() cb() forceUpdatePosition() end)
 end
 createNav("NAIK", function() posY = posY + 0.2 end)
 createNav("TURUN", function() posY = posY - 0.2 end)
@@ -430,6 +379,7 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
+-- Tombol Toggle Emote
 local ToggleBtn = Instance.new("TextButton", NavFrame)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
 ToggleBtn.Text = "AUTO EMOTE: ON"
@@ -438,28 +388,9 @@ Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
 end)
 
--- Garis Pembatas
-local Line = Instance.new("Frame", HomePage)
-Line.Size = UDim2.new(1, -10, 0, 2)
-Line.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Line.BorderSizePixel = 0
-
--- 5. INSTANT INTERACT (Paling Bawah)
-CreateToggle(HomePage, "Instant Interact", function(state)
-    isInstantActive = state
-    if isInstantActive then
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do makeInstant(prompt) end
-        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-            if isInstantActive then makeInstant(prompt) end
-        end)
-    else
-        if promptConnection then promptConnection:Disconnect() end
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do resetToNormal(prompt) end
-    end
-end)
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
 -- =========================================================
