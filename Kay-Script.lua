@@ -255,73 +255,62 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Pastikan HomePage sudah didefinisikan sebelumnya
--- Jika belum, ganti HomePage dengan nama variabel frame utama kamu
-
--- 1. Layout Otomatis agar tidak bertumpuk
+-- Mengatur Layout Utama agar berjejer ke bawah dengan rapi
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- 2. Judul
-local PiggyTitle = Instance.new("TextLabel", HomePage)
-PiggyTitle.Size = UDim2.new(1, 0, 0, 20)
-PiggyTitle.BackgroundTransparency = 1
-PiggyTitle.Text = "KAY PIGGYBACK FE SYSTEM"
-PiggyTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-PiggyTitle.Font = Enum.Font.SourceSansBold
-PiggyTitle.TextSize = 13
-
--- 3. Pencarian
+-- 1. TextBox Pencarian
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
-SearchBox.PlaceholderText = "Cari player (DisplayName/Username)..."
+SearchBox.PlaceholderText = "Cari player (ketik nama)..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 SearchBox.TextColor3 = Color3.new(1, 1, 1)
 SearchBox.Font = Enum.Font.SourceSans
-SearchBox.TextSize = 13
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
--- 4. Daftar Player
+-- 2. Tombol Dropdown
+local DropdownBtn = Instance.new("TextButton", HomePage)
+DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
+DropdownBtn.Text = "▼ Pilih Player ▼"
+DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
+DropdownBtn.Font = Enum.Font.SourceSansBold
+Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
+
+-- Wadah List Player (Tersembunyi Awalnya)
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
-PlayerListFrame.Size = UDim2.new(1, -10, 0, 100)
+PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
+PlayerListFrame.Visible = false
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerListFrame.ScrollBarThickness = 5
+PlayerListFrame.BorderSizePixel = 0
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
+-- Logika Buka/Tutup Dropdown
+DropdownBtn.MouseButton1Click:Connect(function()
+    PlayerListFrame.Visible = not PlayerListFrame.Visible
+    DropdownBtn.Text = PlayerListFrame.Visible and "▲ Sembunyikan ▲" or "▼ Pilih Player ▼"
+end)
+
+-- Fungsi Isi List
 local function refreshPlayerList(filter)
     for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local searchString = string.lower(player.DisplayName .. " " .. player.Name)
-            if not filter or filter == "" or string.find(searchString, string.lower(filter)) then
+            local searchStr = string.lower(player.DisplayName .. " " .. player.Name)
+            if not filter or filter == "" or string.find(searchStr, string.lower(filter)) then
                 local btn = Instance.new("TextButton", PlayerListFrame)
-                btn.Size = UDim2.new(1, -10, 0, 40)
+                btn.Size = UDim2.new(1, -10, 0, 30)
+                btn.Text = player.DisplayName .. " (@" .. player.Name .. ")"
                 btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                btn.Text = ""
+                btn.TextColor3 = Color3.new(1, 1, 1)
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-                
-                local dn = Instance.new("TextLabel", btn)
-                dn.Size = UDim2.new(1, 0, 0.5, 0)
-                dn.Text = player.DisplayName
-                dn.TextColor3 = Color3.new(1, 1, 1)
-                dn.Font = Enum.Font.SourceSansBold
-                dn.BackgroundTransparency = 1
-                
-                local un = Instance.new("TextLabel", btn)
-                un.Size = UDim2.new(1, 0, 0.5, 0)
-                un.Position = UDim2.new(0, 0, 0.5, 0)
-                un.Text = "@" .. player.Name
-                un.TextColor3 = Color3.fromRGB(200, 200, 200)
-                un.Font = Enum.Font.SourceSans
-                un.TextSize = 12
-                un.BackgroundTransparency = 1
-                
                 btn.MouseButton1Click:Connect(function()
                     targetName = player.Name
-                    for _, b in pairs(PlayerListFrame:GetChildren()) do if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end end
-                    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+                    DropdownBtn.Text = "▼ " .. player.Name .. " ▼"
+                    PlayerListFrame.Visible = false
                 end)
             end
         end
@@ -331,13 +320,13 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
--- 5. Tombol Aksi
+-- 3. Tombol Tempel & Lepas
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
 PBActionFrame.BackgroundTransparency = 1
-local UIList = Instance.new("UIListLayout", PBActionFrame)
-UIList.FillDirection = Enum.FillDirection.Horizontal
-UIList.Padding = UDim.new(0, 10)
+local ActionLayout = Instance.new("UIListLayout", PBActionFrame)
+ActionLayout.FillDirection = Enum.FillDirection.Horizontal
+ActionLayout.Padding = UDim.new(0, 10)
 
 local function createActionBtn(txt, color, callback)
     local b = Instance.new("TextButton", PBActionFrame)
@@ -353,7 +342,7 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function() attachToPlayer() end)
 createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function() detach() end)
 
--- 6. Navigasi (Sesuai kode awalmu)
+-- 4. Navigasi Posisi
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size = UDim2.new(1, -10, 0, 65)
 NavFrame.BackgroundTransparency = 1
