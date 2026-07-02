@@ -519,7 +519,7 @@ UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Charac
 -- =========================================================
 local SettingsPage = CreateTab("Settings")
 local ThemeLabel = Instance.new("TextLabel")
-ThemeLabel.Size, ThemeLabel.BackgroundTransparency, ThemeLabel.Text, ThemeLabel.TextColor3, ThemeLabel.Font, ThemeLabel.TextSize, ThemeLabel.TextXAlignment, ThemeLabel.Parent = UDim2.new(1, -10, 0, 30), 1, "PILIH AJA BRE MAU WARNA APA", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 14, Enum.TextXAlignment.Left, SettingsPage
+ThemeLabel.Size, ThemeLabel.BackgroundTransparency, ThemeLabel.Text, ThemeLabel.TextColor3, ThemeLabel.Font, ThemeLabel.TextSize, ThemeLabel.TextXAlignment, ThemeLabel.Parent = UDim2.new(1, -10, 0, 30), 1, "PILIH TEMA WARNA UI:", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 14, Enum.TextXAlignment.Left, SettingsPage
 
 for Name, Color in pairs(Themes) do
     local ThemeBtn = Instance.new("TextButton")
