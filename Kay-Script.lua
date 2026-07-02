@@ -182,6 +182,10 @@ local function detach()
     isAttached = false
     if attachmentConnection then attachmentConnection:Disconnect() end
     if respawnConnection then respawnConnection:Disconnect() end
+    if currentEmoteTrack then
+        currentEmoteTrack:Stop()
+        currentEmoteTrack = nil
+    end
     local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
@@ -254,6 +258,7 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local currentEmoteTrack = nil
 
 -- Layout Utama agar rapi
 local MainLayout = Instance.new("UIListLayout", HomePage)
@@ -346,16 +351,21 @@ NavGrid.CellPadding = UDim2.new(0.02, 0, 0.1, 0)
 local function playCustomEmote(id)
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
+        -- Hentikan animasi lama jika ada
+        if currentEmoteTrack then currentEmoteTrack:Stop() end
+        
         local anim = Instance.new("Animation")
         anim.AnimationId = "rbxassetid://" .. id
-        char.Humanoid:LoadAnimation(anim):Play()
+        currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
+        currentEmoteTrack:Play()
         
-        -- Auto-Position ke belakang
+        -- Auto-Position
         posX = 0
         posZ = -1.2 
         if forceUpdatePosition then forceUpdatePosition() end
     end
 end
+
 
 local function createNav(txt, cb)
     local b = Instance.new("TextButton", NavFrame)
