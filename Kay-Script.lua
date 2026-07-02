@@ -258,13 +258,13 @@ local LocalPlayer = Players.LocalPlayer
 -- Variabel Status & Animasi
 local autoEmoteEnabled = true
 local currentEmoteTrack = nil
+local lockLoop = nil -- Untuk menghentikan tracking otomatis
 
--- Layout Utama
+-- 1. UI Setup (Sama dengan sebelumnya)
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- 1. TextBox & Dropdown
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
@@ -312,31 +312,37 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
--- 2. Fungsi Attach & Detach (Integrasi Emote)
+-- 2. Fungsi Logic Auto-Lock & Emote
 local function runAttachLogic()
     attachToPlayer() -- Panggil fungsi asli kamu
     
     if autoEmoteEnabled then
+        local target = Players:FindFirstChild(targetName)
         local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") then
-            if currentEmoteTrack then currentEmoteTrack:Stop() end
+        if target and target.Character and char and char:FindFirstChild("HumanoidRootPart") then
+            -- Animasi
             local anim = Instance.new("Animation")
             anim.AnimationId = "rbxassetid://107480602323379"
             currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
             currentEmoteTrack:Play()
             
-            posX, posZ = 0, -1.2
-            if forceUpdatePosition then forceUpdatePosition() end
+            -- Auto-Lock Posisi
+            lockLoop = task.spawn(function()
+                while task.wait() and lockLoop do
+                    local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                    if tRoot and char:FindFirstChild("HumanoidRootPart") then
+                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, 0, 1.5) * CFrame.Angles(0, math.rad(180), 0)
+                    else break end
+                end
+            end)
         end
     end
 end
 
 local function runDetachLogic()
     detach() -- Panggil fungsi asli kamu
-    if currentEmoteTrack then
-        currentEmoteTrack:Stop()
-        currentEmoteTrack = nil
-    end
+    if currentEmoteTrack then currentEmoteTrack:Stop() end
+    lockLoop = nil -- Berhenti mengunci posisi
 end
 
 -- 3. Tombol Aksi
@@ -369,7 +375,7 @@ local function createNav(txt, cb)
     b.Text = txt
     b.TextColor3 = Color3.fromRGB(220, 220, 220)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(function() cb() forceUpdatePosition() end)
+    b.MouseButton1Click:Connect(cb)
 end
 createNav("NAIK", function() posY = posY + 0.2 end)
 createNav("TURUN", function() posY = posY - 0.2 end)
@@ -379,16 +385,15 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
--- Tombol Toggle Emote
 local ToggleBtn = Instance.new("TextButton", NavFrame)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "AUTO EMOTE: ON"
+ToggleBtn.Text = "ON"
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
 end)
 
 -- =========================================================
