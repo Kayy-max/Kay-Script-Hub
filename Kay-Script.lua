@@ -252,57 +252,87 @@ end)
 local Line = Instance.new("Frame")
 Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0, HomePage
 
--- Fitur Tambahan 2: Piggyback FE di Tab Home
-local PiggyTitle = Instance.new("TextLabel")
-PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment, PiggyTitle.Parent = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left, HomePage
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- TextBox Input Nama Player
-local PBTextBox = Instance.new("TextBox")
-PBTextBox.Size, PBTextBox.BackgroundColor3, PBTextBox.TextColor3, PBTextBox.PlaceholderText, PBTextBox.Text, PBTextBox.TextSize, PBTextBox.Font, PBTextBox.Parent = UDim2.new(1, -10, 0, 30), Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255), "Nama Player (Case Sensitive)", "", 13, Enum.Font.SourceSans, HomePage
-Instance.new("UICorner", PBTextBox).CornerRadius = UDim.new(0, 6)
+-- Container Utama (Asumsi HomePage sudah ada dari script kamu)
+local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
+PlayerListFrame.Size = UDim2.new(1, -10, 0, 120)
+PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PlayerListFrame.BorderSizePixel = 0
+PlayerListFrame.ScrollBarThickness = 5
+Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
--- Container Tombol Tempel & Lepas
-local PBActionFrame = Instance.new("Frame")
-PBActionFrame.Size, PBActionFrame.BackgroundTransparency, PBActionFrame.Parent = UDim2.new(1, -10, 0, 35), 1, HomePage
-local PBActionLayout = Instance.new("UIListLayout", PBActionFrame)
-PBActionLayout.FillDirection, PBActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 10)
+-- Input Pencarian
+local SearchBox = Instance.new("TextBox", HomePage)
+SearchBox.Size = UDim2.new(1, -10, 0, 30)
+SearchBox.PlaceholderText = "Cari player..."
+SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.Font = Enum.Font.SourceSans
+SearchBox.TextSize = 14
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
-local AttachBtn = Instance.new("TextButton", PBActionFrame)
-AttachBtn.Size, AttachBtn.BackgroundColor3, AttachBtn.Text, AttachBtn.TextColor3, AttachBtn.Font, AttachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(0, 150, 80), "TEMPEL", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
-Instance.new("UICorner", AttachBtn).CornerRadius = UDim.new(0, 6)
-
-local DetachBtn = Instance.new("TextButton", PBActionFrame)
-DetachBtn.Size, DetachBtn.BackgroundColor3, DetachBtn.Text, DetachBtn.TextColor3, DetachBtn.Font, DetachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(180, 40, 40), "LEPAS", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
-Instance.new("UICorner", DetachBtn).CornerRadius = UDim.new(0, 6)
-
-AttachBtn.MouseButton1Click:Connect(function()
-    targetName = PBTextBox.Text
-    attachToPlayer()
-end)
-DetachBtn.MouseButton1Click:Connect(detach)
-
--- Container Tombol Navigasi Posisi Piggyback
-local NavFrame = Instance.new("Frame")
-NavFrame.Size, NavFrame.BackgroundTransparency, NavFrame.Parent = UDim2.new(1, -10, 0, 65), 1, HomePage
-local NavGrid = Instance.new("UIGridLayout", NavFrame)
-NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.23, 0, 0, 28), UDim2.new(0.02, 0, 0.1, 0)
-
-local function createNav(txt, cb)
-    local b = Instance.new("TextButton", NavFrame)
-    b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = Color3.fromRGB(40, 40, 45), txt, Color3.fromRGB(220, 220, 220), Enum.Font.SourceSansBold, 11
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(function()
-        cb()
-        forceUpdatePosition()
-    end)
+-- Fungsi Refresh List
+local function refreshPlayerList(filter)
+    for _, child in pairs(PlayerListFrame:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
+                local btn = Instance.new("TextButton", PlayerListFrame)
+                btn.Size = UDim2.new(1, -10, 0, 25)
+                btn.Text = player.Name
+                btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                btn.TextColor3 = Color3.new(1, 1, 1)
+                btn.Font = Enum.Font.SourceSansBold
+                btn.TextSize = 13
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                
+                btn.MouseButton1Click:Connect(function()
+                    targetName = player.Name
+                    -- Opsional: Beri visual feedback
+                    btn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+                end)
+            end
+        end
+    end
 end
-createNav("NAIK", function() posY = posY + 0.2 end)
-createNav("TURUN", function() posY = posY - 0.2 end)
-createNav("DEPAN", function() posZ = posZ - 0.2 end)
-createNav("BELAKANG", function() posZ = posZ + 0.2 end)
-createNav("KIRI", function() posX = posX - 0.2 end)
-createNav("KANAN", function() posX = posX + 0.2 end)
-createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
+
+-- Event Pencarian
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    refreshPlayerList(SearchBox.Text)
+end)
+
+-- Initial Load
+refreshPlayerList()
+Players.PlayerAdded:Connect(function() refreshPlayerList(SearchBox.Text) end)
+Players.PlayerRemoving:Connect(function() refreshPlayerList(SearchBox.Text) end)
+
+-- Tombol Aksi (Tempel & Lepas)
+local PBActionFrame = Instance.new("Frame", HomePage)
+PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
+PBActionFrame.BackgroundTransparency = 1
+local UIList = Instance.new("UIListLayout", PBActionFrame)
+UIList.FillDirection = Enum.FillDirection.Horizontal
+UIList.Padding = UDim.new(0, 10)
+
+local function createActionBtn(txt, color, callback)
+    local b = Instance.new("TextButton", PBActionFrame)
+    b.Size = UDim2.new(0.48, 0, 1, 0)
+    b.BackgroundColor3 = color
+    b.Text = txt
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.SourceSansBold
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(callback)
+end
+
+createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function() attachToPlayer() end)
+createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function() detach() end)
 
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
