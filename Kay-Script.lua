@@ -1,10 +1,10 @@
--- [[ KAY HUB PRO V8 - SLIM EDITION (FIXED UI & REPLICATION) ]] --
+-- [[ KAY HUB  - SLIM EDITION ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Themes = {["Neon Green"] = Color3.fromRGB(0, 255, 150), ["Aqua Blue"] = Color3.fromRGB(0, 210, 255), ["Ruby Red"] = Color3.fromRGB(255, 50, 70), ["Purple Cyber"] = Color3.fromRGB(180, 0, 255)}
 local ActiveThemeColor, ActiveToggles, Tabs = Themes["Neon Green"], {}, {}
 
--- Inisialisasi GUI Utama
+-- GUI Utama
 local KayHub = Instance.new("ScreenGui")
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -13,7 +13,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.BackgroundColor3, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 420, 0, 280), UDim2.new(0.3, 0, 0.25, 0), Color3.fromRGB(20, 20, 20), true, true, KayHub
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- Fungsi Drag & Drop Otomatis (Aman & Ringkas)
+-- Drag & Drop
 local function MakeDraggable(gui)
     local dragInput, dragStart, startPos
     gui.InputBegan:Connect(function(input)
@@ -115,201 +115,16 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
--- LOGIKA UTAMA FITUR TAMBAHAN (INTERACT & PIGGYBACK)
--- =========================================================
--- [ Variabel Fitur 1: Instant Interact ]
-local ProximityPromptService = game:GetService("ProximityPromptService")
-local isInstantActive = false
-local promptConnection = nil
-
-local function makeInstant(prompt)
-    if prompt:IsA("ProximityPrompt") then
-        if not prompt:GetAttribute("OriginalHold") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) end
-        prompt.HoldDuration = 0
-    end
-end
-
-local function resetToNormal(prompt)
-    if prompt:IsA("ProximityPrompt") then
-        local original = prompt:GetAttribute("OriginalHold")
-        if original then prompt.HoldDuration = original end
-    end
-end
-
--- [ Variabel Fitur 2: Piggyback FE ]
-local targetName = ""
-local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
-local isAttached = false
-local attachmentConnection = nil
-local respawnConnection = nil
-
-local function startLoop(targetChar)
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
-    
-    if myHRP and targetHRP and myHumanoid then
-        myHumanoid.PlatformStand = true
-        
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-        
-        attachmentConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
-                if attachmentConnection then attachmentConnection:Disconnect() end
-                return
-            end
-            
-            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            
-            pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
-            end)
-            
-            myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new()
-            myHRP.AssemblyLinearVelocity = Vector3.new()
-            myHRP.AssemblyAngularVelocity = Vector3.new()
-            myHRP.RotVelocity = Vector3.new()
-        end)
-    end
-end
-
-local function detach()
-    isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    if myChar then
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-        if myHumanoid then myHumanoid.PlatformStand = false end
-        
-        if myHRP then 
-            pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
-            end)
-            myHRP.Velocity = Vector3.new(0, 0, 0) 
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
-        end
-        
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
-        end
-    end
-end
-
-local function forceUpdatePosition()
-    if isAttached then
-        local targetPlayer = game.Players:FindFirstChild(targetName)
-        if targetPlayer and targetPlayer.Character then
-            local myChar = LocalPlayer.Character
-            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myHRP and targetHRP then
-                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            end
-        end
-    end
-end
-
-local function attachToPlayer()
-    local targetPlayer = game.Players:FindFirstChild(targetName)
-    if not targetPlayer then return end
-    isAttached = true
-    if respawnConnection then respawnConnection:Disconnect() end
-    if targetPlayer.Character then startLoop(targetPlayer.Character) end
-    respawnConnection = targetPlayer.CharacterAdded:Connect(function(newCharacter)
-        if isAttached then task.wait(0.5) startLoop(newCharacter) end
-    end)
-end
-
--- =========================================================
 -- HALAMAN UTAMA & FITUR-FITUR
 -- =========================================================
 local HomePage = CreateTab("Home")
+local WelcomeLabel = Instance.new("TextLabel")
+WelcomeLabel.Size, WelcomeLabel.BackgroundTransparency, WelcomeLabel.Text, WelcomeLabel.TextColor3, WelcomeLabel.Font, WelcomeLabel.TextSize, WelcomeLabel.Parent = UDim2.new(1, 0, 0, 45), 1, "Kay Hub V8 (Theme Engine)\nFitur Lengkap, Kode Ringkas & No Delay!", Color3.fromRGB(180, 180, 180), Enum.Font.SourceSans, 14, HomePage
 
--- Fitur Tambahan 1: Instant Interact di Tab Home
-CreateToggle(HomePage, "Instant Interact", function(state)
-    isInstantActive = state
-    if isInstantActive then
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do makeInstant(prompt) end
-        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-            if isInstantActive then makeInstant(prompt) end
-        end)
-    else
-        if promptConnection then promptConnection:Disconnect() end
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do resetToNormal(prompt) end
-    end
-end)
-
--- Garis Pembatas UI
-local Line = Instance.new("Frame")
-Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0, HomePage
-
--- Fitur Tambahan 2: Piggyback FE di Tab Home
-local PiggyTitle = Instance.new("TextLabel")
-PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment, PiggyTitle.Parent = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left, HomePage
-
--- TextBox Input Nama Player
-local PBTextBox = Instance.new("TextBox")
-PBTextBox.Size, PBTextBox.BackgroundColor3, PBTextBox.TextColor3, PBTextBox.PlaceholderText, PBTextBox.Text, PBTextBox.TextSize, PBTextBox.Font, PBTextBox.Parent = UDim2.new(1, -10, 0, 30), Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255), "Nama Player (Case Sensitive)", "", 13, Enum.Font.SourceSans, HomePage
-Instance.new("UICorner", PBTextBox).CornerRadius = UDim.new(0, 6)
-
--- Container Tombol Tempel & Lepas
-local PBActionFrame = Instance.new("Frame")
-PBActionFrame.Size, PBActionFrame.BackgroundTransparency, PBActionFrame.Parent = UDim2.new(1, -10, 0, 35), 1, HomePage
-local PBActionLayout = Instance.new("UIListLayout", PBActionFrame)
-PBActionLayout.FillDirection, PBActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 10)
-
-local AttachBtn = Instance.new("TextButton", PBActionFrame)
-AttachBtn.Size, AttachBtn.BackgroundColor3, AttachBtn.Text, AttachBtn.TextColor3, AttachBtn.Font, AttachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(0, 150, 80), "TEMPEL", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
-Instance.new("UICorner", AttachBtn).CornerRadius = UDim.new(0, 6)
-
-local DetachBtn = Instance.new("TextButton", PBActionFrame)
-DetachBtn.Size, DetachBtn.BackgroundColor3, DetachBtn.Text, DetachBtn.TextColor3, DetachBtn.Font, DetachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(180, 40, 40), "LEPAS", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
-Instance.new("UICorner", DetachBtn).CornerRadius = UDim.new(0, 6)
-
-AttachBtn.MouseButton1Click:Connect(function()
-    targetName = PBTextBox.Text
-    attachToPlayer()
-end)
-DetachBtn.MouseButton1Click:Connect(detach)
-
--- Container Tombol Navigasi Posisi Piggyback
-local NavFrame = Instance.new("Frame")
-NavFrame.Size, NavFrame.BackgroundTransparency, NavFrame.Parent = UDim2.new(1, -10, 0, 65), 1, HomePage
-local NavGrid = Instance.new("UIGridLayout", NavFrame)
-NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.23, 0, 0, 28), UDim2.new(0.02, 0, 0.1, 0)
-
-local function createNav(txt, cb)
-    local b = Instance.new("TextButton", NavFrame)
-    b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = Color3.fromRGB(40, 40, 45), txt, Color3.fromRGB(220, 220, 220), Enum.Font.SourceSansBold, 11
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(function()
-        cb()
-        forceUpdatePosition()
-    end)
-end
-createNav("NAIK", function() posY = posY + 0.2 end)
-createNav("TURUN", function() posY = posY - 0.2 end)
-createNav("DEPAN", function() posZ = posZ - 0.2 end)
-createNav("BELAKANG", function() posZ = posZ + 0.2 end)
-createNav("KIRI", function() posX = posX - 0.2 end)
-createNav("KANAN", function() posX = posX + 0.2 end)
-createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
-
--- =========================================================
--- TAB FEATURES & LOOPS LOGIKA
--- =========================================================
 local MainFeaturesPage = CreateTab("Features")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, AirWalkEnabled, AirWalkPlatform, NoclipEnabled = 16, false, false, false, 60, false, nil, false
 
+-- 1. Speed Walk Frame & Slider
 local SpeedFrame = Instance.new("Frame")
 SpeedFrame.Size, SpeedFrame.BackgroundColor3, SpeedFrame.Parent = UDim2.new(1, -10, 0, 75), Color3.fromRGB(30, 30, 30), MainFeaturesPage
 Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 6)
@@ -341,6 +156,7 @@ SpeedToggleBtn.MouseButton1Click:Connect(function()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
 
+-- Loops Logika Fitur
 RS.Stepped:Connect(function()
     if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue end
     if NoclipEnabled and LocalPlayer.Character then
@@ -375,33 +191,24 @@ CreateToggle(MainFeaturesPage, "Fly", function(state)
     end
 end)
 
+-- 3. Fitur Noclip, Airwalk & Inf Jump
 CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
 
--- Fitur Air Walk
 local AirWalkConnection
 CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     AirWalkEnabled = state
-    if AirWalkConnection then AirWalkConnection:Disconnect() end
-    if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
-    
-    if AirWalkEnabled then
-        AirWalkPlatform = Instance.new("Part")
-        AirWalkPlatform.Size = Vector3.new(15, 0.5, 15)
-        AirWalkPlatform.Transparency = 1
-        AirWalkPlatform.Anchored = true
-        AirWalkPlatform.CanCollide = true
-        AirWalkPlatform.Parent = workspace
-        
-        AirWalkConnection = RS.Heartbeat:Connect(function()
-            local Char = LocalPlayer.Character
-            local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-            if AirWalkEnabled and Root and AirWalkPlatform then
-                AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, Root.Position.Y - 3.1, Root.Position.Z)
-            else
-                if AirWalkConnection then AirWalkConnection:Disconnect() end
-                if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
+    if AirWalkEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        AirWalkPlatform = AirWalkPlatform or Instance.new("Part", workspace)
+        AirWalkPlatform.Size, AirWalkPlatform.Transparency, AirWalkPlatform.Anchored = Vector3.new(35, 2, 35), 1, true
+        AirWalkConnection = RS.PreSimulation:Connect(function()
+            local Root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if Root and AirWalkPlatform then
+                AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, AirWalkPlatform.Position.Y, Root.Position.Z)
+                if Root.Position.Y < AirWalkPlatform.Position.Y + 2.5 then Root.CFrame = CFrame.new(Root.Position.X, AirWalkPlatform.Position.Y + 2.5, Root.Position.Z) end
             end
         end)
+    else
+        if AirWalkConnection then AirWalkConnection:Disconnect() end if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
     end
 end)
 
@@ -432,4 +239,4 @@ local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
+print("[SYSTEM] Kay Hub Pro V8 Slim Dimuat.")
