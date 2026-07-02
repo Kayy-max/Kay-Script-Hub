@@ -346,7 +346,7 @@ local function runAttachLogic()
                     local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
                     if tRoot and char:FindFirstChild("HumanoidRootPart") then
                         -- CFrame: 3 ke belakang (z), 18 ke bawah (y)
-                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, -25, 6) * CFrame.Angles(0, math.rad(180), 0)
+                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, -45, 12) * CFrame.Angles(0, math.rad(180), 0)
                     else break end
                 end
             end)
