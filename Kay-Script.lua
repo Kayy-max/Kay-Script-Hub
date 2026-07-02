@@ -182,10 +182,6 @@ local function detach()
     isAttached = false
     if attachmentConnection then attachmentConnection:Disconnect() end
     if respawnConnection then respawnConnection:Disconnect() end
-    if currentEmoteTrack then
-        currentEmoteTrack:Stop()
-        currentEmoteTrack = nil
-    end
     local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
@@ -258,14 +254,17 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+
+-- Variabel Status & Animasi
+local autoEmoteEnabled = true
 local currentEmoteTrack = nil
 
--- Layout Utama agar rapi
+-- Layout Utama
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- 1. TextBox Pencarian
+-- 1. TextBox & Dropdown
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
@@ -273,7 +272,6 @@ SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 SearchBox.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
--- 2. Tombol Dropdown
 local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
 DropdownBtn.Text = "▼ Pilih Player ▼"
@@ -281,7 +279,6 @@ DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 
--- Wadah List Player
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
 PlayerListFrame.Visible = false
@@ -290,9 +287,7 @@ PlayerListFrame.ScrollBarThickness = 5
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
-DropdownBtn.MouseButton1Click:Connect(function()
-    PlayerListFrame.Visible = not PlayerListFrame.Visible
-end)
+DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
 local function refreshPlayerList(filter)
     for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
@@ -307,76 +302,75 @@ local function refreshPlayerList(filter)
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
                 btn.MouseButton1Click:Connect(function()
                     targetName = player.Name
-                    DropdownBtn.Text = "Target: " .. player.Name
+                    DropdownBtn.Text = "▼ " .. player.Name .. " ▼"
                     PlayerListFrame.Visible = false
                 end)
             end
         end
     end
 end
-
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
+
+-- 2. Fungsi Attach & Detach (Integrasi Emote)
+local function runAttachLogic()
+    attachToPlayer() -- Panggil fungsi asli kamu
+    
+    if autoEmoteEnabled then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            if currentEmoteTrack then currentEmoteTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://107480602323379"
+            currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
+            currentEmoteTrack:Play()
+            
+            posX, posZ = 0, -1.2
+            if forceUpdatePosition then forceUpdatePosition() end
+        end
+    end
+end
+
+local function runDetachLogic()
+    detach() -- Panggil fungsi asli kamu
+    if currentEmoteTrack then
+        currentEmoteTrack:Stop()
+        currentEmoteTrack = nil
+    end
+end
 
 -- 3. Tombol Aksi
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
 PBActionFrame.BackgroundTransparency = 1
-local ActionLayout = Instance.new("UIListLayout", PBActionFrame)
-ActionLayout.FillDirection = Enum.FillDirection.Horizontal
-ActionLayout.Padding = UDim.new(0, 10)
-
+Instance.new("UIListLayout", PBActionFrame).FillDirection = Enum.FillDirection.Horizontal
 local function createActionBtn(txt, color, callback)
     local b = Instance.new("TextButton", PBActionFrame)
     b.Size = UDim2.new(0.48, 0, 1, 0)
     b.BackgroundColor3 = color
     b.Text = txt
     b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.SourceSansBold
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     b.MouseButton1Click:Connect(callback)
 end
+createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), runAttachLogic)
+createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), runDetachLogic)
 
-createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function() attachToPlayer() end)
-createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function() detach() end)
-
--- 4. Navigasi & Emote
+-- 4. Navigasi & Toggle Emote
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size = UDim2.new(1, -10, 0, 100)
 NavFrame.BackgroundTransparency = 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
 NavGrid.CellSize = UDim2.new(0.23, 0, 0, 28)
-NavGrid.CellPadding = UDim2.new(0.02, 0, 0.1, 0)
-
-local function playCustomEmote(id)
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("Humanoid") then
-        -- Hentikan animasi lama jika ada
-        if currentEmoteTrack then currentEmoteTrack:Stop() end
-        
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://" .. id
-        currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
-        currentEmoteTrack:Play()
-        
-        -- Auto-Position
-        posX = 0
-        posZ = -1.2 
-        if forceUpdatePosition then forceUpdatePosition() end
-    end
-end
-
 
 local function createNav(txt, cb)
     local b = Instance.new("TextButton", NavFrame)
     b.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
     b.Text = txt
     b.TextColor3 = Color3.fromRGB(220, 220, 220)
-    b.Font = Enum.Font.SourceSansBold
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(function() cb() forceUpdatePosition() end)
 end
-
 createNav("NAIK", function() posY = posY + 0.2 end)
 createNav("TURUN", function() posY = posY - 0.2 end)
 createNav("DEPAN", function() posZ = posZ - 0.2 end)
@@ -385,12 +379,17 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
-local EmoteBtn = Instance.new("TextButton", NavFrame)
-EmoteBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 180)
-EmoteBtn.Text = "EMOTE"
-EmoteBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", EmoteBtn).CornerRadius = UDim.new(0, 4)
-EmoteBtn.MouseButton1Click:Connect(function() playCustomEmote("107480602323379") end)
+-- Tombol Toggle Emote
+local ToggleBtn = Instance.new("TextButton", NavFrame)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+ToggleBtn.Text = "AUTO EMOTE: ON"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
+ToggleBtn.MouseButton1Click:Connect(function()
+    autoEmoteEnabled = not autoEmoteEnabled
+    ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
+    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
+end)
 
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
@@ -516,8 +515,8 @@ for Name, Color in pairs(Themes) do
     end)
 end
 
-local CreditsPage = CreateTab("Next Fitur??")
+local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
-AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "Enjoy ajadah cape aing bikinnya.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
+AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
 print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
