@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - SLIM EDITION ]] --
+-- [[ KAY HUB PRO V8 - SLIM EDITION (FIXED UI & REPLICATION) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Themes = {["Neon Green"] = Color3.fromRGB(0, 255, 150), ["Aqua Blue"] = Color3.fromRGB(0, 210, 255), ["Ruby Red"] = Color3.fromRGB(255, 50, 70), ["Purple Cyber"] = Color3.fromRGB(180, 0, 255)}
@@ -153,27 +153,22 @@ local function startLoop(targetChar)
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
         
-        -- Menonaktifkan tabrakan fisik agar tidak menghambat target
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = false end
         end
         
-        -- Loop Utama Menggunakan Trik PhysicsRepRootPart + Offset Navigasi UI
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
             
-            -- Penggabungan Kode: Mengkalkulasi matriks posisi berdasarkan tombol navigasi UI
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
-            -- Memaksa sinkronisasi Network Ownership lewat sethiddenproperty
             pcall(function()
                 sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
             end)
             
-            -- Pembersihan instan velocity agar replikasi di POV teman 100% mulus tanpa delay
             myHRP.CFrame = offset
             myHRP.Velocity = Vector3.new()
             myHRP.AssemblyLinearVelocity = Vector3.new()
@@ -193,7 +188,6 @@ local function detach()
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
         
-        -- Kembalikan PhysicsRepRootPart ke objek aslinya (Nil) saat lepas
         if myHRP then 
             pcall(function()
                 sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
@@ -254,23 +248,24 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
--- Garis Pembatas (Sederhana)
-local Line = Instance.new("Frame", HomePage)
-Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0
+-- Garis Pembatas UI
+local Line = Instance.new("Frame")
+Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0, HomePage
 
 -- Fitur Tambahan 2: Piggyback FE di Tab Home
-local PiggyTitle = Instance.new("TextLabel", HomePage)
-PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left
+local PiggyTitle = Instance.new("TextLabel")
+PiggyTitle.Size, PiggyTitle.BackgroundTransparency, PiggyTitle.Text, PiggyTitle.TextColor3, PiggyTitle.Font, PiggyTitle.TextSize, PiggyTitle.TextXAlignment, PiggyTitle.Parent = UDim2.new(1, 0, 0, 20), 1, "KAY PIGGYBACK FE SYSTEM", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, Enum.TextXAlignment.Left, HomePage
 
 -- TextBox Input Nama Player
-local PBTextBox = Instance.new("TextBox", HomePage)
-PBTextBox.Size, PBTextBox.BackgroundColor3, PBTextBox.TextColor3, PBTextBox.PlaceholderText, PBTextBox.Text, PBTextBox.TextSize, PBTextBox.Font = UDim2.new(1, -10, 0, 30), Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255), "Nama Player (Case Sensitive)", "", 13, Enum.Font.SourceSans
+local PBTextBox = Instance.new("TextBox")
+PBTextBox.Size, PBTextBox.BackgroundColor3, PBTextBox.TextColor3, PBTextBox.PlaceholderText, PBTextBox.Text, PBTextBox.TextSize, PBTextBox.Font, PBTextBox.Parent = UDim2.new(1, -10, 0, 30), Color3.fromRGB(30, 30, 30), Color3.fromRGB(255, 255, 255), "Nama Player (Case Sensitive)", "", 13, Enum.Font.SourceSans, HomePage
 Instance.new("UICorner", PBTextBox).CornerRadius = UDim.new(0, 6)
 
 -- Container Tombol Tempel & Lepas
-local PBActionFrame = Instance.new("Frame", HomePage)
-PBActionFrame.Size, PBActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 35), 1
-Instance.new("UIListLayout", PBActionFrame).FillDirection, Instance.new("UIListLayout", PBActionFrame).Padding = Enum.FillDirection.Horizontal, UDim.new(0, 10)
+local PBActionFrame = Instance.new("Frame")
+PBActionFrame.Size, PBActionFrame.BackgroundTransparency, PBActionFrame.Parent = UDim2.new(1, -10, 0, 35), 1, HomePage
+local PBActionLayout = Instance.new("UIListLayout", PBActionFrame)
+PBActionLayout.FillDirection, PBActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 10)
 
 local AttachBtn = Instance.new("TextButton", PBActionFrame)
 AttachBtn.Size, AttachBtn.BackgroundColor3, AttachBtn.Text, AttachBtn.TextColor3, AttachBtn.Font, AttachBtn.TextSize = UDim2.new(0.48, 0, 1, 0), Color3.fromRGB(0, 150, 80), "TEMPEL", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 13
@@ -286,9 +281,9 @@ AttachBtn.MouseButton1Click:Connect(function()
 end)
 DetachBtn.MouseButton1Click:Connect(detach)
 
--- Container Tombol Navigasi Posisi Piggyback + Sinkronisasi Instan
-local NavFrame = Instance.new("Frame", HomePage)
-NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
+-- Container Tombol Navigasi Posisi Piggyback
+local NavFrame = Instance.new("Frame")
+NavFrame.Size, NavFrame.BackgroundTransparency, NavFrame.Parent = UDim2.new(1, -10, 0, 65), 1, HomePage
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
 NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.23, 0, 0, 28), UDim2.new(0.02, 0, 0.1, 0)
 
@@ -298,7 +293,7 @@ local function createNav(txt, cb)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(function()
         cb()
-        forceUpdatePosition() -- Memaksa posisi langsung update saat tombol ditekan
+        forceUpdatePosition()
     end)
 end
 createNav("NAIK", function() posY = posY + 0.2 end)
@@ -346,7 +341,6 @@ SpeedToggleBtn.MouseButton1Click:Connect(function()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
 
--- Loops Logika Fitur (Speed Walk & Noclip)
 RS.Stepped:Connect(function()
     if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue end
     if NoclipEnabled and LocalPlayer.Character then
@@ -381,10 +375,9 @@ CreateToggle(MainFeaturesPage, "Fly", function(state)
     end
 end)
 
--- 3. Fitur Noclip, Airwalk & Inf Jump
 CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
 
--- UPDATE LOGIKA AIR WALK (STABLE & ANTI LAG)
+-- Fitur Air Walk
 local AirWalkConnection
 CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
     AirWalkEnabled = state
@@ -439,4 +432,4 @@ local CreditsPage = CreateTab("Credits")
 local AuthorLabel = Instance.new("TextLabel")
 AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat dengan Modifikasi Anti-Delay.")
+print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
