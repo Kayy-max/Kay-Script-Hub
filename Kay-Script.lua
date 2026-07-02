@@ -266,7 +266,7 @@ MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 -- 1. TextBox Pencarian
-local SearchBox = Instance.new("TextBox", HomePage)
+local SearchBox = Instance.new("Cari player...", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -402,13 +402,13 @@ createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
 local ToggleBtn = Instance.new("TextButton", NavFrame)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "AUTO EMOTE: ON"
+ToggleBtn.Text = "ON"
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
 end)
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
@@ -481,11 +481,11 @@ CreateToggle(MainFeaturesPage, "Fly", function(state)
     end
 end)
 
-CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
+CreateToggle(MainFeaturesPage, "Noclip", function(state) NoclipEnabled = state end)
 
 -- Fitur Air Walk
 local AirWalkConnection
-CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
+CreateToggle(MainFeaturesPage, "Air Walk", function(state)
     AirWalkEnabled = state
     if AirWalkConnection then AirWalkConnection:Disconnect() end
     if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
@@ -534,8 +534,8 @@ for Name, Color in pairs(Themes) do
     end)
 end
 
-local CreditsPage = CreateTab("Credits")
+local CreditsPage = CreateTab("Next Update??")
 local AuthorLabel = Instance.new("TextLabel")
-AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
+AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "Enjoy aja aing cape bikinnya.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
 print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
