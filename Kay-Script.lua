@@ -279,7 +279,7 @@ MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 -- 1. TextBox Pencarian
-local SearchBox = Instance.new("Cari player...", HomePage)
+local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -415,13 +415,13 @@ createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
 local ToggleBtn = Instance.new("TextButton", NavFrame)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "ON"
+ToggleBtn.Text = "AUTO EMOTE: ON"
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
 end)
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
