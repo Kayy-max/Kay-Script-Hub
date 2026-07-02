@@ -255,7 +255,7 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Mengatur Layout Utama agar berjejer ke bawah dengan rapi
+-- Layout Utama agar rapi
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -263,10 +263,9 @@ MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 -- 1. TextBox Pencarian
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
-SearchBox.PlaceholderText = "Cari player (ketik nama)..."
+SearchBox.PlaceholderText = "Cari player..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 SearchBox.TextColor3 = Color3.new(1, 1, 1)
-SearchBox.Font = Enum.Font.SourceSans
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
 -- 2. Tombol Dropdown
@@ -275,32 +274,26 @@ DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
 DropdownBtn.Text = "▼ Pilih Player ▼"
 DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
-DropdownBtn.Font = Enum.Font.SourceSansBold
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 
--- Wadah List Player (Tersembunyi Awalnya)
+-- Wadah List Player
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
 PlayerListFrame.Visible = false
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerListFrame.ScrollBarThickness = 5
-PlayerListFrame.BorderSizePixel = 0
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
--- Logika Buka/Tutup Dropdown
 DropdownBtn.MouseButton1Click:Connect(function()
     PlayerListFrame.Visible = not PlayerListFrame.Visible
-    DropdownBtn.Text = PlayerListFrame.Visible and "▲ Sembunyikan ▲" or "▼ Pilih Player ▼"
 end)
 
--- Fungsi Isi List
 local function refreshPlayerList(filter)
     for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            local searchStr = string.lower(player.DisplayName .. " " .. player.Name)
-            if not filter or filter == "" or string.find(searchStr, string.lower(filter)) then
+            if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
                 local btn = Instance.new("TextButton", PlayerListFrame)
                 btn.Size = UDim2.new(1, -10, 0, 30)
                 btn.Text = player.DisplayName .. " (@" .. player.Name .. ")"
@@ -309,7 +302,7 @@ local function refreshPlayerList(filter)
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
                 btn.MouseButton1Click:Connect(function()
                     targetName = player.Name
-                    DropdownBtn.Text = "▼ " .. player.Name .. " ▼"
+                    DropdownBtn.Text = "Target: " .. player.Name
                     PlayerListFrame.Visible = false
                 end)
             end
@@ -320,7 +313,7 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
--- 3. Tombol Tempel & Lepas
+-- 3. Tombol Aksi
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
 PBActionFrame.BackgroundTransparency = 1
@@ -342,13 +335,27 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function() attachToPlayer() end)
 createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function() detach() end)
 
--- 4. Navigasi Posisi
+-- 4. Navigasi & Emote
 local NavFrame = Instance.new("Frame", HomePage)
-NavFrame.Size = UDim2.new(1, -10, 0, 65)
+NavFrame.Size = UDim2.new(1, -10, 0, 100)
 NavFrame.BackgroundTransparency = 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
 NavGrid.CellSize = UDim2.new(0.23, 0, 0, 28)
 NavGrid.CellPadding = UDim2.new(0.02, 0, 0.1, 0)
+
+local function playCustomEmote(id)
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("Humanoid") then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://" .. id
+        char.Humanoid:LoadAnimation(anim):Play()
+        
+        -- Auto-Position ke belakang
+        posX = 0
+        posZ = -1.2 
+        if forceUpdatePosition then forceUpdatePosition() end
+    end
+end
 
 local function createNav(txt, cb)
     local b = Instance.new("TextButton", NavFrame)
@@ -356,7 +363,6 @@ local function createNav(txt, cb)
     b.Text = txt
     b.TextColor3 = Color3.fromRGB(220, 220, 220)
     b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(function() cb() forceUpdatePosition() end)
 end
@@ -368,6 +374,13 @@ createNav("BELAKANG", function() posZ = posZ + 0.2 end)
 createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
+
+local EmoteBtn = Instance.new("TextButton", NavFrame)
+EmoteBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 180)
+EmoteBtn.Text = "EMOTE"
+EmoteBtn.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", EmoteBtn).CornerRadius = UDim.new(0, 4)
+EmoteBtn.MouseButton1Click:Connect(function() playCustomEmote("107480602323379") end)
 
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
@@ -493,8 +506,8 @@ for Name, Color in pairs(Themes) do
     end)
 end
 
-local CreditsPage = CreateTab("Credits")
+local CreditsPage = CreateTab("Next Fitur??")
 local AuthorLabel = Instance.new("TextLabel")
-AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
+AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "Enjoy ajadah cape aing bikinnya.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
 
 print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
