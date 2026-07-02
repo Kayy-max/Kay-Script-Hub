@@ -255,46 +255,72 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Container Utama (Asumsi HomePage sudah ada dari script kamu)
+-- Pastikan HomePage sudah didefinisikan sebelumnya
+-- Jika belum, ganti HomePage dengan nama variabel frame utama kamu
+
+-- 1. Layout Otomatis agar tidak bertumpuk
+local MainLayout = Instance.new("UIListLayout", HomePage)
+MainLayout.Padding = UDim.new(0, 5)
+MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- 2. Judul
+local PiggyTitle = Instance.new("TextLabel", HomePage)
+PiggyTitle.Size = UDim2.new(1, 0, 0, 20)
+PiggyTitle.BackgroundTransparency = 1
+PiggyTitle.Text = "KAY PIGGYBACK FE SYSTEM"
+PiggyTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+PiggyTitle.Font = Enum.Font.SourceSansBold
+PiggyTitle.TextSize = 13
+
+-- 3. Pencarian
+local SearchBox = Instance.new("TextBox", HomePage)
+SearchBox.Size = UDim2.new(1, -10, 0, 30)
+SearchBox.PlaceholderText = "Cari player (DisplayName/Username)..."
+SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.Font = Enum.Font.SourceSans
+SearchBox.TextSize = 13
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
+
+-- 4. Daftar Player
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
-PlayerListFrame.Size = UDim2.new(1, -10, 0, 120)
+PlayerListFrame.Size = UDim2.new(1, -10, 0, 100)
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PlayerListFrame.BorderSizePixel = 0
 PlayerListFrame.ScrollBarThickness = 5
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
 
--- Input Pencarian
-local SearchBox = Instance.new("TextBox", HomePage)
-SearchBox.Size = UDim2.new(1, -10, 0, 30)
-SearchBox.PlaceholderText = "Cari player..."
-SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-SearchBox.TextColor3 = Color3.new(1, 1, 1)
-SearchBox.Font = Enum.Font.SourceSans
-SearchBox.TextSize = 14
-Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
-
--- Fungsi Refresh List
 local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-    
+    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
+            local searchString = string.lower(player.DisplayName .. " " .. player.Name)
+            if not filter or filter == "" or string.find(searchString, string.lower(filter)) then
                 local btn = Instance.new("TextButton", PlayerListFrame)
-                btn.Size = UDim2.new(1, -10, 0, 25)
-                btn.Text = player.Name
+                btn.Size = UDim2.new(1, -10, 0, 40)
                 btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                btn.TextColor3 = Color3.new(1, 1, 1)
-                btn.Font = Enum.Font.SourceSansBold
-                btn.TextSize = 13
+                btn.Text = ""
                 Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                
+                local dn = Instance.new("TextLabel", btn)
+                dn.Size = UDim2.new(1, 0, 0.5, 0)
+                dn.Text = player.DisplayName
+                dn.TextColor3 = Color3.new(1, 1, 1)
+                dn.Font = Enum.Font.SourceSansBold
+                dn.BackgroundTransparency = 1
+                
+                local un = Instance.new("TextLabel", btn)
+                un.Size = UDim2.new(1, 0, 0.5, 0)
+                un.Position = UDim2.new(0, 0, 0.5, 0)
+                un.Text = "@" .. player.Name
+                un.TextColor3 = Color3.fromRGB(200, 200, 200)
+                un.Font = Enum.Font.SourceSans
+                un.TextSize = 12
+                un.BackgroundTransparency = 1
                 
                 btn.MouseButton1Click:Connect(function()
                     targetName = player.Name
-                    -- Opsional: Beri visual feedback
+                    for _, b in pairs(PlayerListFrame:GetChildren()) do if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end end
                     btn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
                 end)
             end
@@ -302,17 +328,10 @@ local function refreshPlayerList(filter)
     end
 end
 
--- Event Pencarian
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    refreshPlayerList(SearchBox.Text)
-end)
-
--- Initial Load
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
-Players.PlayerAdded:Connect(function() refreshPlayerList(SearchBox.Text) end)
-Players.PlayerRemoving:Connect(function() refreshPlayerList(SearchBox.Text) end)
 
--- Tombol Aksi (Tempel & Lepas)
+-- 5. Tombol Aksi
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
 PBActionFrame.BackgroundTransparency = 1
@@ -334,10 +353,37 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), function() attachToPlayer() end)
 createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), function() detach() end)
 
+-- 6. Navigasi (Sesuai kode awalmu)
+local NavFrame = Instance.new("Frame", HomePage)
+NavFrame.Size = UDim2.new(1, -10, 0, 65)
+NavFrame.BackgroundTransparency = 1
+local NavGrid = Instance.new("UIGridLayout", NavFrame)
+NavGrid.CellSize = UDim2.new(0.23, 0, 0, 28)
+NavGrid.CellPadding = UDim2.new(0.02, 0, 0.1, 0)
+
+local function createNav(txt, cb)
+    local b = Instance.new("TextButton", NavFrame)
+    b.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    b.Text = txt
+    b.TextColor3 = Color3.fromRGB(220, 220, 220)
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 11
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    b.MouseButton1Click:Connect(function() cb() forceUpdatePosition() end)
+end
+
+createNav("NAIK", function() posY = posY + 0.2 end)
+createNav("TURUN", function() posY = posY - 0.2 end)
+createNav("DEPAN", function() posZ = posZ - 0.2 end)
+createNav("BELAKANG", function() posZ = posZ + 0.2 end)
+createNav("KIRI", function() posX = posX - 0.2 end)
+createNav("KANAN", function() posX = posX + 0.2 end)
+createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
+
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
 -- =========================================================
-local MainFeaturesPage = CreateTab("Features")
+local MainFeaturesPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, AirWalkEnabled, AirWalkPlatform, NoclipEnabled = 16, false, false, false, 60, false, nil, false
 
 local SpeedFrame = Instance.new("Frame")
