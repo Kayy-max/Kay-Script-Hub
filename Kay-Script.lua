@@ -249,7 +249,7 @@ MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 -- 1. TextBox Pencarian
-local SearchBox = Instance.new("TextBox", HomePage)
+local SearchBox = Instance.new("Cari player...", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
 SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
@@ -365,6 +365,10 @@ local function createNav(txt, cb)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(cb)
 end
+createNav("NAIK", function() posY = posY + 0.2 end)
+createNav("TURUN", function() posY = posY - 0.2 end)
+createNav("DEPAN", function() posZ = posZ - 0.2 end)
+createNav("BELAKANG", function() posZ = posZ + 0.2 end)
 createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
@@ -377,7 +381,7 @@ Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
 end)
 
 -- Garis Pembatas
