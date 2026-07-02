@@ -254,13 +254,26 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
 
 -- Variabel Status
 local autoEmoteEnabled = true
 local currentEmoteTrack = nil
 local lockLoop = nil
 
--- UI Setup
+-- Fungsi Lepas Paksa Weld
+local function removeWelds()
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then
+                part:Destroy()
+            end
+        end
+    end
+end
+
+-- Layout Utama
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -288,25 +301,24 @@ PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerListFrame.ScrollBarThickness = 5
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
-ListLayout.Padding = UDim.new(0, 4)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
--- Tombol Tutup List (Posisi Paling Atas)
+-- Tombol Tutup List
 local CloseListBtn = Instance.new("TextButton", PlayerListFrame)
 CloseListBtn.Size = UDim2.new(1, -10, 0, 30)
 CloseListBtn.Text = "▲ TUTUP LIST ▲"
 CloseListBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 CloseListBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseListBtn.Font = Enum.Font.SourceSansBold
 CloseListBtn.LayoutOrder = -1
 Instance.new("UICorner", CloseListBtn).CornerRadius = UDim.new(0, 4)
 CloseListBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
 
--- Fungsi List
 local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end end
+    for _, child in pairs(PlayerListFrame:GetChildren()) do 
+        if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end 
+    end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
@@ -328,9 +340,11 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
--- 3. Logic Attach & Emote
+-- 3. Logic Attach, Emote & Force-Lock
 local function runAttachLogic()
     attachToPlayer()
+    removeWelds()
+    
     if autoEmoteEnabled then
         local target = Players:FindFirstChild(targetName)
         local char = LocalPlayer.Character
@@ -341,14 +355,13 @@ local function runAttachLogic()
             currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
             currentEmoteTrack:Play()
             
-            lockLoop = task.spawn(function()
-                while task.wait() and lockLoop do
-                    local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                    if tRoot and char:FindFirstChild("HumanoidRootPart") then
-                        -- CFrame: 3 ke belakang (z), 18 ke bawah (y)
-                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, -45, 12) * CFrame.Angles(0, math.rad(180), 0)
-                    else break end
-                end
+            -- Force Lock Posisi: 3 belakang, 25 bawah
+            lockLoop = RunService.RenderStepped:Connect(function()
+                local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                local cRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if tRoot and cRoot then
+                    cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
+                else if lockLoop then lockLoop:Disconnect() end end
             end)
         end
     end
@@ -357,7 +370,7 @@ end
 local function runDetachLogic()
     detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
-    lockLoop = nil
+    if lockLoop then lockLoop:Disconnect() end
 end
 
 -- 4. Tombol Aksi
