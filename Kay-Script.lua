@@ -255,16 +255,17 @@ Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Variabel Status & Animasi
+-- Variabel Status
 local autoEmoteEnabled = true
 local currentEmoteTrack = nil
-local lockLoop = nil -- Untuk menghentikan tracking otomatis
+local lockLoop = nil
 
--- 1. UI Setup (Sama dengan sebelumnya)
+-- UI Setup
 local MainLayout = Instance.new("UIListLayout", HomePage)
 MainLayout.Padding = UDim.new(0, 5)
 MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
+-- 1. TextBox Pencarian
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size = UDim2.new(1, -10, 0, 30)
 SearchBox.PlaceholderText = "Cari player..."
@@ -272,6 +273,7 @@ SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 SearchBox.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 
+-- 2. Dropdown
 local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
 DropdownBtn.Text = "▼ Pilih Player ▼"
@@ -285,12 +287,26 @@ PlayerListFrame.Visible = false
 PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerListFrame.ScrollBarThickness = 5
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
-Instance.new("UIListLayout", PlayerListFrame).Padding = UDim.new(0, 4)
+local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
+ListLayout.Padding = UDim.new(0, 4)
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
+-- Tombol Tutup List (Posisi Paling Atas)
+local CloseListBtn = Instance.new("TextButton", PlayerListFrame)
+CloseListBtn.Size = UDim2.new(1, -10, 0, 30)
+CloseListBtn.Text = "▲ TUTUP LIST ▲"
+CloseListBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+CloseListBtn.TextColor3 = Color3.new(1, 1, 1)
+CloseListBtn.Font = Enum.Font.SourceSansBold
+CloseListBtn.LayoutOrder = -1
+Instance.new("UICorner", CloseListBtn).CornerRadius = UDim.new(0, 4)
+CloseListBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
+
+-- Fungsi List
 local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
             if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
@@ -312,26 +328,25 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
 refreshPlayerList()
 
--- 2. Fungsi Logic Auto-Lock & Emote
+-- 3. Logic Attach & Emote
 local function runAttachLogic()
-    attachToPlayer() -- Panggil fungsi asli kamu
-    
+    attachToPlayer()
     if autoEmoteEnabled then
         local target = Players:FindFirstChild(targetName)
         local char = LocalPlayer.Character
         if target and target.Character and char and char:FindFirstChild("HumanoidRootPart") then
-            -- Animasi
+            if currentEmoteTrack then currentEmoteTrack:Stop() end
             local anim = Instance.new("Animation")
             anim.AnimationId = "rbxassetid://107480602323379"
             currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
             currentEmoteTrack:Play()
             
-            -- Auto-Lock Posisi
             lockLoop = task.spawn(function()
                 while task.wait() and lockLoop do
                     local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
                     if tRoot and char:FindFirstChild("HumanoidRootPart") then
-                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, 0, 1.5) * CFrame.Angles(0, math.rad(180), 0)
+                        -- CFrame: 3 ke belakang (z), 18 ke bawah (y)
+                        char.HumanoidRootPart.CFrame = tRoot.CFrame * CFrame.new(0, -18, 3) * CFrame.Angles(0, math.rad(180), 0)
                     else break end
                 end
             end)
@@ -340,12 +355,12 @@ local function runAttachLogic()
 end
 
 local function runDetachLogic()
-    detach() -- Panggil fungsi asli kamu
+    detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
-    lockLoop = nil -- Berhenti mengunci posisi
+    lockLoop = nil
 end
 
--- 3. Tombol Aksi
+-- 4. Tombol Aksi
 local PBActionFrame = Instance.new("Frame", HomePage)
 PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
 PBActionFrame.BackgroundTransparency = 1
@@ -362,7 +377,7 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), runAttachLogic)
 createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), runDetachLogic)
 
--- 4. Navigasi & Toggle Emote
+-- 5. Navigasi & Toggle Emote
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size = UDim2.new(1, -10, 0, 100)
 NavFrame.BackgroundTransparency = 1
@@ -387,15 +402,14 @@ createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
 local ToggleBtn = Instance.new("TextButton", NavFrame)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "ON"
+ToggleBtn.Text = "AUTO EMOTE: ON"
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
 ToggleBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "ON" or "OFF"
+    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
 end)
-
 -- =========================================================
 -- TAB FEATURES & LOOPS LOGIKA
 -- =========================================================
