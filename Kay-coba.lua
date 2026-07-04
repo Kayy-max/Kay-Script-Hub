@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - SLEEK & MULTI-THEME EDITION (FIXED EXECUTE) ]] --
+-- [[ KAY HUB PRO V8 - SLEEK & MULTI-THEME EDITION (FINAL FIX) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -130,13 +130,15 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- Fungsi Update Tema Global (Fixed syntax loop)
+-- Fungsi Update Tema Global (Fixed syntax loop & check properties)
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
         local targetColor = CurrentTheme[item.Key]
         if item.Obj and item.Obj.Parent then
-            TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
+            pcall(function()
+                TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
+            end)
         end
     end
     
@@ -498,7 +500,7 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- HALAMAN THEMES (MENGGANTIKAN CREDITS)
+-- HALAMAN THEMES
 -- =========================================================
 local ThemesPage = CreateTab("Themes")
 
