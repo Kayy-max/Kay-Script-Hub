@@ -297,7 +297,7 @@ Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
 -- PLAYER SELECTOR dropdown
-local SearchBox = Instance.new("TextBox", HomePage)
+local SearchBox = Instance.new("Cari nama player...", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 local SBS = Instance.new("UIStroke", SearchBox)
