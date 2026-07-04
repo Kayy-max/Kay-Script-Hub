@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - SLEEK & MULTI-THEME EDITION (FINAL FIX) ]] --
+-- [[ KAY HUB PRO V8 - MULTI-THEME & ANIMATION INTEGRATED EDITION ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -130,7 +130,7 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- Fungsi Update Tema Global (Fixed syntax loop & check properties)
+-- Fungsi Update Tema Global
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
@@ -214,7 +214,7 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
--- LOGIKA UTAMA: PIGGYBACK
+-- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
 -- =========================================================
 local HomePage = CreateTab("Home")
 local targetPlayerObj = nil 
@@ -401,6 +401,70 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
+-- INTEGRASI FITUR: KAY ANIMATION (TAB BARU)
+-- =========================================================
+local AnimPage = CreateTab("Animations")
+local animMode = "NONE"
+local kayAnimTrack = nil
+
+local btnPreset = Instance.new("TextButton", AnimPage)
+btnPreset.Size, btnPreset.Text, btnPreset.Font, btnPreset.TextSize = UDim2.new(1, -10, 0, 35), "Preset Kay", Enum.Font.Gotham, 12
+Instance.new("UICorner", btnPreset).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = btnPreset, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = btnPreset, Prop = "TextColor3", Key = "TextColor"})
+
+local inIdle = Instance.new("TextBox", AnimPage)
+inIdle.Size, inIdle.PlaceholderText, inIdle.Text, inIdle.Font, inIdle.TextSize = UDim2.new(1, -10, 0, 35), "Custom Idle (ID)", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", inIdle).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = inIdle, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = inIdle, Prop = "TextColor3", Key = "TextColor"})
+
+local inWalk = Instance.new("TextBox", AnimPage)
+inWalk.Size, inWalk.PlaceholderText, inWalk.Text, inWalk.Font, inWalk.TextSize = UDim2.new(1, -10, 0, 35), "Custom Walk (ID)", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", inWalk).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = inWalk, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = inWalk, Prop = "TextColor3", Key = "TextColor"})
+
+local btnToggleAnim = Instance.new("TextButton", AnimPage)
+btnToggleAnim.Size, btnToggleAnim.Text, btnToggleAnim.BackgroundColor3, btnToggleAnim.TextColor3, btnToggleAnim.Font, btnToggleAnim.TextSize = UDim2.new(1, -10, 0, 35), "STATUS: OFF", Color3.fromRGB(160, 40, 40), Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 12
+Instance.new("UICorner", btnToggleAnim).CornerRadius = UDim.new(0, 6)
+
+local function playKayAnim(id)
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if char and hum and hum.Health > 0 then
+        if char:FindFirstChild("Animate") then char.Animate.Disabled = true end
+        if not kayAnimTrack or kayAnimTrack.Animation.AnimationId ~= "rbxassetid://" .. id then
+            if kayAnimTrack then kayAnimTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://" .. id
+            pcall(function()
+                kayAnimTrack = hum:LoadAnimation(anim)
+                kayAnimTrack:Play()
+            end)
+        end
+    end
+end
+
+btnPreset.MouseButton1Click:Connect(function()
+    animMode = (animMode == "PRESET" and "NONE" or "PRESET")
+    btnPreset.TextColor3 = (animMode == "PRESET" and CurrentTheme.AccentColor or CurrentTheme.TextColor)
+    if animMode ~= "CUSTOM" then
+        btnToggleAnim.Text = "STATUS: OFF"
+        btnToggleAnim.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+    end
+end)
+
+btnToggleAnim.MouseButton1Click:Connect(function()
+    animMode = (animMode == "CUSTOM" and "NONE" or "CUSTOM")
+    btnToggleAnim.Text = (animMode == "CUSTOM" and "STATUS: ON" or "STATUS: OFF")
+    btnToggleAnim.BackgroundColor3 = (animMode == "CUSTOM" and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40))
+    if animMode ~= "PRESET" then
+        btnPreset.TextColor3 = CurrentTheme.TextColor
+    end
+end)
+
+-- =========================================================
 -- FUN & CHEATS FEATURES
 -- =========================================================
 local FunPage = CreateTab("Fun")
@@ -461,10 +525,30 @@ end
 createChangeFly("-", -60, -10)
 createChangeFly("+", -32, 10)
 
+-- LOOP MANAGER UTAMA (Gabungan Cheats & Kay Animation)
 RS.Stepped:Connect(function()
-    if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue end
-    if NoclipEnabled and LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    -- Logika Speed & Noclip
+    if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
+    if NoclipEnabled and char then
+        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+    end
+    
+    -- Logika Sistem Kay Animation
+    if hum then
+        if animMode == "PRESET" then
+            playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
+        elseif animMode == "CUSTOM" then
+            local id = (hum.MoveDirection.Magnitude > 0 and inWalk.Text:gsub("%D","") or inIdle.Text:gsub("%D",""))
+            if id ~= "" then playKayAnim(id) end
+        else
+            if char and char:FindFirstChild("Animate") and char.Animate.Enabled == false then 
+                char.Animate.Enabled = true 
+            end
+            if kayAnimTrack then kayAnimTrack:Stop() kayAnimTrack = nil end
+        end
     end
 end)
 
@@ -522,9 +606,11 @@ for themeName, data in pairs(Themes) do
     
     ThemeBtn.MouseButton1Click:Connect(function()
         ApplyTheme(themeName)
+        -- Ikut meng-update teks preset jika sedang tidak aktif
+        if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
     end)
 end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8 Multi-Theme loaded successfully.")
+print("[SYSTEM] Kay Hub V8 & Kay Anim successfully integrated.")
