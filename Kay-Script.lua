@@ -456,32 +456,75 @@ end)
 
 -- 2. Fitur Fly
 local bV, bG
-CreateToggle(MainFeaturesPage, "Fly", function(state)
-    Flying = state
-    local Char = LocalPlayer.Character
-    local Root, Hum, Anim = Char and Char:FindFirstChild("HumanoidRootPart"), Char and Char:FindFirstChildOfClass("Humanoid"), Char and Char:FindFirstChild("Animate")
-    if Flying and Root and Hum then
-        if Anim then Anim.Enabled = false end
-        bV, bG = Instance.new("BodyVelocity"), Instance.new("BodyGyro")
-        bV.MaxForce, bV.Velocity, bV.Parent = Vector3.new(1e9, 1e9, 1e9), Vector3.new(0,0,0), Root
-        bG.MaxTorque, bG.CFrame, bG.Parent = Vector3.new(1e9, 1e9, 1e9), Root.CFrame, Root
-        task.spawn(function()
-            while Flying and task.wait() do
-                local Cam = workspace.CurrentCamera
-                if Root and Hum and Cam and bV and bG then
-                    bG.CFrame = Cam.CFrame
-                    local move = Hum.MoveDirection
-                    bV.Velocity = move.Magnitude > 0 and ((Cam.CFrame.LookVector * move:Dot(Cam.CFrame.LookVector) * FlySpeed) + (Cam.CFrame.RightVector * move:Dot(Cam.CFrame.RightVector) * FlySpeed)) or Vector3.new(0,0,0)
-                end
-            end
-            if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
-        end)
+local FlySpeed = 50 -- Kecepatan default awal
+
+-- Fitur Mengatur Kecepatan Terbang
+-- (Ganti "CreateTextBox" sesuai dengan fungsi input teks/slider pada UI Library milikmu)
+CreateTextBox(MainFeaturesPage, "Fly Speed", "Masukkan angka (Contoh: 100)", function(value)
+    local num = tonumber(value)
+    if num then
+        FlySpeed = num
     else
-        if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
+        -- Jika input bukan angka, kembali ke default agar tidak error
+        FlySpeed = 50 
     end
 end)
 
-CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
+-- Fitur Terbang (Fly)
+CreateToggle(MainFeaturesPage, "Fly", function(state)
+    Flying = state
+    
+    local Char = LocalPlayer.Character
+    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+    local Anim = Char and Char:FindFirstChild("Animate")
+    
+    local function disableFly()
+        if bV then bV:Destroy() bV = nil end
+        if bG then bG:Destroy() bG = nil end
+        if Anim then Anim.Enabled = true end
+    end
+
+    if Flying and Root and Hum then
+        if Anim then Anim.Enabled = false end
+        
+        bV = Instance.new("BodyVelocity")
+        bV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        bV.Velocity = Vector3.zero
+        bV.Parent = Root
+        
+        bG = Instance.new("BodyGyro")
+        bG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        bG.CFrame = Root.CFrame
+        bG.Parent = Root
+        
+        task.spawn(function()
+            while Flying and Root and Hum and bV and bG do
+                local Cam = workspace.CurrentCamera
+                if Cam then
+                    bG.CFrame = Cam.CFrame
+                    
+                    local moveDir = Hum.MoveDirection
+                    if moveDir.Magnitude > 0 then
+                        -- Menggunakan variabel FlySpeed yang bisa berubah kapan saja
+                        local cameraRelativeMove = Cam.CFrame:VectorToWorldSpace(Vector3.new(moveDir.X, 0, moveDir.Z))
+                        bV.Velocity = cameraRelativeMove.Unit * FlySpeed
+                    else
+                        bV.Velocity = Vector3.zero
+                    end
+                end
+                task.wait()
+            end
+            disableFly()
+        end)
+    else
+        disableFly()
+    end
+end)
+
+CreateToggle(MainFeaturesPage, "Noclip V8", function(state) 
+    NoclipEnabled = state 
+end)
 
 -- Fitur Air Walk
 local AirWalkConnection
