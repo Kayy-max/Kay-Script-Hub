@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - MULTI-THEME, ANIMATION & ESP INTEGRATED ]] --
+-- [[ KAY HUB PRO V8.1 - UPDATE CLOSE SCRIPT & FIXED BOX ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -45,6 +45,7 @@ local Themes = {
 local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} -- Menyimpan referensi elemen untuk update tema instan
+local ScriptRunning = true -- Pengontrol status script aktif
 
 -- UI Utama (ScreenGui)
 local KayHub = Instance.new("ScreenGui")
@@ -101,13 +102,17 @@ local TopBar = Instance.new("Frame")
 TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
 -- Minimize Button Elegan
 local MinButton = Instance.new("TextButton")
-MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
+MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -65, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
+
+-- Tombol Close Script [X] Terintegrasi Bersih
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, false, KayHub
@@ -121,6 +126,7 @@ table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeCo
 
 local isMinimized = false
 local function toggleMenu()
+    if not ScriptRunning then return end
     isMinimized = not isMinimized
     TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
     if isMinimized then task.wait(0.2) end
@@ -200,6 +206,7 @@ local function CreateToggle(parent, text, callback)
     table.insert(ActiveToggles, data)
 
     Switch.MouseButton1Click:Connect(function()
+        if not ScriptRunning then return end
         Enabled = not Enabled
         data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
@@ -291,7 +298,7 @@ table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "Strok
 
 -- PLAYER SELECTOR dropdown
 local SearchBox = Instance.new("TextBox", HomePage)
-SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
+SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12[cite: 1]
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 local SBS = Instance.new("UIStroke", SearchBox)
 table.insert(AllUIElements, {Obj = SearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
@@ -590,9 +597,39 @@ local function clearEspElements(p)
 end
 
 -- =========================================================
+-- EXECUTE CLOSE SCRIPT ACTION
+-- =========================================================
+CloseButton.MouseButton1Click:Connect(function()
+    ScriptRunning = false
+    detach()
+    if promptConnection then promptConnection:Disconnect() end
+    
+    -- Kembalikan walkspeed dan noclip normal
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
+        if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
+    end)
+    
+    -- Bersihkan semua ESP player di server
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Character then
+            if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+            if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
+        end
+    end
+    
+    -- Hancurkan GUI total
+    KayHub:Destroy()
+end)
+
+-- =========================================================
 -- LOOP MANAGER UTAMA (Gabungan Semua Fungsi Runtime)
 -- =========================================================
 RS.Stepped:Connect(function()
+    if not ScriptRunning then return end
+    
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local myHrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -709,4 +746,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8: All features integrated flawlessly including ESP.")
+print("[SYSTEM] Kay Hub V8.1: Close script added and structure secured.")
