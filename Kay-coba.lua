@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.1 - MULTI-THEME, ANIMATION, ESP & CORRECT SPECTATE LAYOUT ]] --
+-- [[ KAY HUB PRO V9.2 - MULTI-THEME, ANIMATION, FIXED GLOBAL ESP & LAYOUT ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -88,7 +88,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.1", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.2", Enum.Font.GothamBold, 15, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarList = Instance.new("UIListLayout")
@@ -558,7 +558,7 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- INTEGRASI FITUR: ESP & SPECTATE DENGAN TATA LETAK BENAR (TAB ESP)
+-- INTEGRASI FITUR: ESP & SPECTATE BENAR (TAB ESP)
 -- =========================================================
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive, spectateActive = false, false, false
@@ -580,7 +580,6 @@ end)
 -- 3. Toggle Spectate Kamera (Urutan Kedua)
 CreateToggle(EspPage, "Spectate Kamera Target", function(state)
     spectateActive = state
-    -- Jika dinonaktifkan, kembalikan kamera ke tubuh sendiri secara instan
     if not spectateActive then
         local myChar = LocalPlayer.Character
         local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
@@ -631,7 +630,7 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Pemrosesan ESP & Spectate Terintegrasi Menggunakan TargetSearchBox
+    -- Pemrosesan ESP & Spectate Terintegrasi (Logika yang Diperbaiki)
     local queryTarget = string.lower(TargetSearchBox.Text)
     local foundSpectateTarget = false
 
@@ -640,16 +639,18 @@ RS.Stepped:Connect(function()
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
             local tHum = tChar:FindFirstChildOfClass("Humanoid")
+            
+            -- Cek kecocokan target satu orang
             local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
-            -- Logika Spectate Kamera
+            -- Logika Spectate Kamera (Hanya bekerja jika Target Cocok)
             if spectateActive and isMatchTarget and tHum then
                 Camera.CameraSubject = tHum
                 foundSpectateTarget = true
             end
 
-            -- Logika ESP (Global atau Satu Orang)
-            if (globalEspActive) or (targetEspActive and isMatchTarget) then
+            -- LOGIKA FIX ESP: Global aktif secara bebas, atau Target aktif ketika nama cocok
+            if globalEspActive or (targetEspActive and isMatchTarget) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                 
                 -- Buat/Update Teks ESP (BillboardGui)
@@ -673,10 +674,11 @@ RS.Stepped:Connect(function()
                 local label = bill:FindFirstChild("EspLabel")
                 if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
-                    label.TextColor3 = CurrentTheme.AccentColor
+                    -- Membedakan warna teks: Target satu orang diberi warna khusus AccentColor, Global biasa diberi warna putih
+                    label.TextColor3 = isMatchTarget and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
                 end
 
-                -- Efek Highlight Khusus Target Satu Orang
+                -- Efek Highlight Khusus Target Satu Orang saja
                 if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -691,13 +693,14 @@ RS.Stepped:Connect(function()
                     if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
             else
+                -- Jika tidak memenuhi syarat ESP, hapus objek visualnya
                 clearEspElements(tHrp)
                 if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 
-    -- Sistem Keamanan: Balikkan ke kamera sendiri jika target keluar/tidak diisi saat spectate ON
+    -- Sistem Keamanan Kamera: Balikkan ke kamera player sendiri jika target spectate kosong/keluar game
     if spectateActive and not foundSpectateTarget then
         if hum then Camera.CameraSubject = hum end
     end
@@ -737,4 +740,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V9.1: Successfully loaded with fixed layout inside ESP Tab.")
+print("[SYSTEM] Kay Hub V9.2: Successfully loaded with fixed Global ESP runtime check.")
