@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - SLEEK & MULTI-THEME EDITION ]] --
+-- [[ KAY HUB PRO V8 - SLEEK & MULTI-THEME EDITION (FIXED EXECUTE) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -130,17 +130,16 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- Fungsi Update Tema Global (Instan & Lembut via Tween)
+-- Fungsi Update Tema Global (Fixed syntax loop)
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
-    for _, item do
+    for _, item in pairs(AllUIElements) do
         local targetColor = CurrentTheme[item.Key]
         if item.Obj and item.Obj.Parent then
             TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
         end
     end
     
-    -- Update warna tombol navigasi/toggle aktif secara manual agar tidak tabrakan
     for _, tab in pairs(Tabs) do
         if tab.Page.Visible then
             tab.Btn.TextColor3 = CurrentTheme.AccentColor
@@ -213,7 +212,7 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
--- HALAMAN UTAMA (HOME TABS)
+-- LOGIKA UTAMA: PIGGYBACK
 -- =========================================================
 local HomePage = CreateTab("Home")
 local targetPlayerObj = nil 
@@ -264,6 +263,7 @@ local function detach()
         if myHumanoid then myHumanoid.PlatformStand = false end
         for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
     end
+    if currentEmoteTrack then currentEmoteTrack:Stop() end
 end
 
 -- Fitur Instant Interact
@@ -399,7 +399,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- FUN & CHEATS FEATURES (FLY, SPEED, ETC.)
+-- FUN & CHEATS FEATURES
 -- =========================================================
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
@@ -498,7 +498,7 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- BARU: HALAMAN THEMES (MENGGANTIKAN CREDITS)
+-- HALAMAN THEMES (MENGGANTIKAN CREDITS)
 -- =========================================================
 local ThemesPage = CreateTab("Themes")
 
@@ -506,7 +506,6 @@ local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
 InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
 table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
 
--- Membuat daftar pilihan tombol tema secara dinamis
 for themeName, data in pairs(Themes) do
     local ThemeBtn = Instance.new("TextButton", ThemesPage)
     ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
