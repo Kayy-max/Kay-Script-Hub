@@ -1,9 +1,9 @@
--- [[ KAY HUB PRO V9.3 - MULTI-THEME, ANIMATION, ULTRA FIXED GLOBAL ESP ]] --
+-- [[ KAY HUB PRO V9.4 - MULTI-THEME, ANIMATION, MODULAR SEPARATED ESP & SPECTATE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- DAFTAR PRESET TEMA LENGKAP (MERUBAH SELURUH WARNA UI)
+-- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
     ["Sleek Dark"] = {
         BGColor = Color3.fromRGB(15, 15, 15),
@@ -45,9 +45,9 @@ local Themes = {
 
 local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
-local AllUIElements = {} -- Menyimpan referensi elemen untuk update tema instan
+local AllUIElements = {}
 
--- UI Utama (ScreenGui)
+-- UI Utama
 local KayHub = Instance.new("ScreenGui")
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -61,7 +61,6 @@ MainStroke.Thickness = 1
 table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
--- Fungsi Drag & Drop Ringkas
 local function MakeDraggable(gui)
     local dragInput, dragStart, startPos
     gui.InputBegan:Connect(function(input)
@@ -81,20 +80,18 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
--- Sidebar Minimalis
 local Sidebar = Instance.new("Frame")
 Sidebar.Size, Sidebar.Parent = UDim2.new(0, 120, 1, 0), MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.3", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.4", Enum.Font.GothamBold, 15, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarList = Instance.new("UIListLayout")
 SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment, SidebarList.Parent = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center, Sidebar
 
--- Container Konten
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency, ContentContainer.Parent = UDim2.new(1, -135, 1, -55), UDim2.new(0, 125, 0, 45), 1, MainFrame
 
@@ -105,7 +102,6 @@ local CurrentTabTitle = Instance.new("TextLabel")
 CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
--- Minimize Button Elegan
 local MinButton = Instance.new("TextButton")
 MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
@@ -131,7 +127,6 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- Fungsi Update Tema Global
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
@@ -142,17 +137,11 @@ local function ApplyTheme(themeName)
             end)
         end
     end
-    
     for _, tab in pairs(Tabs) do
-        if tab.Page.Visible then
-            tab.Btn.TextColor3 = CurrentTheme.AccentColor
-        else
-            tab.Btn.TextColor3 = CurrentTheme.MutedText
-        end
+        if tab.Page.Visible then tab.Btn.TextColor3 = CurrentTheme.AccentColor else tab.Btn.TextColor3 = CurrentTheme.MutedText end
     end
 end
 
--- Pembuat Tab & Toggle Simpel
 local FirstTab = true
 local function CreateTab(tabName)
     local Page = Instance.new("ScrollingFrame")
@@ -269,7 +258,7 @@ local function detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
 end
 
--- Fitur Instant Interact
+-- Instant Interact
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local isInstantActive = false
 local promptConnection = nil
@@ -285,12 +274,10 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
--- SEPARATOR LINE
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- PLAYER SELECTOR dropdown
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -335,7 +322,6 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
 refreshPlayerList()
 
--- Eksekusi Piggyback
 local function runAttachLogic()
     if not targetPlayerObj then return end
     isAttached = true
@@ -370,7 +356,6 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(20, 140, 80), runAttachLogic)
 createActionBtn("LEPAS", Color3.fromRGB(160, 40, 40), detach)
 
--- Navigasi Posisi Mini-Grid
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
@@ -460,9 +445,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     animMode = (animMode == "CUSTOM" and "NONE" or "CUSTOM")
     btnToggleAnim.Text = (animMode == "CUSTOM" and "STATUS: ON" or "STATUS: OFF")
     btnToggleAnim.BackgroundColor3 = (animMode == "CUSTOM" and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40))
-    if animMode ~= "PRESET" then
-        btnPreset.TextColor3 = CurrentTheme.TextColor
-    end
+    if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
 -- =========================================================
@@ -558,78 +541,83 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- INTEGRASI FITUR: ESP & SPECTATE BENAR (TAB ESP)
+-- TAB ESP & SPECTATE (SEPARATED & REMADE)
 -- =========================================================
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive, spectateActive = false, false, false
 
--- 1. Kotak Pencarian / Textbox Target (Paling Atas)
+-- 1. BAGIAN GLOBAL ESP (Sistem Awal Tanpa Hambatan)
+CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
+    globalEspActive = state
+end)
+
+local DivLine1 = Instance.new("Frame", EspPage)
+DivLine1.Size, DivLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = DivLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+-- 2. BAGIAN TARGET ESP (Terpisah Mandiri)
 local TargetSearchBox = Instance.new("TextBox", EspPage)
-TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target ESP (1 Orang)...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
-local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
+local TSBStroke = Instance.new("UIStroke", TargetSearchBox)
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
-table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
+table.insert(AllUIElements, {Obj = TSBStroke, Prop = "Color", Key = "StrokeColor"})
 
--- 2. Toggle ESP Satu Orang (Urutan Pertama)
-CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
+CreateToggle(EspPage, "Aktifkan Target ESP", function(state)
     targetEspActive = state
 end)
 
--- 3. Toggle Spectate Kamera (Urutan Kedua)
+local DivLine2 = Instance.new("Frame", EspPage)
+DivLine2.Size, DivLine2.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = DivLine2, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+-- 3. BAGIAN SPECTATE CAMERA (Terpisah Mandiri dengan TextBox Sendiri)
+local SpecSearchBox = Instance.new("TextBox", EspPage)
+SpecSearchBox.Size, SpecSearchBox.PlaceholderText, SpecSearchBox.Text, SpecSearchBox.Font, SpecSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target Spectate...", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", SpecSearchBox).CornerRadius = UDim.new(0, 6)
+local SSBStroke = Instance.new("UIStroke", SpecSearchBox)
+table.insert(AllUIElements, {Obj = SpecSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SpecSearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = SSBStroke, Prop = "Color", Key = "StrokeColor"})
+
 CreateToggle(EspPage, "Spectate Kamera Target", function(state)
     spectateActive = state
-    if not spectateActive then
+    if not state then
         local myChar = LocalPlayer.Character
         local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
         if myHum then Camera.CameraSubject = myHum end
     end
 end)
 
--- SEPARATOR BARIS (Pembatas visual sebelum Global ESP)
-local EspLine = Instance.new("Frame", EspPage)
-EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
-
--- 4. Toggle Global ESP (Semua Orang)
-CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
-    globalEspActive = state
-end)
-
--- Fungsi Pembersih Objek ESP Lawas Berdasarkan Instansiasi
-local function clearEspElements(character)
+-- Helper Pembersih & Root Part
+local function clearEsp(character)
     if not character then return end
-    for _, part in pairs(character:GetDescendants()) do
-        if part.Name == "KayEsp_Bill" then part:Destroy() end
+    for _, child in pairs(character:GetDescendants()) do
+        if child.Name == "KayEsp_Bill" or child.Name == "KayEsp_Highlight" then child:Destroy() end
     end
-    if character:FindFirstChild("KayEsp_Highlight") then character.KayEsp_Highlight:Destroy() end
 end
 
--- Fungsi Pencari Bagian Root Karakter (Aman dari Modifikasi Game)
 local function getSafeRoot(char)
     if not char then return nil end
-    return char:FindFirstChild("HumanoidRootPart") 
-        or char:FindFirstChild("Torso") 
-        or char:FindFirstChild("UpperTorso") 
-        or char:FindFirstChildOfClass("Part")
+    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char:FindFirstChildOfClass("Part")
 end
 
 -- =========================================================
--- LOOP MANAGER UTAMA (Gabungan Semua Fungsi Runtime)
+-- RUNTIME CORE LOOP (GABUNGAN SEMUANYA)
 -- =========================================================
 RS.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local myHrp = getSafeRoot(char)
     
-    -- Logika Speed & Noclip
+    -- Fun cheats
     if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
     if NoclipEnabled and char then
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
-    -- Logika Sistem Kay Animation
+    -- Animation System
     if hum then
         if animMode == "PRESET" then
             playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
@@ -642,9 +630,10 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Pemrosesan ESP & Spectate Terintegrasi (ULTRA FIX RUNTIME)
-    local queryTarget = string.lower(TargetSearchBox.Text)
-    local foundSpectateTarget = false
+    -- SISTEM RUNTIME MODULAR (ESP & SPECTATE TERPISAH)
+    local qTargetEsp = string.lower(TargetSearchBox.Text)
+    local qSpectate = string.lower(SpecSearchBox.Text)
+    local spectateFound = false
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
@@ -653,84 +642,76 @@ RS.Stepped:Connect(function()
             local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
             
             if tChar and tHrp then
-                -- Ambil String pencarian
-                local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
+                local isMatchEsp = (qTargetEsp ~= "" and (string.find(string.lower(p.Name), qTargetEsp) or string.find(string.lower(p.DisplayName), qTargetEsp)))
+                local isMatchSpec = (qSpectate ~= "" and (string.find(string.lower(p.Name), qSpectate) or string.find(string.lower(p.DisplayName), qSpectate)))
 
-                -- Logika Spectate Kamera
-                if spectateActive and isMatchTarget and tHum then
+                -- A. Logika Spectate Independen
+                if spectateActive and isMatchSpec and tHum then
                     Camera.CameraSubject = tHum
-                    foundSpectateTarget = true
+                    spectateFound = true
                 end
 
-                -- PROGRAM GLOBAL ESP & TARGET ESP (DIJAMIN TIDAK BENTROK)
-                if globalEspActive or (targetEspActive and isMatchTarget) then
+                -- B. Logika ESP (Global atau Target)
+                if globalEspActive or (targetEspActive and isMatchEsp) then
                     local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                     
-                    -- Pembuatan BillboardGui pada Part Utama Player
                     local bill = tHrp:FindFirstChild("KayEsp_Bill")
                     if not bill then
                         bill = Instance.new("BillboardGui")
                         bill.Name = "KayEsp_Bill"
-                        bill.Size = UDim2.new(0, 180, 0, 45)
+                        bill.Size = UDim2.new(0, 150, 0, 40)
                         bill.AlwaysOnTop = true
                         bill.ExtentsOffset = Vector3.new(0, 3, 0)
                         
-                        local txt = Instance.new("TextLabel", bill)
-                        txt.Name = "EspLabel"
-                        txt.Size = UDim2.new(1, 0, 1, 0)
-                        txt.BackgroundTransparency = 1
-                        txt.Font = Enum.Font.GothamBold
-                        txt.TextSize = 12
-                        txt.TextStrokeTransparency = 0.4
+                        local label = Instance.new("TextLabel", bill)
+                        label.Name = "EspLabel"
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.BackgroundTransparency = 1
+                        label.Font = Enum.Font.GothamBold
+                        label.TextSize = 11
+                        label.TextStrokeTransparency = 0.4
                         bill.Parent = tHrp
                     end
                     
-                    local label = bill:FindFirstChild("EspLabel")
-                    if label then
-                        label.Text = p.DisplayName .. "\n[" .. distance .. "m]"
-                        -- TARGET: Warna Hijau/Neon (Sesuai Accent Tema) | GLOBAL: Putih Bersih
-                        label.TextColor3 = isMatchTarget and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
+                    local lbl = bill:FindFirstChild("EspLabel")
+                    if lbl then
+                        lbl.Text = p.DisplayName .. "\n[" .. distance .. "m]"
+                        lbl.TextColor3 = (targetEspActive and isMatchEsp) and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
                     end
 
-                    -- Efek Outline Highlight Khusus untuk Target Satu Orang
-                    if targetEspActive and isMatchTarget then
+                    -- Highlight khusus target ESP 1 orang
+                    if targetEspActive and isMatchEsp then
                         local high = tChar:FindFirstChild("KayEsp_Highlight")
                         if not high then
-                            high = Instance.new("Highlight")
+                            high = Instance.new("Highlight", tChar)
                             high.Name = "KayEsp_Highlight"
                             high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                            high.Parent = tChar
                         end
                         high.FillColor = CurrentTheme.AccentColor
-                        high.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        high.OutlineColor = Color3.fromRGB(255,255,255)
                         high.FillTransparency = 0.6
                     else
                         if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                     end
                 else
-                    -- Bersihkan instansi visual player ini jika toggle mati
-                    clearEspElements(tChar)
+                    clearEsp(tChar)
                 end
             end
         end
     end
 
-    -- Kembalikan Kamera ke Player Asli jika Spectate Mati / Target Keluar
-    if spectateActive and not foundSpectateTarget then
+    -- Kembalikan kamera jika spectate mati atau target keluar game
+    if spectateActive and not spectateFound then
         if hum then Camera.CameraSubject = hum end
     end
 end)
 
--- Reset total player saat keluar server
-Players.PlayerRemoving:Connect(function(p)
-    clearEspElements(p.Character)
-end)
+Players.PlayerRemoving:Connect(function(p) clearEsp(p.Character) end)
 
 -- =========================================================
--- HALAMAN THEMES
+-- THEMES PAGE
 -- =========================================================
 local ThemesPage = CreateTab("Themes")
-
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
 InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
 table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
@@ -739,10 +720,7 @@ for themeName, data in pairs(Themes) do
     local ThemeBtn = Instance.new("TextButton", ThemesPage)
     ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
     Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
-    
     local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
-    TBtnStroke.Thickness = 1
-    
     table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
     table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "TextColor3", Key = "TextColor"})
     table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
@@ -753,6 +731,5 @@ for themeName, data in pairs(Themes) do
     end)
 end
 
--- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V9.3: Successfully loaded with Ultra Fixed Global ESP runtime check.")
+print("[SYSTEM] Kay Hub V9.4: Fully Modular Separated ESP & Spectate Loaded.")
