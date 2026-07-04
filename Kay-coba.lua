@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.2 - MULTI-THEME, ANIMATION, FIXED GLOBAL ESP & LAYOUT ]] --
+-- [[ KAY HUB PRO V9.3 - MULTI-THEME, ANIMATION, ULTRA FIXED GLOBAL ESP ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -88,7 +88,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.2", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.3", Enum.Font.GothamBold, 15, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarList = Instance.new("UIListLayout")
@@ -597,10 +597,22 @@ CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
     globalEspActive = state
 end)
 
--- Fungsi Pembersih Objek ESP Lawas
-local function clearEspElements(p)
-    if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
-    if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
+-- Fungsi Pembersih Objek ESP Lawas Berdasarkan Instansiasi
+local function clearEspElements(character)
+    if not character then return end
+    for _, part in pairs(character:GetDescendants()) do
+        if part.Name == "KayEsp_Bill" then part:Destroy() end
+    end
+    if character:FindFirstChild("KayEsp_Highlight") then character.KayEsp_Highlight:Destroy() end
+end
+
+-- Fungsi Pencari Bagian Root Karakter (Aman dari Modifikasi Game)
+local function getSafeRoot(char)
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart") 
+        or char:FindFirstChild("Torso") 
+        or char:FindFirstChild("UpperTorso") 
+        or char:FindFirstChildOfClass("Part")
 end
 
 -- =========================================================
@@ -609,7 +621,7 @@ end
 RS.Stepped:Connect(function()
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local myHrp = char and char:FindFirstChild("HumanoidRootPart")
+    local myHrp = getSafeRoot(char)
     
     -- Logika Speed & Noclip
     if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
@@ -630,85 +642,88 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Pemrosesan ESP & Spectate Terintegrasi (Logika yang Diperbaiki)
+    -- Pemrosesan ESP & Spectate Terintegrasi (ULTRA FIX RUNTIME)
     local queryTarget = string.lower(TargetSearchBox.Text)
     local foundSpectateTarget = false
 
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
+        if p ~= LocalPlayer then
             local tChar = p.Character
-            local tHrp = tChar.HumanoidRootPart
-            local tHum = tChar:FindFirstChildOfClass("Humanoid")
+            local tHrp = getSafeRoot(tChar)
+            local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
             
-            -- Cek kecocokan target satu orang
-            local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
+            if tChar and tHrp then
+                -- Ambil String pencarian
+                local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
-            -- Logika Spectate Kamera (Hanya bekerja jika Target Cocok)
-            if spectateActive and isMatchTarget and tHum then
-                Camera.CameraSubject = tHum
-                foundSpectateTarget = true
-            end
+                -- Logika Spectate Kamera
+                if spectateActive and isMatchTarget and tHum then
+                    Camera.CameraSubject = tHum
+                    foundSpectateTarget = true
+                end
 
-            -- LOGIKA FIX ESP: Global aktif secara bebas, atau Target aktif ketika nama cocok
-            if globalEspActive or (targetEspActive and isMatchTarget) then
-                local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
-                
-                -- Buat/Update Teks ESP (BillboardGui)
-                local bill = tHrp:FindFirstChild("KayEsp_Bill")
-                if not bill then
-                    bill = Instance.new("BillboardGui", tHrp)
-                    bill.Name = "KayEsp_Bill"
-                    bill.Size = UDim2.new(0, 200, 0, 50)
-                    bill.AlwaysOnTop = true
-                    bill.ExtentsOffset = Vector3.new(0, 3, 0)
+                -- PROGRAM GLOBAL ESP & TARGET ESP (DIJAMIN TIDAK BENTROK)
+                if globalEspActive or (targetEspActive and isMatchTarget) then
+                    local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                     
-                    local txt = Instance.new("TextLabel", bill)
-                    txt.Name = "EspLabel"
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.BackgroundTransparency = 1
-                    txt.Font = Enum.Font.GothamBold
-                    txt.TextSize = 12
-                    txt.TextStrokeTransparency = 0.5
-                end
-                
-                local label = bill:FindFirstChild("EspLabel")
-                if label then
-                    label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
-                    -- Membedakan warna teks: Target satu orang diberi warna khusus AccentColor, Global biasa diberi warna putih
-                    label.TextColor3 = isMatchTarget and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
-                end
-
-                -- Efek Highlight Khusus Target Satu Orang saja
-                if targetEspActive and isMatchTarget then
-                    local high = tChar:FindFirstChild("KayEsp_Highlight")
-                    if not high then
-                        high = Instance.new("Highlight", tChar)
-                        high.Name = "KayEsp_Highlight"
-                        high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    -- Pembuatan BillboardGui pada Part Utama Player
+                    local bill = tHrp:FindFirstChild("KayEsp_Bill")
+                    if not bill then
+                        bill = Instance.new("BillboardGui")
+                        bill.Name = "KayEsp_Bill"
+                        bill.Size = UDim2.new(0, 180, 0, 45)
+                        bill.AlwaysOnTop = true
+                        bill.ExtentsOffset = Vector3.new(0, 3, 0)
+                        
+                        local txt = Instance.new("TextLabel", bill)
+                        txt.Name = "EspLabel"
+                        txt.Size = UDim2.new(1, 0, 1, 0)
+                        txt.BackgroundTransparency = 1
+                        txt.Font = Enum.Font.GothamBold
+                        txt.TextSize = 12
+                        txt.TextStrokeTransparency = 0.4
+                        bill.Parent = tHrp
                     end
-                    high.FillColor = CurrentTheme.AccentColor
-                    high.OutlineColor = Color3.fromRGB(255,255,255)
-                    high.FillTransparency = 0.6
+                    
+                    local label = bill:FindFirstChild("EspLabel")
+                    if label then
+                        label.Text = p.DisplayName .. "\n[" .. distance .. "m]"
+                        -- TARGET: Warna Hijau/Neon (Sesuai Accent Tema) | GLOBAL: Putih Bersih
+                        label.TextColor3 = isMatchTarget and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
+                    end
+
+                    -- Efek Outline Highlight Khusus untuk Target Satu Orang
+                    if targetEspActive and isMatchTarget then
+                        local high = tChar:FindFirstChild("KayEsp_Highlight")
+                        if not high then
+                            high = Instance.new("Highlight")
+                            high.Name = "KayEsp_Highlight"
+                            high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            high.Parent = tChar
+                        end
+                        high.FillColor = CurrentTheme.AccentColor
+                        high.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        high.FillTransparency = 0.6
+                    else
+                        if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                    end
                 else
-                    if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                    -- Bersihkan instansi visual player ini jika toggle mati
+                    clearEspElements(tChar)
                 end
-            else
-                -- Jika tidak memenuhi syarat ESP, hapus objek visualnya
-                clearEspElements(tHrp)
-                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 
-    -- Sistem Keamanan Kamera: Balikkan ke kamera player sendiri jika target spectate kosong/keluar game
+    -- Kembalikan Kamera ke Player Asli jika Spectate Mati / Target Keluar
     if spectateActive and not foundSpectateTarget then
         if hum then Camera.CameraSubject = hum end
     end
 end)
 
--- Bersihkan elemen saat ada player yang keluar server
+-- Reset total player saat keluar server
 Players.PlayerRemoving:Connect(function(p)
-    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+    clearEspElements(p.Character)
 end)
 
 -- =========================================================
@@ -740,4 +755,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V9.2: Successfully loaded with fixed Global ESP runtime check.")
+print("[SYSTEM] Kay Hub V9.3: Successfully loaded with Ultra Fixed Global ESP runtime check.")
