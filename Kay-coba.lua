@@ -1,6 +1,7 @@
--- [[ KAY HUB PRO V8 - MULTI-THEME, ANIMATION & ESP INTEGRATED ]] --
+-- [[ KAY HUB PRO V9 - MULTI-THEME, ANIMATION, ESP & INTEGRATED SPECTATE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- DAFTAR PRESET TEMA LENGKAP (MERUBAH SELURUH WARNA UI)
 local Themes = {
@@ -87,7 +88,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V8", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9", Enum.Font.GothamBold, 15, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarList = Instance.new("UIListLayout")
@@ -557,10 +558,10 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- INTEGRASI FITUR: ESP EXTRA SENSORY PERCEPTION (TAB BARU)
+-- INTEGRASI FITUR: ESP & SPECTATE SYSTEM (TAB ESP)
 -- =========================================================
 local EspPage = CreateTab("ESP")
-local globalEspActive, targetEspActive = false, false
+local globalEspActive, targetEspActive, spectateActive = false, false, false
 
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
     globalEspActive = state
@@ -571,6 +572,7 @@ local EspLine = Instance.new("Frame", EspPage)
 EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
+-- TEXTBOX BERSAMA (Dipakai Target ESP & Spectate)
 local TargetSearchBox = Instance.new("TextBox", EspPage)
 TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
@@ -581,6 +583,16 @@ table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "St
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
     targetEspActive = state
+end)
+
+CreateToggle(EspPage, "Spectate Target Player", function(state)
+    spectateActive = state
+    -- Jika dinonaktifkan, kembalikan kamera langsung ke LocalPlayer
+    if not spectateActive then
+        local myChar = LocalPlayer.Character
+        local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+        if myHum then Camera.CameraSubject = myHum end
+    end
 end)
 
 -- Fungsi Pembersih Objek ESP Lawas
@@ -616,19 +628,28 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Logika Pemrosesan ESP Global & Target
+    -- Pemrosesan ESP & Spectate Terintegrasi
     local queryTarget = string.lower(TargetSearchBox.Text)
+    local foundSpectateTarget = false
+
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
+            local tHum = tChar:FindFirstChildOfClass("Humanoid")
             local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
-            -- Cek Kondisi Apakah Harus Dirender
+            -- 1. LOGIKA UTAMA SPECTATE
+            if spectateActive and isMatchTarget and tHum then
+                Camera.CameraSubject = tHum
+                foundSpectateTarget = true
+            end
+
+            -- 2. LOGIKA UTAMA ESP
             if (globalEspActive) or (targetEspActive and isMatchTarget) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                 
-                -- 1. Buat/Update Teks ESP (BillboardGui)
+                -- Buat/Update Teks ESP (BillboardGui)
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
                     bill = Instance.new("BillboardGui", tHrp)
@@ -646,14 +667,13 @@ RS.Stepped:Connect(function()
                     txt.TextStrokeTransparency = 0.5
                 end
                 
-                -- Update Teks & Warna Sesuai Tema Aktif
                 local label = bill:FindFirstChild("EspLabel")
                 if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
 
-                -- 2. Buat Efek Highlight Menyala Khusus Target Satu Orang
+                -- Efek Highlight Menyala Khusus Target Satu Orang
                 if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -672,6 +692,11 @@ RS.Stepped:Connect(function()
                 if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
+    end
+
+    -- Keamanan Sistem Kamera: Kembalikan kamera jika target spectate tidak ditemukan/keluar
+    if spectateActive and not foundSpectateTarget then
+        if hum then Camera.CameraSubject = hum end
     end
 end)
 
@@ -709,4 +734,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8: All features integrated flawlessly including ESP.")
+print("[SYSTEM] Kay Hub V9: Successfully loaded with fully integrated ESP & Spectate module.")
