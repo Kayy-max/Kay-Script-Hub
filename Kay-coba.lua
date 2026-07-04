@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - MULTI-THEME, ANIMATION, MODULAR SEPARATED ESP & SPECTATE ]] --
+-- [[ KAY HUB PRO V9.5 - ANTI-CRASH RUNTIME, SEPARATED ESP/SPECTATE & EXIT CONFIRMATION ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -46,6 +46,7 @@ local Themes = {
 local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {}
+local ScriptRunning = true
 
 -- UI Utama
 local KayHub = Instance.new("ScreenGui")
@@ -86,7 +87,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.4", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.5", Enum.Font.GothamBold, 15, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarList = Instance.new("UIListLayout")
@@ -99,12 +100,17 @@ local TopBar = Instance.new("Frame")
 TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
+-- Minimize Button Elegan
 local MinButton = Instance.new("TextButton")
-MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
+MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 25, 0, 30), UDim2.new(1, -60, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
+
+-- Close Button Elegan
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 25, 0, 30), UDim2.new(1, -30, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, false, KayHub
@@ -190,6 +196,7 @@ local function CreateToggle(parent, text, callback)
     table.insert(ActiveToggles, data)
 
     Switch.MouseButton1Click:Connect(function()
+        if not ScriptRunning then return end
         Enabled = not Enabled
         data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
@@ -541,12 +548,12 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- TAB ESP & SPECTATE (SEPARATED & REMADE)
+-- TAB ESP & SPECTATE (REBORN ANTI-CRASH)
 -- =========================================================
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive, spectateActive = false, false, false
 
--- 1. BAGIAN GLOBAL ESP (Sistem Awal Tanpa Hambatan)
+-- 1. BAGIAN GLOBAL ESP
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
     globalEspActive = state
 end)
@@ -555,7 +562,7 @@ local DivLine1 = Instance.new("Frame", EspPage)
 DivLine1.Size, DivLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = DivLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 2. BAGIAN TARGET ESP (Terpisah Mandiri)
+-- 2. BAGIAN TARGET ESP
 local TargetSearchBox = Instance.new("TextBox", EspPage)
 TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target ESP (1 Orang)...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
@@ -572,7 +579,7 @@ local DivLine2 = Instance.new("Frame", EspPage)
 DivLine2.Size, DivLine2.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = DivLine2, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 3. BAGIAN SPECTATE CAMERA (Terpisah Mandiri dengan TextBox Sendiri)
+-- 3. BAGIAN SPECTATE CAMERA
 local SpecSearchBox = Instance.new("TextBox", EspPage)
 SpecSearchBox.Size, SpecSearchBox.PlaceholderText, SpecSearchBox.Text, SpecSearchBox.Font, SpecSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target Spectate...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", SpecSearchBox).CornerRadius = UDim.new(0, 6)
@@ -584,18 +591,22 @@ table.insert(AllUIElements, {Obj = SSBStroke, Prop = "Color", Key = "StrokeColor
 CreateToggle(EspPage, "Spectate Kamera Target", function(state)
     spectateActive = state
     if not state then
-        local myChar = LocalPlayer.Character
-        local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-        if myHum then Camera.CameraSubject = myHum end
+        pcall(function()
+            local myChar = LocalPlayer.Character
+            local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+            if myHum then Camera.CameraSubject = myHum end
+        end)
     end
 end)
 
 -- Helper Pembersih & Root Part
 local function clearEsp(character)
     if not character then return end
-    for _, child in pairs(character:GetDescendants()) do
-        if child.Name == "KayEsp_Bill" or child.Name == "KayEsp_Highlight" then child:Destroy() end
-    end
+    pcall(function()
+        for _, child in pairs(character:GetDescendants()) do
+            if child.Name == "KayEsp_Bill" or child.Name == "KayEsp_Highlight" then child:Destroy() end
+        end
+    end)
 end
 
 local function getSafeRoot(char)
@@ -604,9 +615,59 @@ local function getSafeRoot(char)
 end
 
 -- =========================================================
--- RUNTIME CORE LOOP (GABUNGAN SEMUANYA)
+-- SYSTEM CLOSE DENGAN KONFIRMASI POP-UP
+-- =========================================================
+local ConfirmOverlay = Instance.new("Frame")
+ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.Visible, ConfirmOverlay.ZIndexBehavior, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), false, Enum.ZIndexBehavior.Sibling, MainFrame
+Instance.new("UICorner", ConfirmOverlay).CornerRadius = UDim.new(0, 12)
+table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
+
+local ConfirmBox = Instance.new("Frame", ConfirmOverlay)
+ConfirmBox.Size, ConfirmBox.Position, ConfirmBox.Parent = UDim2.new(0, 260, 0, 120), UDim2.new(0.5, -130, 0.5, -60), ConfirmOverlay
+Instance.new("UICorner", ConfirmBox).CornerRadius = UDim.new(0, 8)
+local CBSec = Instance.new("UIStroke", ConfirmBox)
+table.insert(AllUIElements, {Obj = ConfirmBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = CBSec, Prop = "Color", Key = "StrokeColor"})
+
+local QTxt = Instance.new("TextLabel", ConfirmBox)
+QTxt.Size, QTxt.BackgroundTransparency, QTxt.Text, QTxt.Font, QTxt.TextSize, QTxt.TextWrapped = UDim2.new(1, -20, 0, 50), 1, "Apakah kamu yakin ingin menutup seluruh script?", Enum.Font.GothamBold, 12, true
+QTxt.Position = UDim2.new(0, 10, 0, 15)
+table.insert(AllUIElements, {Obj = QTxt, Prop = "TextColor3", Key = "TextColor"})
+
+local function createConfirmBtn(txt, xOffset, color, cb)
+    local b = Instance.new("TextButton", ConfirmBox)
+    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 100, 0, 30), UDim2.new(0.5, xOffset, 0, 75), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(cb)
+end
+
+createConfirmBtn("IYA, TUTUP", -110, Color3.fromRGB(180, 40, 40), function()
+    ScriptRunning = false
+    detach()
+    if promptConnection then promptConnection:Disconnect() end
+    for _, p in pairs(Players:GetPlayers()) do clearEsp(p.Character) end
+    pcall(function()
+        local myChar = LocalPlayer.Character
+        local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+        if myHum then Camera.CameraSubject = myHum end
+    end)
+    KayHub:Destroy()
+end)
+
+createConfirmBtn("BATAL", 10, Color3.fromRGB(60, 60, 60), function()
+    ConfirmOverlay.Visible = false
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ConfirmOverlay.Visible = true
+end)
+
+-- =========================================================
+-- RUNTIME CORE LOOP (GABUNGAN SEMUANYA + PROTEKSI PCALL)
 -- =========================================================
 RS.Stepped:Connect(function()
+    if not ScriptRunning then return end
+    
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local myHrp = getSafeRoot(char)
@@ -630,79 +691,81 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- SISTEM RUNTIME MODULAR (ESP & SPECTATE TERPISAH)
+    -- SISTEM RUNTIME MODERN PROTECTED VIA PCALL
     local qTargetEsp = string.lower(TargetSearchBox.Text)
     local qSpectate = string.lower(SpecSearchBox.Text)
     local spectateFound = false
 
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer then
-            local tChar = p.Character
-            local tHrp = getSafeRoot(tChar)
-            local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
-            
-            if tChar and tHrp then
-                local isMatchEsp = (qTargetEsp ~= "" and (string.find(string.lower(p.Name), qTargetEsp) or string.find(string.lower(p.DisplayName), qTargetEsp)))
-                local isMatchSpec = (qSpectate ~= "" and (string.find(string.lower(p.Name), qSpectate) or string.find(string.lower(p.DisplayName), qSpectate)))
+            pcall(function()
+                local tChar = p.Character
+                local tHrp = getSafeRoot(tChar)
+                local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
+                
+                if tChar and tHrp then
+                    local isMatchEsp = (qTargetEsp ~= "" and (string.find(string.lower(p.Name), qTargetEsp) or string.find(string.lower(p.DisplayName), qTargetEsp)))
+                    local isMatchSpec = (qSpectate ~= "" and (string.find(string.lower(p.Name), qSpectate) or string.find(string.lower(p.DisplayName), qSpectate)))
 
-                -- A. Logika Spectate Independen
-                if spectateActive and isMatchSpec and tHum then
-                    Camera.CameraSubject = tHum
-                    spectateFound = true
-                end
+                    -- A. Logika Spectate Independen
+                    if spectateActive and isMatchSpec and tHum then
+                        Camera.CameraSubject = tHum
+                        spectateFound = true
+                    end
 
-                -- B. Logika ESP (Global atau Target)
-                if globalEspActive or (targetEspActive and isMatchEsp) then
-                    local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
-                    
-                    local bill = tHrp:FindFirstChild("KayEsp_Bill")
-                    if not bill then
-                        bill = Instance.new("BillboardGui")
-                        bill.Name = "KayEsp_Bill"
-                        bill.Size = UDim2.new(0, 150, 0, 40)
-                        bill.AlwaysOnTop = true
-                        bill.ExtentsOffset = Vector3.new(0, 3, 0)
+                    -- B. Logika ESP (Global atau Target)
+                    if globalEspActive or (targetEspActive and isMatchEsp) then
+                        local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                         
-                        local label = Instance.new("TextLabel", bill)
-                        label.Name = "EspLabel"
-                        label.Size = UDim2.new(1, 0, 1, 0)
-                        label.BackgroundTransparency = 1
-                        label.Font = Enum.Font.GothamBold
-                        label.TextSize = 11
-                        label.TextStrokeTransparency = 0.4
-                        bill.Parent = tHrp
-                    end
-                    
-                    local lbl = bill:FindFirstChild("EspLabel")
-                    if lbl then
-                        lbl.Text = p.DisplayName .. "\n[" .. distance .. "m]"
-                        lbl.TextColor3 = (targetEspActive and isMatchEsp) and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
-                    end
-
-                    -- Highlight khusus target ESP 1 orang
-                    if targetEspActive and isMatchEsp then
-                        local high = tChar:FindFirstChild("KayEsp_Highlight")
-                        if not high then
-                            high = Instance.new("Highlight", tChar)
-                            high.Name = "KayEsp_Highlight"
-                            high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        local bill = tHrp:FindFirstChild("KayEsp_Bill")
+                        if not bill then
+                            bill = Instance.new("BillboardGui")
+                            bill.Name = "KayEsp_Bill"
+                            bill.Size = UDim2.new(0, 150, 0, 40)
+                            bill.AlwaysOnTop = true
+                            bill.ExtentsOffset = Vector3.new(0, 3, 0)
+                            
+                            local label = Instance.new("TextLabel", bill)
+                            label.Name = "EspLabel"
+                            label.Size = UDim2.new(1, 0, 1, 0)
+                            label.BackgroundTransparency = 1
+                            label.Font = Enum.Font.GothamBold
+                            label.TextSize = 11
+                            label.TextStrokeTransparency = 0.4
+                            bill.Parent = tHrp
                         end
-                        high.FillColor = CurrentTheme.AccentColor
-                        high.OutlineColor = Color3.fromRGB(255,255,255)
-                        high.FillTransparency = 0.6
+                        
+                        local lbl = bill:FindFirstChild("EspLabel")
+                        if lbl then
+                            lbl.Text = p.DisplayName .. "\n[" .. distance .. "m]"
+                            lbl.TextColor3 = (targetEspActive and isMatchEsp) and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
+                        end
+
+                        -- Highlight khusus target ESP 1 orang
+                        if targetEspActive and isMatchEsp then
+                            local high = tChar:FindFirstChild("KayEsp_Highlight")
+                            if not high then
+                                high = Instance.new("Highlight", tChar)
+                                high.Name = "KayEsp_Highlight"
+                                high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            end
+                            high.FillColor = CurrentTheme.AccentColor
+                            high.OutlineColor = Color3.fromRGB(255,255,255)
+                            high.FillTransparency = 0.6
+                        else
+                            if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                        end
                     else
-                        if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                        clearEsp(tChar)
                     end
-                else
-                    clearEsp(tChar)
                 end
-            end
+            end)
         end
     end
 
-    -- Kembalikan kamera jika spectate mati atau target keluar game
+    -- Kembalikan kamera jika spectate mati atau target tidak ditemukan
     if spectateActive and not spectateFound then
-        if hum then Camera.CameraSubject = hum end
+        pcall(function() if hum then Camera.CameraSubject = hum end end)
     end
 end)
 
@@ -732,4 +795,4 @@ for themeName, data in pairs(Themes) do
 end
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V9.4: Fully Modular Separated ESP & Spectate Loaded.")
+print("[SYSTEM] Kay Hub V9.5: Protection Bypass & Confirmation Close Dialog Loaded.")
