@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - SLEEK & ELEGANT EDITION ]] --
+-- [[ KAY HUB PRO V8 - SLEEK & ELEGANT EDITION (FIXED PIGGYBACK) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -132,17 +132,17 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
--- LOGIKA UTAMA: PIGGYBACK (MENGGUNAKAN DISPLAY NAME / NAMA KEPALA)
+-- LOGIKA UTAMA: PIGGYBACK (FIXED BUG KARAKTER HILANG / VOIDED)
 -- =========================================================
-local targetPlayerObj = nil -- Menyimpan objek player target secara langsung
-local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
+local targetPlayerObj = nil 
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0 -- Default nempel di atas/pundak karakter
 local isAttached, autoEmoteEnabled = false, true
-local attachmentConnection, respawnConnection, currentEmoteTrack, lockLoop
+local attachmentConnection, respawnConnection, currentEmoteTrack
 
 local function removeWelds()
     if LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then part:Destroy() end
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
         end
     end
 end
@@ -156,17 +156,28 @@ local function startLoop(targetChar)
     
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
-        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
         
+        -- Nonaktifkan tabrakan fisik agar posisi tidak saling mendorong keras (bikin bug hilang)
+        for _, part in pairs(myChar:GetChildren()) do 
+            if part:IsA("BasePart") then part.CanCollide = false end 
+        end
+        
+        -- SISTEM SATU JALUR: Menyatukan pergerakan posisi koordinat
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
+            
+            -- Set CFrame yang stabil berdasarkan offset posisi kustom (tanpa dibenturkan ke Y = -25 void loop)
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
             pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP) end)
+            
             myHRP.CFrame = offset
-            myHRP.Velocity, myHRP.AssemblyLinearVelocity, myHRP.AssemblyAngularVelocity = Vector3.new(), Vector3.new(), Vector3.new()
+            myHRP.Velocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end)
     end
 end
@@ -208,7 +219,7 @@ end)
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), Color3.fromRGB(35, 35, 35), 0
 
--- UI SELECTION PLAYER BARU (SIMPLE & ELEGAN)
+-- UI SELECTION PLAYER BARU (MENGGUNAKAN DISPLAY NAME)
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.BackgroundColor3, SearchBox.TextColor3, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), FrameColor, TextColor, "Cari nama player (Nama di atas kepala)...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -226,18 +237,16 @@ ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
--- Fungsi Refresh List Menggunakan DISPLAY NAME (Nama Atas Kepala)
 local function refreshPlayerList(filter)
     for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            -- Mengecek kecocokan teks filter dengan nama asli (Name) maupun nama di atas kepala (DisplayName)
             if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
                 local btn = Instance.new("TextButton", PlayerListFrame)
                 btn.Size, btn.BackgroundColor3, btn.TextColor3, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 28), Color3.fromRGB(24, 24, 24), TextColor, player.DisplayName, Enum.Font.Gotham, 11
                 btn.BorderSizePixel = 0
                 btn.MouseButton1Click:Connect(function()
-                    targetPlayerObj = player -- Simpan objek player langsung
+                    targetPlayerObj = player 
                     DropdownBtn.Text = "Selected: " .. player.DisplayName
                     PlayerListFrame.Visible = false
                 end)
@@ -248,7 +257,7 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
 refreshPlayerList()
 
--- Eksekusi Tempel / Lepas Piggyback
+-- Eksekusi Piggyback
 local function runAttachLogic()
     if not targetPlayerObj then return end
     isAttached = true
@@ -257,29 +266,22 @@ local function runAttachLogic()
     if targetPlayerObj.Character then startLoop(targetPlayerObj.Character) end
     respawnConnection = targetPlayerObj.CharacterAdded:Connect(function(char) if isAttached then task.wait(0.5) startLoop(char) end end)
     
+    -- Animasi Emote Stabilizer
     if autoEmoteEnabled and targetPlayerObj.Character and LocalPlayer.Character then
         local char = LocalPlayer.Character
         if currentEmoteTrack then currentEmoteTrack:Stop() end
         local anim = Instance.new("Animation")
         anim.AnimationId = "rbxassetid://107480602323379"
-        currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
-        currentEmoteTrack:Play()
-        
-        if lockLoop then lockLoop:Disconnect() end
-        lockLoop = RS.RenderStepped:Connect(function()
-            local tRoot = targetPlayerObj.Character and targetPlayerObj.Character:FindFirstChild("HumanoidRootPart")
-            local cRoot = char and char:FindFirstChild("HumanoidRootPart")
-            if tRoot and cRoot then
-                cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
-            else if lockLoop then lockLoop:Disconnect() end end
+        pcall(function()
+            currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
+            currentEmoteTrack:Play()
         end)
     end
 end
 
 local function runDetachLogic()
-    detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
-    if lockLoop then lockLoop:Disconnect() end
+    runDetachLogic()
 end
 
 -- Tombol Tempel & Lepas Simpel
@@ -423,4 +425,4 @@ local CreditsPage = CreateTab("Credits")
 local CreditLabel = Instance.new("TextLabel", CreditsPage)
 CreditLabel.Size, CreditLabel.BackgroundTransparency, CreditLabel.Text, CreditLabel.TextColor3, CreditLabel.Font, CreditLabel.TextSize = UDim2.new(1, 0, 0, 40), 1, "Dibuat khusus dengan UI Elegan & Fleksibel untuk Kay.", MutedText, Enum.Font.GothamItalic, 11
 
-print("[SYSTEM] Kay Hub V8 Sleek Edition loaded successfully.")
+print("[SYSTEM] Kay Hub V8 Sleek Fixed loaded successfully.")
