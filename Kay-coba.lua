@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.2 - UPDATE TOMBOL CLOSE SCRIPT ]] --
+-- [[ KAY HUB PRO V8.3 - UPDATE POP-UP CLOSE CONFIRMATION ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -110,7 +110,7 @@ local MinButton = Instance.new("TextButton")
 MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -65, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
 
--- Tombol Close Script [X] Baru
+-- Tombol Close Script [X]
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
@@ -135,6 +135,37 @@ local function toggleMenu()
 end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
+
+-- =========================================================
+-- PANEL STRUKTUR: POP-UP KONFIRMASI CLOSE (NEW FITUR)
+-- =========================================================
+local ConfirmOverlay = Instance.new("Frame")
+ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.BackgroundTransparency, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), 0.4, false, 10, MainFrame
+table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
+
+local ConfirmBox = Instance.new("Frame", ConfirmOverlay)
+ConfirmBox.Size, ConfirmBox.Position, ConfirmBox.ZIndex = UDim2.new(0, 260, 0, 130), UDim2.new(0.5, -130, 0.5, -65), 11
+Instance.new("UICorner", ConfirmBox).CornerRadius = UDim.new(0, 10)
+local ConfirmStroke = Instance.new("UIStroke", ConfirmBox)
+table.insert(AllUIElements, {Obj = ConfirmBox, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = ConfirmStroke, Prop = "Color", Key = "StrokeColor"})
+
+local ConfirmTitle = Instance.new("TextLabel", ConfirmBox)
+ConfirmTitle.Size, ConfirmTitle.Position, ConfirmTitle.BackgroundTransparency, ConfirmTitle.Text, ConfirmTitle.Font, ConfirmTitle.TextSize, ConfirmTitle.ZIndex = UDim2.new(1, 0, 0, 55), UDim2.new(0, 0, 0, 5), 1, "Apakah kamu yakin ingin\nmenutup script ini?", Enum.Font.GothamBold, 12, 12
+table.insert(AllUIElements, {Obj = ConfirmTitle, Prop = "TextColor3", Key = "TextColor"})
+
+-- Tombol YA
+local YesButton = Instance.new("TextButton", ConfirmBox)
+YesButton.Size, YesButton.Position, YesButton.Text, YesButton.Font, YesButton.TextSize, YesButton.TextColor3, YesButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(0, 18, 0, 75), "YA", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
+YesButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+Instance.new("UICorner", YesButton).CornerRadius = UDim.new(0, 6)
+
+-- Tombol TIDAK
+local NoButton = Instance.new("TextButton", ConfirmBox)
+NoButton.Size, NoButton.Position, NoButton.Text, NoButton.Font, NoButton.TextSize, NoButton.TextColor3, NoButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(1, -123, 0, 75), "TIDAK", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
+Instance.new("UICorner", NoButton).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = NoButton, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = NoButton, Prop = "TextColor3", Key = "MutedText"})
 
 -- Fungsi Update Tema Global
 local function ApplyTheme(themeName)
@@ -172,6 +203,7 @@ local function CreateTab(tabName)
     if FirstTab then Page.Visible, CurrentTabTitle.Text, FirstTab = true, tabName, false end
     
     TabButton.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
         for _, t in pairs(Tabs) do 
             t.Page.Visible = false 
             t.Btn.TextColor3 = CurrentTheme.MutedText
@@ -206,7 +238,7 @@ local function CreateToggle(parent, text, callback)
     table.insert(ActiveToggles, data)
 
     Switch.MouseButton1Click:Connect(function()
-        if not ScriptRunning then return end
+        if not ScriptRunning or ConfirmOverlay.Visible then return end
         Enabled = not Enabled
         data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
@@ -317,7 +349,7 @@ Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
 table.insert(AllUIElements, {Obj = PlayerListFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
-DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
+DropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
 local function refreshPlayerList(filter)
     for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
@@ -330,6 +362,7 @@ local function refreshPlayerList(filter)
                 table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
                 table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
                 btn.MouseButton1Click:Connect(function()
+                    if ConfirmOverlay.Visible then return end
                     targetPlayerObj = player 
                     DropdownBtn.Text = "Selected: " .. player.DisplayName
                     PlayerListFrame.Visible = false
@@ -343,7 +376,7 @@ refreshPlayerList()
 
 -- Eksekusi Piggyback
 local function runAttachLogic()
-    if not targetPlayerObj then return end
+    if not targetPlayerObj or ConfirmOverlay.Visible then return end
     isAttached = true
     removeWelds()
     if respawnConnection then respawnConnection:Disconnect() end
@@ -371,7 +404,7 @@ local function createActionBtn(txt, color, cb)
     local b = Instance.new("TextButton", ActionFrame)
     b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0.49, 0, 1, 0), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-    b.MouseButton1Click:Connect(cb)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end cb() end)
 end
 createActionBtn("TEMPEL", Color3.fromRGB(20, 140, 80), runAttachLogic)
 createActionBtn("LEPAS", Color3.fromRGB(160, 40, 40), detach)
@@ -388,7 +421,7 @@ local function createNav(txt, cb)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "FrameColor"})
     table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(cb)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end cb() end)
 end
 createNav("NAIK", function() posY = posY + 0.2 end)
 createNav("TURUN", function() posY = posY - 0.2 end)
@@ -402,6 +435,7 @@ local ToggleEmoteBtn = Instance.new("TextButton", NavFrame)
 ToggleEmoteBtn.BackgroundColor3, ToggleEmoteBtn.Text, ToggleEmoteBtn.TextColor3, ToggleEmoteBtn.Font, ToggleEmoteBtn.TextSize = Color3.fromRGB(20, 140, 80), "EMOTE: ON", Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 9
 Instance.new("UICorner", ToggleEmoteBtn).CornerRadius = UDim.new(0, 4)
 ToggleEmoteBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
     autoEmoteEnabled = not autoEmoteEnabled
     ToggleEmoteBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
@@ -454,6 +488,7 @@ local function playKayAnim(id)
 end
 
 btnPreset.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
     animMode = (animMode == "PRESET" and "NONE" or "PRESET")
     btnPreset.TextColor3 = (animMode == "PRESET" and CurrentTheme.AccentColor or CurrentTheme.TextColor)
     if animMode ~= "CUSTOM" then
@@ -463,6 +498,7 @@ btnPreset.MouseButton1Click:Connect(function()
 end)
 
 btnToggleAnim.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
     animMode = (animMode == "CUSTOM" and "NONE" or "CUSTOM")
     btnToggleAnim.Text = (animMode == "CUSTOM" and "STATUS: ON" or "STATUS: OFF")
     btnToggleAnim.BackgroundColor3 = (animMode == "CUSTOM" and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40))
@@ -498,12 +534,13 @@ local function createChangeSpeed(txt, x, offset)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
     table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function() SpeedValue = math.max(16, SpeedValue + offset) SpeedLabel.Text = "Value: < " .. SpeedValue .. " >" end)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end SpeedValue = math.max(16, SpeedValue + offset) SpeedLabel.Text = "Value: < " .. SpeedValue .. " >" end)
 end
 createChangeSpeed("-", -60, -10)
 createChangeSpeed("+", -32, 10)
 
 SpeedToggle.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
     SpeedEnabled = not SpeedEnabled
     SpeedToggle.Text = SpeedEnabled and "Speed: ON" or "Speed: OFF"
     local tBG = SpeedEnabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
@@ -527,7 +564,7 @@ local function createChangeFly(txt, x, offset)
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
     table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function() FlySpeed = math.max(10, FlySpeed + offset) FlyLabel.Text = "Kecepatan Terbang: [ " .. FlySpeed .. " ]" end)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end FlySpeed = math.max(10, FlySpeed + offset) FlyLabel.Text = "Kecepatan Terbang: [ " .. FlySpeed .. " ]" end)
 end
 createChangeFly("-", -60, -10)
 createChangeFly("+", -32, 10)
@@ -564,7 +601,7 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
--- INTEGRASI FITUR: ESP EXTRA SENSORY PERCEPTION (TAB BARU)
+-- INTEGRASI FITUR: ESP EXTRA SENSORY PERCEPTION
 -- =========================================================
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
@@ -573,7 +610,6 @@ CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
     globalEspActive = state
 end)
 
--- SEPARATOR ESP
 local EspLine = Instance.new("Frame", EspPage)
 EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
@@ -590,21 +626,28 @@ CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
     targetEspActive = state
 end)
 
--- Fungsi Pembersih Objek ESP Lawas
 local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
 -- =========================================================
--- EXECUTE CLOSE SCRIPT ACTION (FUNGSI PENUTUP)
+-- SISTEM LOGIKA TRIGER POP-UP DAN EXECUTE CLOSE ACTION
 -- =========================================================
 CloseButton.MouseButton1Click:Connect(function()
+    if not ScriptRunning then return end
+    ConfirmOverlay.Visible = true -- Tampilkan Pop-Up Pertanyaan
+end)
+
+NoButton.MouseButton1Click:Connect(function()
+    ConfirmOverlay.Visible = false -- Sembunyikan Pop-Up (Batal)
+end)
+
+YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
     if promptConnection then promptConnection:Disconnect() end
     
-    -- Kembalikan walkspeed dan noclip normal
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -612,7 +655,6 @@ CloseButton.MouseButton1Click:Connect(function()
         if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
     end)
     
-    -- Bersihkan semua ESP player di server
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
             if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
@@ -620,12 +662,11 @@ CloseButton.MouseButton1Click:Connect(function()
         end
     end
     
-    -- Hancurkan GUI total
-    KayHub:Destroy()
+    KayHub:Destroy() -- Matikan total seluruh GUI
 end)
 
 -- =========================================================
--- LOOP MANAGER UTAMA (Gabungan Semua Fungsi Runtime)
+-- LOOP MANAGER UTAMA
 -- =========================================================
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
@@ -634,13 +675,11 @@ RS.Stepped:Connect(function()
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local myHrp = char and char:FindFirstChild("HumanoidRootPart")
     
-    -- Logika Speed & Noclip
     if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
     if NoclipEnabled and char then
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
-    -- Logika Sistem Kay Animation
     if hum then
         if animMode == "PRESET" then
             playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
@@ -653,7 +692,6 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Logika Pemrosesan ESP Global & Target
     local queryTarget = string.lower(TargetSearchBox.Text)
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
@@ -661,11 +699,8 @@ RS.Stepped:Connect(function()
             local tHrp = tChar.HumanoidRootPart
             local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
-            -- Cek Kondisi Apakah Harus Dirender
             if (globalEspActive) or (targetEspActive and isMatchTarget) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
-                
-                -- 1. Buat/Update Teks ESP (BillboardGui)
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
                     bill = Instance.new("BillboardGui", tHrp)
@@ -683,14 +718,12 @@ RS.Stepped:Connect(function()
                     txt.TextStrokeTransparency = 0.5
                 end
                 
-                -- Update Teks & Warna Sesuai Tema Aktif
                 local label = bill:FindFirstChild("EspLabel")
                 if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
 
-                -- 2. Buat Efek Highlight Menyala Khusus Target Satu Orang
                 if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -712,7 +745,6 @@ RS.Stepped:Connect(function()
     end
 end)
 
--- Bersihkan ESP jika ada player keluar
 Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
@@ -739,6 +771,7 @@ for themeName, data in pairs(Themes) do
     table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
     
     ThemeBtn.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
         ApplyTheme(themeName)
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
     end)
@@ -746,4 +779,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.2: All features integrated including Close Script [X].")
+print("[SYSTEM] Kay Hub V8.3: Script safe close popup confirmation integrated.")
