@@ -1,19 +1,28 @@
--- [[ KAY HUB PRO V8 - SLIM EDITION (FIXED UI & REPLICATION) ]] --
+-- [[ KAY HUB PRO V8 - SLEEK & ELEGANT EDITION ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Themes = {["Neon Green"] = Color3.fromRGB(0, 255, 150), ["Aqua Blue"] = Color3.fromRGB(0, 210, 255), ["Ruby Red"] = Color3.fromRGB(255, 50, 70), ["Purple Cyber"] = Color3.fromRGB(180, 0, 255)}
-local ActiveThemeColor, ActiveToggles, Tabs = Themes["Neon Green"], {}, {}
 
--- Inisialisasi GUI Utama
+-- Tema Warna Elegan (Aksen Premium Neon Green / Dark Slate)
+local AccentColor = Color3.fromRGB(0, 230, 130)
+local BGColor = Color3.fromRGB(15, 15, 15)
+local FrameColor = Color3.fromRGB(22, 22, 22)
+local TextColor = Color3.fromRGB(240, 240, 240)
+local MutedText = Color3.fromRGB(140, 140, 140)
+
+local ActiveToggles, Tabs = {}, {}
+
+-- UI Utama (ScreenGui)
 local KayHub = Instance.new("ScreenGui")
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.BackgroundColor3, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 420, 0, 280), UDim2.new(0.3, 0, 0.25, 0), Color3.fromRGB(20, 20, 20), true, true, KayHub
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+MainFrame.Size, MainFrame.Position, MainFrame.BackgroundColor3, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), BGColor, true, true, KayHub
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color, MainStroke.Thickness = Color3.fromRGB(35, 35, 35), 1
 
--- Fungsi Drag & Drop Otomatis (Aman & Ringkas)
+-- Fungsi Drag & Drop Ringkas
 local function MakeDraggable(gui)
     local dragInput, dragStart, startPos
     gui.InputBegan:Connect(function(input)
@@ -33,63 +42,64 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
--- Sidebar & Container Halaman
+-- Sidebar Minimalis
 local Sidebar = Instance.new("Frame")
-Sidebar.Size, Sidebar.BackgroundColor3, Sidebar.Parent = UDim2.new(0, 110, 1, 0), Color3.fromRGB(28, 28, 28), MainFrame
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
+Sidebar.Size, Sidebar.BackgroundColor3, Sidebar.Parent = UDim2.new(0, 120, 1, 0), FrameColor, MainFrame
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.TextColor3, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 45), 1, "KAY HUB", ActiveThemeColor, Enum.Font.SourceSansBold, 18, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.TextColor3, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V8", AccentColor, Enum.Font.GothamBold, 15, Sidebar
 
 local SidebarList = Instance.new("UIListLayout")
-SidebarList.SortOrder, SidebarList.Padding, SidebarList.Parent = Enum.SortOrder.LayoutOrder, UDim.new(0, 5), Sidebar
+SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment, SidebarList.Parent = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center, Sidebar
 
+-- Container Konten
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency, ContentContainer.Parent = UDim2.new(1, -125, 1, -55), UDim2.new(0, 115, 0, 45), 1, MainFrame
+ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency, ContentContainer.Parent = UDim2.new(1, -135, 1, -55), UDim2.new(0, 125, 0, 45), 1, MainFrame
 
 local TopBar = Instance.new("Frame")
-TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -110, 0, 45), UDim2.new(0, 110, 0, 0), 1, MainFrame
+TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.TextColor3, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0), 1, "Home", Color3.fromRGB(255, 255, 255), Enum.Font.SourceSansBold, 16, Enum.TextXAlignment.Left, TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.TextColor3, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", TextColor, Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 
--- Sistem Minimize / Toggle Menu
+-- Minimize Button Elegan
 local MinButton = Instance.new("TextButton")
-MinButton.Size, MinButton.Position, MinButton.BackgroundColor3, MinButton.Text, MinButton.TextColor3, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -40, 0, 7), Color3.fromRGB(35, 35, 35), "-", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 16, TopBar
-Instance.new("UICorner", MinButton).CornerRadius = UDim.new(0, 6)
+MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.TextColor3, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "—", MutedText, Enum.Font.GothamBold, 12, TopBar
 
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.BackgroundColor3, ToggleButton.Text, ToggleButton.TextColor3, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 90, 0, 35), UDim2.new(0, 10, 0, 50), Color3.fromRGB(25, 25, 25), "Kay Hub", ActiveThemeColor, Enum.Font.SourceSansBold, 14, false, KayHub
-Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 6)
+ToggleButton.Size, ToggleButton.Position, ToggleButton.BackgroundColor3, ToggleButton.Text, ToggleButton.TextColor3, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), FrameColor, "Kay Hub", AccentColor, Enum.Font.GothamBold, 12, false, KayHub
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", ToggleButton).Color = Color3.fromRGB(40, 40, 40)
 MakeDraggable(ToggleButton)
 
 local isMinimized = false
 local function toggleMenu()
     isMinimized = not isMinimized
-    TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 420, 0, 0) or UDim2.new(0, 420, 0, 280)}):Play()
-    if isMinimized then task.wait(0.3) end
+    TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
+    if isMinimized then task.wait(0.2) end
     MainFrame.Visible = not isMinimized
     ToggleButton.Visible = isMinimized
 end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- Pembuatan Fungsi Tab & Toggle Otomatis
+-- Pembuat Tab & Toggle Simpel
 local FirstTab = true
 local function CreateTab(tabName)
     local Page = Instance.new("ScrollingFrame")
-    Page.Size, Page.BackgroundTransparency, Page.BorderSizePixel, Page.ScrollBarThickness, Page.AutomaticCanvasSize, Page.Visible, Page.Parent = UDim2.new(1, 0, 1, 0), 1, 0, 3, Enum.AutomaticSize.Y, false, ContentContainer
-    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
+    Page.Size, Page.BackgroundTransparency, Page.BorderSizePixel, Page.ScrollBarThickness, Page.AutomaticCanvasSize, Page.Visible, Page.Parent = UDim2.new(1, 0, 1, 0), 1, 0, 2, Enum.AutomaticSize.Y, false, ContentContainer
+    local PageList = Instance.new("UIListLayout", Page)
+    PageList.Padding, PageList.HorizontalAlignment = UDim.new(0, 6), Enum.HorizontalAlignment.Center
     
     local TabButton = Instance.new("TextButton")
-    TabButton.Size, TabButton.BackgroundColor3, TabButton.BackgroundTransparency, TabButton.Text, TabButton.TextColor3, TabButton.Font, TabButton.TextSize, TabButton.TextXAlignment, TabButton.Parent = UDim2.new(0.9, 0, 0, 35), Color3.fromRGB(35, 35, 35), 1, "  " .. tabName, Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansBold, 14, Enum.TextXAlignment.Left, Sidebar
-    Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
+    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.TextColor3, TabButton.Font, TabButton.TextSize, TabButton.Parent = UDim2.new(0.9, 0, 0, 32), 1, tabName, MutedText, Enum.Font.GothamBold, 12, Sidebar
     
-    if FirstTab then Page.Visible, TabButton.BackgroundTransparency, TabButton.TextColor3, CurrentTabTitle.Text, FirstTab = true, 0, ActiveThemeColor, tabName, false end
+    if FirstTab then Page.Visible, TabButton.TextColor3, CurrentTabTitle.Text, FirstTab = true, AccentColor, tabName, false end
     
     TabButton.MouseButton1Click:Connect(function()
-        for _, t in pairs(Tabs) do t.Page.Visible, t.Btn.BackgroundTransparency, t.Btn.TextColor3 = false, 1, Color3.fromRGB(150, 150, 150) end
-        Page.Visible, TabButton.BackgroundTransparency, TabButton.TextColor3, CurrentTabTitle.Text = true, 0, ActiveThemeColor, tabName
+        for _, t in pairs(Tabs) do t.Page.Visible, t.Btn.TextColor3 = false, MutedText end
+        Page.Visible, TabButton.TextColor3, CurrentTabTitle.Text = true, AccentColor, tabName
     end)
     table.insert(Tabs, {Page = Page, Btn = TabButton, Name = tabName})
     return Page
@@ -97,51 +107,45 @@ end
 
 local function CreateToggle(parent, text, callback)
     local Enabled = false
-    local Btn = Instance.new("TextButton")
-    Btn.Size, Btn.BackgroundColor3, Btn.Text, Btn.TextColor3, Btn.Font, Btn.TextSize, Btn.Parent = UDim2.new(1, -10, 0, 35), Color3.fromRGB(30, 30, 30), text .. " : OFF", Color3.fromRGB(255, 100, 100), Enum.Font.SourceSansBold, 14, parent
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+    local Frame = Instance.new("Frame", parent)
+    Frame.Size, Frame.BackgroundColor3 = UDim2.new(1, -10, 0, 35), FrameColor
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+    
+    local Label = Instance.new("TextLabel", Frame)
+    Label.Size, Label.Position, Label.BackgroundTransparency, Label.Text, Label.TextColor3, Label.Font, Label.TextSize, Label.TextXAlignment = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0), 1, text, TextColor, Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
+    
+    local Switch = Instance.new("TextButton", Frame)
+    Switch.Size, Switch.Position, Switch.BackgroundColor3, Switch.Text, Switch.TextColor3, Switch.Font, Switch.TextSize = UDim2.new(0, 45, 0, 20), UDim2.new(1, -55, 0, 7.5), Color3.fromRGB(40, 40, 40), "OFF", MutedText, Enum.Font.GothamBold, 10
+    Instance.new("UICorner", Switch).CornerRadius = UDim.new(0, 10)
 
-    local data = {Instance = Btn, IsEnabled = false, BaseText = text}
+    local data = {Instance = Switch, IsEnabled = false}
     table.insert(ActiveToggles, data)
 
-    Btn.MouseButton1Click:Connect(function()
+    Switch.MouseButton1Click:Connect(function()
         Enabled = not Enabled
         data.IsEnabled = Enabled
-        Btn.Text = text .. (Enabled and " : ON" or " : OFF")
-        TS:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Enabled and ActiveThemeColor or Color3.fromRGB(255, 100, 100)}):Play()
+        Switch.Text = Enabled and "ON" or "OFF"
+        TS:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = Enabled and AccentColor or Color3.fromRGB(40, 40, 40), TextColor3 = Enabled and Color3.fromRGB(10,10,10) or MutedText}):Play()
         callback(Enabled)
     end)
-    return Btn
+    return Frame
 end
 
 -- =========================================================
--- LOGIKA UTAMA FITUR TAMBAHAN (INTERACT & PIGGYBACK)
+-- LOGIKA UTAMA: PIGGYBACK (MENGGUNAKAN DISPLAY NAME / NAMA KEPALA)
 -- =========================================================
--- [ Variabel Fitur 1: Instant Interact ]
-local ProximityPromptService = game:GetService("ProximityPromptService")
-local isInstantActive = false
-local promptConnection = nil
-
-local function makeInstant(prompt)
-    if prompt:IsA("ProximityPrompt") then
-        if not prompt:GetAttribute("OriginalHold") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) end
-        prompt.HoldDuration = 0
-    end
-end
-
-local function resetToNormal(prompt)
-    if prompt:IsA("ProximityPrompt") then
-        local original = prompt:GetAttribute("OriginalHold")
-        if original then prompt.HoldDuration = original end
-    end
-end
-
--- [ Variabel Fitur 2: Piggyback FE ]
-local targetName = ""
+local targetPlayerObj = nil -- Menyimpan objek player target secara langsung
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
-local isAttached = false
-local attachmentConnection = nil
-local respawnConnection = nil
+local isAttached, autoEmoteEnabled = false, true
+local attachmentConnection, respawnConnection, currentEmoteTrack, lockLoop
+
+local function removeWelds()
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then part:Destroy() end
+        end
+    end
+end
 
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
@@ -152,28 +156,17 @@ local function startLoop(targetChar)
     
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
-        
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
+        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
         
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
-            
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            
-            pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
-            end)
-            
+            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP) end)
             myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new()
-            myHRP.AssemblyLinearVelocity = Vector3.new()
-            myHRP.AssemblyAngularVelocity = Vector3.new()
-            myHRP.RotVelocity = Vector3.new()
+            myHRP.Velocity, myHRP.AssemblyLinearVelocity, myHRP.AssemblyAngularVelocity = Vector3.new(), Vector3.new(), Vector3.new()
         end)
     end
 end
@@ -185,185 +178,101 @@ local function detach()
     local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
-        
-        if myHRP then 
-            pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
-            end)
-            myHRP.Velocity = Vector3.new(0, 0, 0) 
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
-        end
-        
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
-        end
+        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
     end
-end
-
-local function forceUpdatePosition()
-    if isAttached then
-        local targetPlayer = game.Players:FindFirstChild(targetName)
-        if targetPlayer and targetPlayer.Character then
-            local myChar = LocalPlayer.Character
-            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myHRP and targetHRP then
-                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            end
-        end
-    end
-end
-
-local function attachToPlayer()
-    local targetPlayer = game.Players:FindFirstChild(targetName)
-    if not targetPlayer then return end
-    isAttached = true
-    if respawnConnection then respawnConnection:Disconnect() end
-    if targetPlayer.Character then startLoop(targetPlayer.Character) end
-    respawnConnection = targetPlayer.CharacterAdded:Connect(function(newCharacter)
-        if isAttached then task.wait(0.5) startLoop(newCharacter) end
-    end)
 end
 
 -- =========================================================
--- HALAMAN UTAMA & FITUR-FITUR
+-- HALAMAN UTAMA (HOME TABS)
 -- =========================================================
 local HomePage = CreateTab("Home")
 
--- Fitur Tambahan 1: Instant Interact di Tab Home
+-- Fitur Instant Interact
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local isInstantActive = false
+local promptConnection = nil
+
 CreateToggle(HomePage, "Instant Interact", function(state)
     isInstantActive = state
     if isInstantActive then
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do makeInstant(prompt) end
-        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-            if isInstantActive then makeInstant(prompt) end
-        end)
+        for _, prompt in pairs(workspace:GetDescendants()) do if prompt:IsA("ProximityPrompt") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) prompt.HoldDuration = 0 end end
+        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt) if isInstantActive then prompt.HoldDuration = 0 end end)
     else
         if promptConnection then promptConnection:Disconnect() end
-        for _, prompt in pairs(game.Workspace:GetDescendants()) do resetToNormal(prompt) end
+        for _, prompt in pairs(workspace:GetDescendants()) do if prompt:IsA("ProximityPrompt") then local orig = prompt:GetAttribute("OriginalHold") if orig then prompt.HoldDuration = orig end end end
     end
 end)
 
--- Garis Pembatas UI
-local Line = Instance.new("Frame")
-Line.Size, Line.BackgroundColor3, Line.BorderSizePixel, Line.Parent = UDim2.new(1, -10, 0, 2), Color3.fromRGB(40, 40, 40), 0, HomePage
+-- SEPARATOR LINE SLICK
+local Line = Instance.new("Frame", HomePage)
+Line.Size, Line.BackgroundColor3, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), Color3.fromRGB(35, 35, 35), 0
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-
--- Variabel Status
-local autoEmoteEnabled = true
-local currentEmoteTrack = nil
-local lockLoop = nil
-
--- Fungsi Lepas Paksa Weld
-local function removeWelds()
-    local char = LocalPlayer.Character
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then
-                part:Destroy()
-            end
-        end
-    end
-end
-
--- Layout Utama
-local MainLayout = Instance.new("UIListLayout", HomePage)
-MainLayout.Padding = UDim.new(0, 5)
-MainLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- 1. TextBox Pencarian
+-- UI SELECTION PLAYER BARU (SIMPLE & ELEGAN)
 local SearchBox = Instance.new("TextBox", HomePage)
-SearchBox.Size = UDim2.new(1, -10, 0, 30)
-SearchBox.PlaceholderText = "Cari player..."
-SearchBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-SearchBox.TextColor3 = Color3.new(1, 1, 1)
+SearchBox.Size, SearchBox.BackgroundColor3, SearchBox.TextColor3, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), FrameColor, TextColor, "Cari nama player (Nama di atas kepala)...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", SearchBox).Color = Color3.fromRGB(35, 35, 35)
 
--- 2. Dropdown
 local DropdownBtn = Instance.new("TextButton", HomePage)
-DropdownBtn.Size = UDim2.new(1, -10, 0, 30)
-DropdownBtn.Text = "▼ Pilih Player ▼"
-DropdownBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-DropdownBtn.TextColor3 = Color3.new(1, 1, 1)
+DropdownBtn.Size, DropdownBtn.BackgroundColor3, DropdownBtn.TextColor3, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), FrameColor, MutedText, "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
-PlayerListFrame.Size = UDim2.new(1, -10, 0, 150)
-PlayerListFrame.Visible = false
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PlayerListFrame.ScrollBarThickness = 5
+PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.BackgroundColor3, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 100), false, Color3.fromRGB(18, 18, 18), 2, 0
 Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
 local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 DropdownBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = not PlayerListFrame.Visible end)
 
--- Tombol Tutup List
-local CloseListBtn = Instance.new("TextButton", PlayerListFrame)
-CloseListBtn.Size = UDim2.new(1, -10, 0, 30)
-CloseListBtn.Text = "▲ TUTUP LIST ▲"
-CloseListBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-CloseListBtn.TextColor3 = Color3.new(1, 1, 1)
-CloseListBtn.LayoutOrder = -1
-Instance.new("UICorner", CloseListBtn).CornerRadius = UDim.new(0, 4)
-CloseListBtn.MouseButton1Click:Connect(function() PlayerListFrame.Visible = false end)
-
+-- Fungsi Refresh List Menggunakan DISPLAY NAME (Nama Atas Kepala)
 local function refreshPlayerList(filter)
-    for _, child in pairs(PlayerListFrame:GetChildren()) do 
-        if child:IsA("TextButton") and child ~= CloseListBtn then child:Destroy() end 
-    end
+    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            if not filter or filter == "" or string.find(string.lower(player.Name), string.lower(filter)) then
+            -- Mengecek kecocokan teks filter dengan nama asli (Name) maupun nama di atas kepala (DisplayName)
+            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
                 local btn = Instance.new("TextButton", PlayerListFrame)
-                btn.Size = UDim2.new(1, -10, 0, 30)
-                btn.Text = player.DisplayName .. " (@" .. player.Name .. ")"
-                btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-                btn.TextColor3 = Color3.new(1, 1, 1)
-                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                btn.Size, btn.BackgroundColor3, btn.TextColor3, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 28), Color3.fromRGB(24, 24, 24), TextColor, player.DisplayName, Enum.Font.Gotham, 11
+                btn.BorderSizePixel = 0
                 btn.MouseButton1Click:Connect(function()
-                    targetName = player.Name
-                    DropdownBtn.Text = "▼ " .. player.Name .. " ▼"
+                    targetPlayerObj = player -- Simpan objek player langsung
+                    DropdownBtn.Text = "Selected: " .. player.DisplayName
                     PlayerListFrame.Visible = false
                 end)
             end
         end
     end
 end
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) end)
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
 refreshPlayerList()
 
--- 3. Logic Attach, Emote & Force-Lock
+-- Eksekusi Tempel / Lepas Piggyback
 local function runAttachLogic()
-    attachToPlayer()
+    if not targetPlayerObj then return end
+    isAttached = true
     removeWelds()
+    if respawnConnection then respawnConnection:Disconnect() end
+    if targetPlayerObj.Character then startLoop(targetPlayerObj.Character) end
+    respawnConnection = targetPlayerObj.CharacterAdded:Connect(function(char) if isAttached then task.wait(0.5) startLoop(char) end end)
     
-    if autoEmoteEnabled then
-        local target = Players:FindFirstChild(targetName)
+    if autoEmoteEnabled and targetPlayerObj.Character and LocalPlayer.Character then
         local char = LocalPlayer.Character
-        if target and target.Character and char and char:FindFirstChild("HumanoidRootPart") then
-            if currentEmoteTrack then currentEmoteTrack:Stop() end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://107480602323379"
-            currentEmoteTrack = char.Humanoid:LoadAnimation(anim)
-            currentEmoteTrack:Play()
-            
-            -- Force Lock Posisi: 3 belakang, 25 bawah
-            lockLoop = RunService.RenderStepped:Connect(function()
-                local tRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                local cRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if tRoot and cRoot then
-                    cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
-                else if lockLoop then lockLoop:Disconnect() end end
-            end)
-        end
+        if currentEmoteTrack then currentEmoteTrack:Stop() end
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://107480602323379"
+        currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
+        currentEmoteTrack:Play()
+        
+        if lockLoop then lockLoop:Disconnect() end
+        lockLoop = RS.RenderStepped:Connect(function()
+            local tRoot = targetPlayerObj.Character and targetPlayerObj.Character:FindFirstChild("HumanoidRootPart")
+            local cRoot = char and char:FindFirstChild("HumanoidRootPart")
+            if tRoot and cRoot then
+                cRoot.CFrame = tRoot.CFrame * CFrame.new(0, -25, 3) * CFrame.Angles(0, math.rad(180), 0)
+            else if lockLoop then lockLoop:Disconnect() end end
+        end)
     end
 end
 
@@ -373,35 +282,30 @@ local function runDetachLogic()
     if lockLoop then lockLoop:Disconnect() end
 end
 
--- 4. Tombol Aksi
-local PBActionFrame = Instance.new("Frame", HomePage)
-PBActionFrame.Size = UDim2.new(1, -10, 0, 30)
-PBActionFrame.BackgroundTransparency = 1
-Instance.new("UIListLayout", PBActionFrame).FillDirection = Enum.FillDirection.Horizontal
-local function createActionBtn(txt, color, callback)
-    local b = Instance.new("TextButton", PBActionFrame)
-    b.Size = UDim2.new(0.48, 0, 1, 0)
-    b.BackgroundColor3 = color
-    b.Text = txt
-    b.TextColor3 = Color3.new(1, 1, 1)
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
-    b.MouseButton1Click:Connect(callback)
-end
-createActionBtn("TEMPEL", Color3.fromRGB(0, 150, 80), runAttachLogic)
-createActionBtn("LEPAS", Color3.fromRGB(180, 40, 40), runDetachLogic)
+-- Tombol Tempel & Lepas Simpel
+local ActionFrame = Instance.new("Frame", HomePage)
+ActionFrame.Size, ActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 32), 1
+local ActionLayout = Instance.new("UIListLayout", ActionFrame)
+ActionLayout.FillDirection, ActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 6)
 
--- 5. Navigasi & Toggle Emote
+local function createActionBtn(txt, color, cb)
+    local b = Instance.new("TextButton", ActionFrame)
+    b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0.49, 0, 1, 0), color, txt, Color3.fromRGB(240,240,240), Enum.Font.GothamBold, 11
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(cb)
+end
+createActionBtn("TEMPEL", Color3.fromRGB(20, 140, 80), runAttachLogic)
+createActionBtn("LEPAS", Color3.fromRGB(150, 40, 40), runDetachLogic)
+
+-- Navigasi Posisi Mini-Grid
 local NavFrame = Instance.new("Frame", HomePage)
-NavFrame.Size = UDim2.new(1, -10, 0, 100)
-NavFrame.BackgroundTransparency = 1
+NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
-NavGrid.CellSize = UDim2.new(0.23, 0, 0, 28)
+NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.235, 0, 0, 26), UDim2.new(0, 4, 0, 4)
 
 local function createNav(txt, cb)
     local b = Instance.new("TextButton", NavFrame)
-    b.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    b.Text = txt
-    b.TextColor3 = Color3.fromRGB(220, 220, 220)
+    b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = FrameColor, txt, TextColor, Enum.Font.GothamBold, 9
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
     b.MouseButton1Click:Connect(cb)
 end
@@ -413,75 +317,67 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
-local ToggleBtn = Instance.new("TextButton", NavFrame)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-ToggleBtn.Text = "AUTO EMOTE: ON"
-ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 4)
-ToggleBtn.MouseButton1Click:Connect(function()
+local ToggleEmoteBtn = Instance.new("TextButton", NavFrame)
+ToggleEmoteBtn.BackgroundColor3, ToggleEmoteBtn.Text, ToggleEmoteBtn.TextColor3, ToggleEmoteBtn.Font, ToggleEmoteBtn.TextSize = Color3.fromRGB(20, 140, 80), "EMOTE: ON", Color3.fromRGB(240,240,240), Enum.Font.GothamBold, 9
+Instance.new("UICorner", ToggleEmoteBtn).CornerRadius = UDim.new(0, 4)
+ToggleEmoteBtn.MouseButton1Click:Connect(function()
     autoEmoteEnabled = not autoEmoteEnabled
-    ToggleBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(180, 40, 40)
-    ToggleBtn.Text = autoEmoteEnabled and "AUTO EMOTE: ON" or "AUTO EMOTE: OFF"
+    ToggleEmoteBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(150, 40, 40)
+    ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
--- =========================================================
--- TAB FEATURES & LOOPS LOGIKA
--- =========================================================
-local MainFeaturesPage = CreateTab("Fun")
-local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, AirWalkEnabled, AirWalkPlatform, NoclipEnabled = 16, false, false, false, 60, false, nil, false
 
--- 1. Fitur Speed Walk
-local SpeedFrame = Instance.new("Frame")
-SpeedFrame.Size, SpeedFrame.BackgroundColor3, SpeedFrame.Parent = UDim2.new(1, -10, 0, 75), Color3.fromRGB(30, 30, 30), MainFeaturesPage
+-- =========================================================
+-- FUN & CHEATS FEATURES (FLY, SPEED, ETC.)
+-- =========================================================
+local FunPage = CreateTab("Fun")
+local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
+
+-- Panel Speed Walk Modern
+local SpeedFrame = Instance.new("Frame", FunPage)
+SpeedFrame.Size, SpeedFrame.BackgroundColor3 = UDim2.new(1, -10, 0, 40), FrameColor
 Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 6)
 
-local SpeedToggleBtn = Instance.new("TextButton")
-SpeedToggleBtn.Size, SpeedToggleBtn.BackgroundTransparency, SpeedToggleBtn.Text, SpeedToggleBtn.TextColor3, SpeedToggleBtn.Font, SpeedToggleBtn.TextSize, SpeedToggleBtn.Parent = UDim2.new(1, 0, 0, 35), 1, "Speed Walk : OFF", Color3.fromRGB(255, 100, 100), Enum.Font.SourceSansBold, 14, SpeedFrame
-table.insert(ActiveToggles, {Instance = SpeedToggleBtn, IsEnabled = false, BaseText = "Speed Walk"})
+local SpeedToggle = Instance.new("TextButton", SpeedFrame)
+SpeedToggle.Size, SpeedToggle.Position, SpeedToggle.BackgroundColor3, SpeedToggle.Text, SpeedToggle.TextColor3, SpeedToggle.Font, SpeedToggle.TextSize = UDim2.new(0, 80, 0, 24), UDim2.new(0, 8, 0, 8), Color3.fromRGB(40, 40, 40), "Speed: OFF", MutedText, Enum.Font.GothamBold, 11
+Instance.new("UICorner", SpeedToggle).CornerRadius = UDim.new(0, 6)
 
-local SliderLabel = Instance.new("TextLabel")
-SliderLabel.Size, SliderLabel.Position, SliderLabel.BackgroundTransparency, SliderLabel.Text, SliderLabel.TextColor3, SliderLabel.Font, SliderLabel.TextSize, SliderLabel.Parent = UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 35), 1, "Atur Kecepatan: < " .. SpeedValue .. " >", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSans, 13, SpeedFrame
+local SpeedLabel = Instance.new("TextLabel", SpeedFrame)
+SpeedLabel.Size, SpeedLabel.Position, SpeedLabel.BackgroundTransparency, SpeedLabel.Text, SpeedLabel.TextColor3, SpeedLabel.Font, SpeedLabel.TextSize = UDim2.new(0, 120, 1, 0), UDim2.new(0, 95, 0, 0), 1, "Value: < " .. SpeedValue .. " >", TextColor, Enum.Font.Gotham, 11
 
-local function createChangeSpeedBtn(text, pos, offset)
-    local b = Instance.new("TextButton")
-    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Parent = UDim2.new(0, 35, 0, 25), pos, Color3.fromRGB(45, 45, 45), text, Color3.fromRGB(255, 255, 255), SpeedFrame
+local function createChangeSpeed(txt, x, offset)
+    local b = Instance.new("TextButton", SpeedFrame)
+    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 24, 0, 24), UDim2.new(1, x, 0, 8), Color3.fromRGB(32,32,32), txt, TextColor, Enum.Font.GothamBold, 12
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(function()
-        SpeedValue = math.max(16, SpeedValue + offset)
-        SliderLabel.Text = "Atur Kecepatan: < " .. SpeedValue .. " >"
-    end)
+    b.MouseButton1Click:Connect(function() SpeedValue = math.max(16, SpeedValue + offset) SpeedLabel.Text = "Value: < " .. SpeedValue .. " >" end)
 end
-createChangeSpeedBtn("-", UDim2.new(0, 10, 0, 40), -10)
-createChangeSpeedBtn("+", UDim2.new(1, -45, 0, 40), 10)
+createChangeSpeed("-", -60, -10)
+createChangeSpeed("+", -32, 10)
 
-SpeedToggleBtn.MouseButton1Click:Connect(function()
+SpeedToggle.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
-    for _, t in pairs(ActiveToggles) do if t.Instance == SpeedToggleBtn then t.IsEnabled = SpeedEnabled end end
-    SpeedToggleBtn.Text = SpeedEnabled and "Speed Walk : ON" or "Speed Walk : OFF"
-    SpeedToggleBtn.TextColor3 = SpeedEnabled and ActiveThemeColor or Color3.fromRGB(255, 100, 100)
+    SpeedToggle.Text = SpeedEnabled and "Speed: ON" or "Speed: OFF"
+    TS:Create(SpeedToggle, TweenInfo.new(0.2), {BackgroundColor3 = SpeedEnabled and AccentColor or Color3.fromRGB(40, 40, 40), TextColor3 = SpeedEnabled and Color3.fromRGB(10,10,10) or MutedText}):Play()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
 
--- 2. Fitur Pengatur Kecepatan Terbang (Fly Speed UI)
-local FlySpeedFrame = Instance.new("Frame")
-FlySpeedFrame.Size, FlySpeedFrame.BackgroundColor3, FlySpeedFrame.Parent = UDim2.new(1, -10, 0, 45), Color3.fromRGB(30, 30, 30), MainFeaturesPage
+-- Panel Fly Speed Modern
+local FlySpeedFrame = Instance.new("Frame", FunPage)
+FlySpeedFrame.Size, FlySpeedFrame.BackgroundColor3 = UDim2.new(1, -10, 0, 40), FrameColor
 Instance.new("UICorner", FlySpeedFrame).CornerRadius = UDim.new(0, 6)
 
-local FlySliderLabel = Instance.new("TextLabel")
-FlySliderLabel.Size, FlySliderLabel.BackgroundTransparency, FlySliderLabel.Text, FlySliderLabel.TextColor3, FlySliderLabel.Font, FlySliderLabel.TextSize, FlySliderLabel.Parent = UDim2.new(1, 0, 1, 0), 1, "Kecepatan Terbang: < " .. FlySpeed .. " >", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 13, FlySpeedFrame
+local FlyLabel = Instance.new("TextLabel", FlySpeedFrame)
+FlyLabel.Size, FlyLabel.Position, FlyLabel.BackgroundTransparency, FlyLabel.Text, FlyLabel.TextColor3, FlyLabel.Font, FlyLabel.TextSize = UDim2.new(0, 150, 1, 0), UDim2.new(0, 12, 0, 0), 1, "Kecepatan Terbang: [ " .. FlySpeed .. " ]", TextColor, Enum.Font.Gotham, 12
 
-local function createChangeFlySpeedBtn(text, pos, offset)
-    local b = Instance.new("TextButton")
-    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Parent = UDim2.new(0, 35, 0, 25), pos, Color3.fromRGB(45, 45, 45), text, Color3.fromRGB(255, 255, 255), FlySpeedFrame
+local function createChangeFly(txt, x, offset)
+    local b = Instance.new("TextButton", FlySpeedFrame)
+    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 24, 0, 24), UDim2.new(1, x, 0, 8), Color3.fromRGB(32,32,32), txt, TextColor, Enum.Font.GothamBold, 12
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    b.MouseButton1Click:Connect(function()
-        FlySpeed = math.max(10, FlySpeed + offset)
-        FlySliderLabel.Text = "Kecepatan Terbang: < " .. FlySpeed .. " >"
-    end)
+    b.MouseButton1Click:Connect(function() FlySpeed = math.max(10, FlySpeed + offset) FlyLabel.Text = "Kecepatan Terbang: [ " .. FlySpeed .. " ]" end)
 end
-createChangeFlySpeedBtn("-", UDim2.new(0, 10, 0, 10), -10)
-createChangeFlySpeedBtn("+", UDim2.new(1, -45, 0, 10), 10)
+createChangeFly("-", -60, -10)
+createChangeFly("+", -32, 10)
 
--- Loop Stepped untuk Speed & Noclip
+-- Loop Utama Stepped (Speed & Noclip)
 RS.Stepped:Connect(function()
     if SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = SpeedValue end
     if NoclipEnabled and LocalPlayer.Character then
@@ -489,13 +385,12 @@ RS.Stepped:Connect(function()
     end
 end)
 
--- 3. Fitur Fly Utama (Kembali ke Logika Asli yang Stabil + Pengatur Kecepatan)
+-- Fitur Terbang Stabil Klasik
 local bV, bG
-CreateToggle(MainFeaturesPage, "Fly", function(state)
+CreateToggle(FunPage, "Fly Engine V8", function(state)
     Flying = state
     local Char = LocalPlayer.Character
     local Root, Hum, Anim = Char and Char:FindFirstChild("HumanoidRootPart"), Char and Char:FindFirstChildOfClass("Humanoid"), Char and Char:FindFirstChild("Animate")
-    
     if Flying and Root and Hum then
         if Anim then Anim.Enabled = false end
         bV, bG = Instance.new("BodyVelocity"), Instance.new("BodyGyro")
@@ -508,76 +403,24 @@ CreateToggle(MainFeaturesPage, "Fly", function(state)
                 if Root and Hum and Cam and bV and bG then
                     bG.CFrame = Cam.CFrame
                     local move = Hum.MoveDirection
-                    -- Menggunakan rumus dot product asli bawaan scriptmu agar kontrol stabil & normal kembali
                     bV.Velocity = move.Magnitude > 0 and ((Cam.CFrame.LookVector * move:Dot(Cam.CFrame.LookVector) * FlySpeed) + (Cam.CFrame.RightVector * move:Dot(Cam.CFrame.RightVector) * FlySpeed)) or Vector3.new(0,0,0)
                 end
             end
-            if bV then bV:Destroy() end 
-            if bG then bG:Destroy() end 
-            if Anim then Anim.Enabled = true end
+            if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
         end)
     else
-        if bV then bV:Destroy() end 
-        if bG then bG:Destroy() end 
-        if Anim then Anim.Enabled = true end
+        if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
     end
 end)
 
-CreateToggle(MainFeaturesPage, "Noclip V8", function(state) NoclipEnabled = state end)
+CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end)
 
--- Fitur Air Walk
-local AirWalkConnection
-CreateToggle(MainFeaturesPage, "Air Walk V8", function(state)
-    AirWalkEnabled = state
-    if AirWalkConnection then AirWalkConnection:Disconnect() end
-    if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
-    
-    if AirWalkEnabled then
-        AirWalkPlatform = Instance.new("Part")
-        AirWalkPlatform.Size = Vector3.new(15, 0.5, 15)
-        AirWalkPlatform.Transparency = 1
-        AirWalkPlatform.Anchored = true
-        AirWalkPlatform.CanCollide = true
-        AirWalkPlatform.Parent = workspace
-        
-        AirWalkConnection = RS.Heartbeat:Connect(function()
-            local Char = LocalPlayer.Character
-            local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-            if AirWalkEnabled and Root and AirWalkPlatform then
-                AirWalkPlatform.CFrame = CFrame.new(Root.Position.X, Root.Position.Y - 3.1, Root.Position.Z)
-            else
-                if AirWalkConnection then AirWalkConnection:Disconnect() end
-                if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
-            end
-        end)
-    end
-end)
-
-CreateToggle(MainFeaturesPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
+CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- =========================================================
--- SETTINGS & THEME ENGINE
--- =========================================================
-local SettingsPage = CreateTab("Settings")
-local ThemeLabel = Instance.new("TextLabel")
-ThemeLabel.Size, ThemeLabel.BackgroundTransparency, ThemeLabel.Text, ThemeLabel.TextColor3, ThemeLabel.Font, ThemeLabel.TextSize, ThemeLabel.TextXAlignment, ThemeLabel.Parent = UDim2.new(1, -10, 0, 30), 1, "PILIH TEMA WARNA UI:", Color3.fromRGB(200, 200, 200), Enum.Font.SourceSansBold, 14, Enum.TextXAlignment.Left, SettingsPage
-
-for Name, Color in pairs(Themes) do
-    local ThemeBtn = Instance.new("TextButton")
-    ThemeBtn.Size, ThemeBtn.BackgroundColor3, ThemeBtn.Text, ThemeBtn.TextColor3, ThemeBtn.Font, ThemeBtn.TextSize, ThemeBtn.TextXAlignment, ThemeBtn.Parent = UDim2.new(1, -10, 0, 35), Color3.fromRGB(32, 32, 32), "• " .. Name, Color, Enum.Font.SourceSansBold, 14, Enum.TextXAlignment.Left, SettingsPage
-    Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
-    ThemeBtn.MouseButton1Click:Connect(function()
-        ActiveThemeColor = Color
-        TS:Create(LogoLabel, TweenInfo.new(0.3), {TextColor3 = Color}):Play()
-        TS:Create(ToggleButton, TweenInfo.new(0.3), {TextColor3 = Color}):Play()
-        for _, t in pairs(Tabs) do if t.Page.Visible then TS:Create(t.Btn, TweenInfo.new(0.3), {TextColor3 = Color}):Play() end end
-        for _, tg in pairs(ActiveToggles) do if tg.IsEnabled then TS:Create(tg.Instance, TweenInfo.new(0.3), {TextColor3 = Color}):Play() end end
-    end)
-end
-
+-- Tab Credit Simpel
 local CreditsPage = CreateTab("Credits")
-local AuthorLabel = Instance.new("TextLabel")
-AuthorLabel.Size, AuthorLabel.BackgroundTransparency, AuthorLabel.Text, AuthorLabel.TextColor3, AuthorLabel.Font, AuthorLabel.TextSize, AuthorLabel.Parent = UDim2.new(1, 0, 0, 30), 1, "UI Framework ini didesain khusus untuk Kay.", Color3.fromRGB(150, 150, 150), Enum.Font.SourceSansItalic, 14, CreditsPage
+local CreditLabel = Instance.new("TextLabel", CreditsPage)
+CreditLabel.Size, CreditLabel.BackgroundTransparency, CreditLabel.Text, CreditLabel.TextColor3, CreditLabel.Font, CreditLabel.TextSize = UDim2.new(1, 0, 0, 40), 1, "Dibuat khusus dengan UI Elegan & Fleksibel untuk Kay.", MutedText, Enum.Font.GothamItalic, 11
 
-print("[SYSTEM] Kay Hub Pro V8 Slim Berhasil Dimuat & Diperbaiki.")
+print("[SYSTEM] Kay Hub V8 Sleek Edition loaded successfully.")
