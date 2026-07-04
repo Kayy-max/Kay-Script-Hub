@@ -1,9 +1,8 @@
--- [[ KAY HUB PRO V9.5 - ANTI-CRASH RUNTIME, SEPARATED ESP/SPECTATE & EXIT CONFIRMATION ]] --
+-- [[ KAY HUB PRO V9.6 - CLEAN RE-STRUCTURE & FIXED CORE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
     ["Sleek Dark"] = {
         BGColor = Color3.fromRGB(15, 15, 15),
@@ -13,52 +12,23 @@ local Themes = {
         AccentColor = Color3.fromRGB(0, 230, 130),
         TextColor = Color3.fromRGB(240, 240, 240),
         MutedText = Color3.fromRGB(140, 140, 140)
-    },
-    ["Cyber Neon"] = {
-        BGColor = Color3.fromRGB(10, 8, 15),
-        SidebarColor = Color3.fromRGB(16, 12, 24),
-        FrameColor = Color3.fromRGB(22, 18, 32),
-        StrokeColor = Color3.fromRGB(55, 30, 80),
-        AccentColor = Color3.fromRGB(255, 0, 127),
-        TextColor = Color3.fromRGB(250, 240, 255),
-        MutedText = Color3.fromRGB(150, 130, 170)
-    },
-    ["Ruby Premium"] = {
-        BGColor = Color3.fromRGB(16, 10, 10),
-        SidebarColor = Color3.fromRGB(24, 14, 14),
-        FrameColor = Color3.fromRGB(32, 18, 18),
-        StrokeColor = Color3.fromRGB(65, 30, 30),
-        AccentColor = Color3.fromRGB(230, 30, 30),
-        TextColor = Color3.fromRGB(255, 240, 240),
-        MutedText = Color3.fromRGB(170, 130, 130)
-    },
-    ["Light Elegant"] = {
-        BGColor = Color3.fromRGB(240, 240, 245),
-        SidebarColor = Color3.fromRGB(225, 225, 230),
-        FrameColor = Color3.fromRGB(255, 255, 255),
-        StrokeColor = Color3.fromRGB(200, 200, 205),
-        AccentColor = Color3.fromRGB(0, 120, 255),
-        TextColor = Color3.fromRGB(30, 30, 30),
-        MutedText = Color3.fromRGB(120, 120, 130)
     }
 }
-
 local CurrentTheme = Themes["Sleek Dark"]
-local ActiveToggles, Tabs = {}, {}
-local AllUIElements = {}
+local Tabs, AllUIElements = {}, {}
 local ScriptRunning = true
 
--- UI Utama
+-- SCREEN GUI CORE
 local KayHub = Instance.new("ScreenGui")
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
+-- MAIN FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, KayHub
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, KayHub
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
-
 table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
@@ -81,43 +51,44 @@ local function MakeDraggable(gui)
 end
 MakeDraggable(MainFrame)
 
-local Sidebar = Instance.new("Frame")
-Sidebar.Size, Sidebar.Parent = UDim2.new(0, 120, 1, 0), MainFrame
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
+-- SIDEBAR
+local Sidebar = Instance.new("Frame", MainFrame)
+Sidebar.Size = UDim2.new(0, 120, 1, 0)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 10)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
-local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V9.5", Enum.Font.GothamBold, 15, Sidebar
+local LogoLabel = Instance.new("TextLabel", Sidebar)
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB V9.6", Enum.Font.GothamBold, 14
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
-local SidebarList = Instance.new("UIListLayout")
-SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment, SidebarList.Parent = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center, Sidebar
+local SidebarList = Instance.new("UIListLayout", Sidebar)
+SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment = Enum.SortOrder.LayoutOrder, UDim.new(0, 5), Enum.HorizontalAlignment.Center
 
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency, ContentContainer.Parent = UDim2.new(1, -135, 1, -55), UDim2.new(0, 125, 0, 45), 1, MainFrame
+-- CONTENT AREA
+local ContentContainer = Instance.new("Frame", MainFrame)
+ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency = UDim2.new(1, -135, 1, -55), UDim2.new(0, 125, 0, 45), 1
 
-local TopBar = Instance.new("Frame")
-TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
+-- TOPBAR CONTROLS
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1
 
-local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
+local CurrentTabTitle = Instance.new("TextLabel", TopBar)
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment = UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 14, Enum.TextXAlignment.Left
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
--- Minimize Button Elegan
-local MinButton = Instance.new("TextButton")
-MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 25, 0, 30), UDim2.new(1, -60, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
+local MinButton = Instance.new("TextButton", TopBar)
+MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize = UDim2.new(0, 25, 0, 30), UDim2.new(1, -60, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
 
--- Close Button Elegan
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 25, 0, 30), UDim2.new(1, -30, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
+local CloseButton = Instance.new("TextButton", TopBar)
+CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3 = UDim2.new(0, 25, 0, 30), UDim2.new(1, -30, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50)
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, false, KayHub
+-- OPEN FLOATING BUTTON
+local ToggleButton = Instance.new("TextButton", KayHub)
+ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, false
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 MakeDraggable(ToggleButton)
-
 table.insert(AllUIElements, {Obj = ToggleButton, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = ToggleButton, Prop = "TextColor3", Key = "AccentColor"})
 table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeColor"})
@@ -125,38 +96,24 @@ table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeCo
 local isMinimized = false
 local function toggleMenu()
     isMinimized = not isMinimized
-    TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
-    if isMinimized then task.wait(0.2) end
+    TS:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 450, 0, 0) or UDim2.new(0, 450, 0, 320)}):Play()
+    if isMinimized then task.wait(0.15) end
     MainFrame.Visible = not isMinimized
     ToggleButton.Visible = isMinimized
 end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
-local function ApplyTheme(themeName)
-    CurrentTheme = Themes[themeName]
-    for _, item in pairs(AllUIElements) do
-        local targetColor = CurrentTheme[item.Key]
-        if item.Obj and item.Obj.Parent then
-            pcall(function()
-                TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
-            end)
-        end
-    end
-    for _, tab in pairs(Tabs) do
-        if tab.Page.Visible then tab.Btn.TextColor3 = CurrentTheme.AccentColor else tab.Btn.TextColor3 = CurrentTheme.MutedText end
-    end
-end
-
+-- TAB SYSTEM CREATOR
 local FirstTab = true
 local function CreateTab(tabName)
-    local Page = Instance.new("ScrollingFrame")
-    Page.Size, Page.BackgroundTransparency, Page.BorderSizePixel, Page.ScrollBarThickness, Page.AutomaticCanvasSize, Page.Visible, Page.Parent = UDim2.new(1, 0, 1, 0), 1, 0, 2, Enum.AutomaticSize.Y, false, ContentContainer
+    local Page = Instance.new("ScrollingFrame", ContentContainer)
+    Page.Size, Page.BackgroundTransparency, Page.BorderSizePixel, Page.ScrollBarThickness, Page.AutomaticCanvasSize, Page.Visible = UDim2.new(1, 0, 1, 0), 1, 0, 2, Enum.AutomaticSize.Y, false
     local PageList = Instance.new("UIListLayout", Page)
     PageList.Padding, PageList.HorizontalAlignment = UDim.new(0, 6), Enum.HorizontalAlignment.Center
     
-    local TabButton = Instance.new("TextButton")
-    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.Font, TabButton.TextSize, TabButton.Parent = UDim2.new(0.9, 0, 0, 32), 1, tabName, Enum.Font.GothamBold, 12, Sidebar
+    local TabButton = Instance.new("TextButton", Sidebar)
+    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.Font, TabButton.TextSize = UDim2.new(0.9, 0, 0, 32), 1, tabName, Enum.Font.GothamBold, 11
     
     table.insert(AllUIElements, {Obj = TabButton, Prop = "TextColor3", Key = FirstTab and "AccentColor" or "MutedText"})
     if FirstTab then Page.Visible, CurrentTabTitle.Text, FirstTab = true, tabName, false end
@@ -174,6 +131,7 @@ local function CreateTab(tabName)
     return Page
 end
 
+-- TOGGLE INTERFACE COMPONENT
 local function CreateToggle(parent, text, callback)
     local Enabled = false
     local Frame = Instance.new("Frame", parent)
@@ -182,36 +140,29 @@ local function CreateToggle(parent, text, callback)
     table.insert(AllUIElements, {Obj = Frame, Prop = "BackgroundColor3", Key = "FrameColor"})
     
     local Label = Instance.new("TextLabel", Frame)
-    Label.Size, Label.Position, Label.BackgroundTransparency, Label.Text, Label.Font, Label.TextSize, Label.TextXAlignment = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0), 1, text, Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
+    Label.Size, Label.Position, Label.BackgroundTransparency, Label.Text, Label.Font, Label.TextSize, Label.TextXAlignment = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0), 1, text, Enum.Font.Gotham, 12, Enum.TextXAlignment.Left
     table.insert(AllUIElements, {Obj = Label, Prop = "TextColor3", Key = "TextColor"})
     
     local Switch = Instance.new("TextButton", Frame)
     Switch.Size, Switch.Position, Switch.Text, Switch.Font, Switch.TextSize = UDim2.new(0, 45, 0, 20), UDim2.new(1, -55, 0, 7.5), "OFF", Enum.Font.GothamBold, 10
     Instance.new("UICorner", Switch).CornerRadius = UDim.new(0, 10)
-
     table.insert(AllUIElements, {Obj = Switch, Prop = "BackgroundColor3", Key = "StrokeColor"})
     table.insert(AllUIElements, {Obj = Switch, Prop = "TextColor3", Key = "MutedText"})
-
-    local data = {Instance = Switch, IsEnabled = false}
-    table.insert(ActiveToggles, data)
 
     Switch.MouseButton1Click:Connect(function()
         if not ScriptRunning then return end
         Enabled = not Enabled
-        data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
-        
         local targetBG = Enabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
         local targetText = Enabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
         TS:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetBG, TextColor3 = targetText}):Play()
-        
         callback(Enabled)
     end)
     return Frame
 end
 
 -- =========================================================
--- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
+-- TAB 1: PIGGYBACK (HOME)
 -- =========================================================
 local HomePage = CreateTab("Home")
 local targetPlayerObj = nil 
@@ -281,9 +232,9 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
-local Line = Instance.new("Frame", HomePage)
-Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
+local Separator1 = Instance.new("Frame", HomePage)
+Separator1.Size, Separator1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = Separator1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
@@ -394,219 +345,58 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- INTEGRASI FITUR: KAY ANIMATION
--- =========================================================
-local AnimPage = CreateTab("Animations")
-local animMode = "NONE"
-local kayAnimTrack = nil
-
-local btnPreset = Instance.new("TextButton", AnimPage)
-btnPreset.Size, btnPreset.Text, btnPreset.Font, btnPreset.TextSize = UDim2.new(1, -10, 0, 35), "Preset Kay", Enum.Font.Gotham, 12
-Instance.new("UICorner", btnPreset).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = btnPreset, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = btnPreset, Prop = "TextColor3", Key = "TextColor"})
-
-local inIdle = Instance.new("TextBox", AnimPage)
-inIdle.Size, inIdle.PlaceholderText, inIdle.Text, inIdle.Font, inIdle.TextSize = UDim2.new(1, -10, 0, 35), "Custom Idle (ID)", "", Enum.Font.Gotham, 12
-Instance.new("UICorner", inIdle).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = inIdle, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = inIdle, Prop = "TextColor3", Key = "TextColor"})
-
-local inWalk = Instance.new("TextBox", AnimPage)
-inWalk.Size, inWalk.PlaceholderText, inWalk.Text, inWalk.Font, inWalk.TextSize = UDim2.new(1, -10, 0, 35), "Custom Walk (ID)", "", Enum.Font.Gotham, 12
-Instance.new("UICorner", inWalk).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = inWalk, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = inWalk, Prop = "TextColor3", Key = "TextColor"})
-
-local btnToggleAnim = Instance.new("TextButton", AnimPage)
-btnToggleAnim.Size, btnToggleAnim.Text, btnToggleAnim.BackgroundColor3, btnToggleAnim.TextColor3, btnToggleAnim.Font, btnToggleAnim.TextSize = UDim2.new(1, -10, 0, 35), "STATUS: OFF", Color3.fromRGB(160, 40, 40), Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 12
-Instance.new("UICorner", btnToggleAnim).CornerRadius = UDim.new(0, 6)
-
-local function playKayAnim(id)
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if char and hum and hum.Health > 0 then
-        if char:FindFirstChild("Animate") then char.Animate.Disabled = true end
-        if not kayAnimTrack or kayAnimTrack.Animation.AnimationId ~= "rbxassetid://" .. id then
-            if kayAnimTrack then kayAnimTrack:Stop() end
-            local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://" .. id
-            pcall(function()
-                kayAnimTrack = hum:LoadAnimation(anim)
-                kayAnimTrack:Play()
-            end)
-        end
-    end
-end
-
-btnPreset.MouseButton1Click:Connect(function()
-    animMode = (animMode == "PRESET" and "NONE" or "PRESET")
-    btnPreset.TextColor3 = (animMode == "PRESET" and CurrentTheme.AccentColor or CurrentTheme.TextColor)
-    if animMode ~= "CUSTOM" then
-        btnToggleAnim.Text = "STATUS: OFF"
-        btnToggleAnim.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
-    end
-end)
-
-btnToggleAnim.MouseButton1Click:Connect(function()
-    animMode = (animMode == "CUSTOM" and "NONE" or "CUSTOM")
-    btnToggleAnim.Text = (animMode == "CUSTOM" and "STATUS: ON" or "STATUS: OFF")
-    btnToggleAnim.BackgroundColor3 = (animMode == "CUSTOM" and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40))
-    if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
-end)
-
--- =========================================================
--- FUN & CHEATS FEATURES
--- =========================================================
-local FunPage = CreateTab("Fun")
-local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
-
-local SpeedFrame = Instance.new("Frame", FunPage)
-SpeedFrame.Size = UDim2.new(1, -10, 0, 40)
-Instance.new("UICorner", SpeedFrame).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = SpeedFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-local SpeedToggle = Instance.new("TextButton", SpeedFrame)
-SpeedToggle.Size, SpeedToggle.Position, SpeedToggle.Text, SpeedToggle.Font, SpeedToggle.TextSize = UDim2.new(0, 80, 0, 24), UDim2.new(0, 8, 0, 8), "Speed: OFF", Enum.Font.GothamBold, 11
-Instance.new("UICorner", SpeedToggle).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = SpeedToggle, Prop = "BackgroundColor3", Key = "StrokeColor"})
-table.insert(AllUIElements, {Obj = SpeedToggle, Prop = "TextColor3", Key = "MutedText"})
-
-local SpeedLabel = Instance.new("TextLabel", SpeedFrame)
-SpeedLabel.Size, SpeedLabel.Position, SpeedLabel.BackgroundTransparency, SpeedLabel.Text, SpeedLabel.Font, SpeedLabel.TextSize = UDim2.new(0, 120, 1, 0), UDim2.new(0, 95, 0, 0), 1, "Value: < " .. SpeedValue .. " >", Enum.Font.Gotham, 11
-table.insert(AllUIElements, {Obj = SpeedLabel, Prop = "TextColor3", Key = "TextColor"})
-
-local function createChangeSpeed(txt, x, offset)
-    local b = Instance.new("TextButton", SpeedFrame)
-    b.Size, b.Position, b.Text, b.Font, b.TextSize = UDim2.new(0, 24, 0, 24), UDim2.new(1, x, 0, 8), txt, Enum.Font.GothamBold, 12
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
-    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function() SpeedValue = math.max(16, SpeedValue + offset) SpeedLabel.Text = "Value: < " .. SpeedValue .. " >" end)
-end
-createChangeSpeed("-", -60, -10)
-createChangeSpeed("+", -32, 10)
-
-SpeedToggle.MouseButton1Click:Connect(function()
-    SpeedEnabled = not SpeedEnabled
-    SpeedToggle.Text = SpeedEnabled and "Speed: ON" or "Speed: OFF"
-    local tBG = SpeedEnabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
-    local tTX = SpeedEnabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
-    TS:Create(SpeedToggle, TweenInfo.new(0.2), {BackgroundColor3 = tBG, TextColor3 = tTX}):Play()
-    if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
-end)
-
-local FlySpeedFrame = Instance.new("Frame", FunPage)
-FlySpeedFrame.Size = UDim2.new(1, -10, 0, 40)
-Instance.new("UICorner", FlySpeedFrame).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = FlySpeedFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-local FlyLabel = Instance.new("TextLabel", FlySpeedFrame)
-FlyLabel.Size, FlyLabel.Position, FlyLabel.BackgroundTransparency, FlyLabel.Text, FlyLabel.Font, FlyLabel.TextSize = UDim2.new(0, 150, 1, 0), UDim2.new(0, 12, 0, 0), 1, "Kecepatan Terbang: [ " .. FlySpeed .. " ]", Enum.Font.Gotham, 12
-table.insert(AllUIElements, {Obj = FlyLabel, Prop = "TextColor3", Key = "TextColor"})
-
-local function createChangeFly(txt, x, offset)
-    local b = Instance.new("TextButton", FlySpeedFrame)
-    b.Size, b.Position, b.Text, b.Font, b.TextSize = UDim2.new(0, 24, 0, 24), UDim2.new(1, x, 0, 8), txt, Enum.Font.GothamBold, 12
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
-    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function() FlySpeed = math.max(10, FlySpeed + offset) FlyLabel.Text = "Kecepatan Terbang: [ " .. FlySpeed .. " ]" end)
-end
-createChangeFly("-", -60, -10)
-createChangeFly("+", -32, 10)
-
-local bV, bG
-CreateToggle(FunPage, "Fly Engine V8", function(state)
-    Flying = state
-    local Char = LocalPlayer.Character
-    local Root, Hum, Anim = Char and Char:FindFirstChild("HumanoidRootPart"), Char and Char:FindFirstChildOfClass("Humanoid"), Char and Char:FindFirstChild("Animate")
-    if Flying and Root and Hum then
-        if Anim then Anim.Enabled = false end
-        bV, bG = Instance.new("BodyVelocity"), Instance.new("BodyGyro")
-        bV.MaxForce, bV.Velocity, bV.Parent = Vector3.new(1e9, 1e9, 1e9), Vector3.new(0,0,0), Root
-        bG.MaxTorque, bG.CFrame, bG.Parent = Vector3.new(1e9, 1e9, 1e9), Root.CFrame, Root
-        
-        task.spawn(function()
-            while Flying and task.wait() do
-                local Cam = workspace.CurrentCamera
-                if Root and Hum and Cam and bV and bG then
-                    bG.CFrame = Cam.CFrame
-                    local move = Hum.MoveDirection
-                    bV.Velocity = move.Magnitude > 0 and ((Cam.CFrame.LookVector * move:Dot(Cam.CFrame.LookVector) * FlySpeed) + (Cam.CFrame.RightVector * move:Dot(Cam.CFrame.RightVector) * FlySpeed)) or Vector3.new(0,0,0)
-                end
-            end
-            if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
-        end)
-    else
-        if bV then bV:Destroy() end if bG then bG:Destroy() end if Anim then Anim.Enabled = true end
-    end
-end)
-
-CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end)
-CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
-UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
-
--- =========================================================
--- TAB ESP & SPECTATE (REBORN ANTI-CRASH)
+-- TAB 2: ESP SYSTEM & SPECTATE (CLEAN MODULAR SETUP)
 -- =========================================================
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive, spectateActive = false, false, false
 
--- 1. BAGIAN GLOBAL ESP
-CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
-    globalEspActive = state
-end)
+-- SECTION 1: GLOBAL
+CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
 
-local DivLine1 = Instance.new("Frame", EspPage)
-DivLine1.Size, DivLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = DivLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
+local LineBreak1 = Instance.new("Frame", EspPage)
+LineBreak1.Size, LineBreak1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = LineBreak1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 2. BAGIAN TARGET ESP
+-- SECTION 2: TARGET 1 ORANG
 local TargetSearchBox = Instance.new("TextBox", EspPage)
-TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target ESP (1 Orang)...", "", Enum.Font.Gotham, 12
-Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 30), "Ketik Nama Target ESP...", "", Enum.Font.Gotham, 11
+Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 5)
 local TSBStroke = Instance.new("UIStroke", TargetSearchBox)
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
 table.insert(AllUIElements, {Obj = TSBStroke, Prop = "Color", Key = "StrokeColor"})
 
-CreateToggle(EspPage, "Aktifkan Target ESP", function(state)
-    targetEspActive = state
-end)
+CreateToggle(EspPage, "Aktifkan Target ESP 1 Orang", function(state) targetEspActive = state end)
 
-local DivLine2 = Instance.new("Frame", EspPage)
-DivLine2.Size, DivLine2.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = DivLine2, Prop = "BackgroundColor3", Key = "StrokeColor"})
+local LineBreak2 = Instance.new("Frame", EspPage)
+LineBreak2.Size, LineBreak2.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = LineBreak2, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 3. BAGIAN SPECTATE CAMERA
+-- SECTION 3: SPECTATE TARGET
 local SpecSearchBox = Instance.new("TextBox", EspPage)
-SpecSearchBox.Size, SpecSearchBox.PlaceholderText, SpecSearchBox.Text, SpecSearchBox.Font, SpecSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Nama Target Spectate...", "", Enum.Font.Gotham, 12
-Instance.new("UICorner", SpecSearchBox).CornerRadius = UDim.new(0, 6)
+SpecSearchBox.Size, SpecSearchBox.PlaceholderText, SpecSearchBox.Text, SpecSearchBox.Font, SpecSearchBox.TextSize = UDim2.new(1, -10, 0, 30), "Ketik Nama Target Spectate...", "", Enum.Font.Gotham, 11
+Instance.new("UICorner", SpecSearchBox).CornerRadius = UDim.new(0, 5)
 local SSBStroke = Instance.new("UIStroke", SpecSearchBox)
 table.insert(AllUIElements, {Obj = SpecSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = SpecSearchBox, Prop = "TextColor3", Key = "TextColor"})
 table.insert(AllUIElements, {Obj = SSBStroke, Prop = "Color", Key = "StrokeColor"})
 
-CreateToggle(EspPage, "Spectate Kamera Target", function(state)
+CreateToggle(EspPage, "Aktifkan Kamera Spectate", function(state)
     spectateActive = state
     if not state then
         pcall(function()
-            local myChar = LocalPlayer.Character
-            local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+            local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if myHum then Camera.CameraSubject = myHum end
         end)
     end
 end)
 
--- Helper Pembersih & Root Part
+-- RENDERING UTILS
 local function clearEsp(character)
     if not character then return end
-    pcall(function()
-        for _, child in pairs(character:GetDescendants()) do
-            if child.Name == "KayEsp_Bill" or child.Name == "KayEsp_Highlight" then child:Destroy() end
-        end
-    end)
+    for _, child in pairs(character:GetDescendants()) do
+        if child.Name == "KayEsp_Bill" or child.Name == "KayEsp_Highlight" then pcall(function() child:Destroy() end) end
+    end
 end
 
 local function getSafeRoot(char)
@@ -615,40 +405,39 @@ local function getSafeRoot(char)
 end
 
 -- =========================================================
--- SYSTEM CLOSE DENGAN KONFIRMASI POP-UP
+-- SYSTEM DESTRUCTION / CLOSE SCRIPT CONFIRMATION
 -- =========================================================
-local ConfirmOverlay = Instance.new("Frame")
-ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.Visible, ConfirmOverlay.ZIndexBehavior, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), false, Enum.ZIndexBehavior.Sibling, MainFrame
-Instance.new("UICorner", ConfirmOverlay).CornerRadius = UDim.new(0, 12)
+local ConfirmOverlay = Instance.new("Frame", MainFrame)
+ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), false, 10
+Instance.new("UICorner", ConfirmOverlay).CornerRadius = UDim.new(0, 10)
 table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
 
 local ConfirmBox = Instance.new("Frame", ConfirmOverlay)
-ConfirmBox.Size, ConfirmBox.Position, ConfirmBox.Parent = UDim2.new(0, 260, 0, 120), UDim2.new(0.5, -130, 0.5, -60), ConfirmOverlay
+ConfirmBox.Size, ConfirmBox.Position = UDim2.new(0, 260, 0, 110), UDim2.new(0.5, -130, 0.5, -55)
 Instance.new("UICorner", ConfirmBox).CornerRadius = UDim.new(0, 8)
 local CBSec = Instance.new("UIStroke", ConfirmBox)
 table.insert(AllUIElements, {Obj = ConfirmBox, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = CBSec, Prop = "Color", Key = "StrokeColor"})
 
 local QTxt = Instance.new("TextLabel", ConfirmBox)
-QTxt.Size, QTxt.BackgroundTransparency, QTxt.Text, QTxt.Font, QTxt.TextSize, QTxt.TextWrapped = UDim2.new(1, -20, 0, 50), 1, "Apakah kamu yakin ingin menutup seluruh script?", Enum.Font.GothamBold, 12, true
+QTxt.Size, QTxt.BackgroundTransparency, QTxt.Text, QTxt.Font, QTxt.TextSize, QTxt.TextWrapped = UDim2.new(1, -20, 0, 40), 1, "Yakin ingin menutup script?", Enum.Font.GothamBold, 12, true
 QTxt.Position = UDim2.new(0, 10, 0, 15)
 table.insert(AllUIElements, {Obj = QTxt, Prop = "TextColor3", Key = "TextColor"})
 
-local function createConfirmBtn(txt, xOffset, color, cb)
+createConfirmBtn = function(txt, xOffset, color, cb)
     local b = Instance.new("TextButton", ConfirmBox)
-    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 100, 0, 30), UDim2.new(0.5, xOffset, 0, 75), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
+    b.Size, b.Position, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0, 100, 0, 28), UDim2.new(0.5, xOffset, 0, 65), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
     b.MouseButton1Click:Connect(cb)
 end
 
-createConfirmBtn("IYA, TUTUP", -110, Color3.fromRGB(180, 40, 40), function()
+createConfirmBtn("IYA", -110, Color3.fromRGB(180, 40, 40), function()
     ScriptRunning = false
     detach()
     if promptConnection then promptConnection:Disconnect() end
     for _, p in pairs(Players:GetPlayers()) do clearEsp(p.Character) end
     pcall(function()
-        local myChar = LocalPlayer.Character
-        local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+        local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
         if myHum then Camera.CameraSubject = myHum end
     end)
     KayHub:Destroy()
@@ -658,40 +447,17 @@ createConfirmBtn("BATAL", 10, Color3.fromRGB(60, 60, 60), function()
     ConfirmOverlay.Visible = false
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    ConfirmOverlay.Visible = true
-end)
+CloseButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = true end)
 
 -- =========================================================
--- RUNTIME CORE LOOP (GABUNGAN SEMUANYA + PROTEKSI PCALL)
+-- RUNTIME CORE LOOP (GABUNGAN UTAMA)
 -- =========================================================
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local myHrp = getSafeRoot(char)
+    local myChar = LocalPlayer.Character
+    local myHrp = getSafeRoot(myChar)
     
-    -- Fun cheats
-    if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
-    if NoclipEnabled and char then
-        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
-    end
-    
-    -- Animation System
-    if hum then
-        if animMode == "PRESET" then
-            playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
-        elseif animMode == "CUSTOM" then
-            local id = (hum.MoveDirection.Magnitude > 0 and inWalk.Text:gsub("%D","") or inIdle.Text:gsub("%D",""))
-            if id ~= "" then playKayAnim(id) end
-        else
-            if char and char:FindFirstChild("Animate") and char.Animate.Enabled == false then char.Animate.Enabled = true end
-            if kayAnimTrack then kayAnimTrack:Stop() kayAnimTrack = nil end
-        end
-    end
-
-    -- SISTEM RUNTIME MODERN PROTECTED VIA PCALL
     local qTargetEsp = string.lower(TargetSearchBox.Text)
     local qSpectate = string.lower(SpecSearchBox.Text)
     local spectateFound = false
@@ -707,13 +473,13 @@ RS.Stepped:Connect(function()
                     local isMatchEsp = (qTargetEsp ~= "" and (string.find(string.lower(p.Name), qTargetEsp) or string.find(string.lower(p.DisplayName), qTargetEsp)))
                     local isMatchSpec = (qSpectate ~= "" and (string.find(string.lower(p.Name), qSpectate) or string.find(string.lower(p.DisplayName), qSpectate)))
 
-                    -- A. Logika Spectate Independen
+                    -- A. SPECTATE CAMERA
                     if spectateActive and isMatchSpec and tHum then
                         Camera.CameraSubject = tHum
                         spectateFound = true
                     end
 
-                    -- B. Logika ESP (Global atau Target)
+                    -- B. LOGIKA ESP (GLOBAL ATAU TARGET)
                     if globalEspActive or (targetEspActive and isMatchEsp) then
                         local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                         
@@ -721,7 +487,7 @@ RS.Stepped:Connect(function()
                         if not bill then
                             bill = Instance.new("BillboardGui")
                             bill.Name = "KayEsp_Bill"
-                            bill.Size = UDim2.new(0, 150, 0, 40)
+                            bill.Size = UDim2.new(0, 130, 0, 35)
                             bill.AlwaysOnTop = true
                             bill.ExtentsOffset = Vector3.new(0, 3, 0)
                             
@@ -730,8 +496,8 @@ RS.Stepped:Connect(function()
                             label.Size = UDim2.new(1, 0, 1, 0)
                             label.BackgroundTransparency = 1
                             label.Font = Enum.Font.GothamBold
-                            label.TextSize = 11
-                            label.TextStrokeTransparency = 0.4
+                            label.TextSize = 10
+                            label.TextStrokeTransparency = 0.5
                             bill.Parent = tHrp
                         end
                         
@@ -741,7 +507,6 @@ RS.Stepped:Connect(function()
                             lbl.TextColor3 = (targetEspActive and isMatchEsp) and CurrentTheme.AccentColor or Color3.fromRGB(255, 255, 255)
                         end
 
-                        -- Highlight khusus target ESP 1 orang
                         if targetEspActive and isMatchEsp then
                             local high = tChar:FindFirstChild("KayEsp_Highlight")
                             if not high then
@@ -750,7 +515,6 @@ RS.Stepped:Connect(function()
                                 high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                             end
                             high.FillColor = CurrentTheme.AccentColor
-                            high.OutlineColor = Color3.fromRGB(255,255,255)
                             high.FillTransparency = 0.6
                         else
                             if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
@@ -763,36 +527,19 @@ RS.Stepped:Connect(function()
         end
     end
 
-    -- Kembalikan kamera jika spectate mati atau target tidak ditemukan
     if spectateActive and not spectateFound then
-        pcall(function() if hum then Camera.CameraSubject = hum end end)
+        pcall(function()
+            local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+            if myHum then Camera.CameraSubject = myHum end
+        end)
     end
 end)
 
 Players.PlayerRemoving:Connect(function(p) clearEsp(p.Character) end)
 
--- =========================================================
--- THEMES PAGE
--- =========================================================
-local ThemesPage = CreateTab("Themes")
-local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
-InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
-table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
-
-for themeName, data in pairs(Themes) do
-    local ThemeBtn = Instance.new("TextButton", ThemesPage)
-    ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
-    Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
-    local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
-    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "TextColor3", Key = "TextColor"})
-    table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
-    
-    ThemeBtn.MouseButton1Click:Connect(function()
-        ApplyTheme(themeName)
-        if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
-    end)
+-- SET THEME DEFAULT
+for _, item in pairs(AllUIElements) do
+    if item.Obj and item.Obj.Parent then item.Obj[item.Prop] = CurrentTheme[item.Key] end
 end
 
-ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V9.5: Protection Bypass & Confirmation Close Dialog Loaded.")
+print("[SYSTEM] Kay Hub V9.6 Loaded Successfully.")
