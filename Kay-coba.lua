@@ -110,7 +110,7 @@ local MinButton = Instance.new("TextButton")
 MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -65, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
 table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
 
--- Tombol Close Script [X] Terintegrasi Bersih
+-- Tombol Close Script [X]
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
@@ -298,7 +298,7 @@ table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "Strok
 
 -- PLAYER SELECTOR dropdown
 local SearchBox = Instance.new("TextBox", HomePage)
-SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12[cite: 1]
+SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
 local SBS = Instance.new("UIStroke", SearchBox)
 table.insert(AllUIElements, {Obj = SearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
@@ -746,4 +746,4 @@ end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.1: Close script added and structure secured.")
+print("[SYSTEM] Kay Hub V8.1: Safe execution and stability fix complete.")
