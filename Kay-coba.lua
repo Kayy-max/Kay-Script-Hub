@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8 - MULTI-THEME & ANIMATION INTEGRATED EDITION ]] --
+-- [[ KAY HUB PRO V8 - MULTI-THEME, ANIMATION & ESP INTEGRATED ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -401,7 +401,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================================================
--- INTEGRASI FITUR: KAY ANIMATION (TAB BARU)
+-- INTEGRASI FITUR: KAY ANIMATION
 -- =========================================================
 local AnimPage = CreateTab("Animations")
 local animMode = "NONE"
@@ -525,33 +525,6 @@ end
 createChangeFly("-", -60, -10)
 createChangeFly("+", -32, 10)
 
--- LOOP MANAGER UTAMA (Gabungan Cheats & Kay Animation)
-RS.Stepped:Connect(function()
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    
-    -- Logika Speed & Noclip
-    if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
-    if NoclipEnabled and char then
-        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
-    end
-    
-    -- Logika Sistem Kay Animation
-    if hum then
-        if animMode == "PRESET" then
-            playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
-        elseif animMode == "CUSTOM" then
-            local id = (hum.MoveDirection.Magnitude > 0 and inWalk.Text:gsub("%D","") or inIdle.Text:gsub("%D",""))
-            if id ~= "" then playKayAnim(id) end
-        else
-            if char and char:FindFirstChild("Animate") and char.Animate.Enabled == false then 
-                char.Animate.Enabled = true 
-            end
-            if kayAnimTrack then kayAnimTrack:Stop() kayAnimTrack = nil end
-        end
-    end
-end)
-
 local bV, bG
 CreateToggle(FunPage, "Fly Engine V8", function(state)
     Flying = state
@@ -584,6 +557,130 @@ CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = sta
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
 -- =========================================================
+-- INTEGRASI FITUR: ESP EXTRA SENSORY PERCEPTION (TAB BARU)
+-- =========================================================
+local EspPage = CreateTab("ESP")
+local globalEspActive, targetEspActive = false, false
+
+CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
+    globalEspActive = state
+end)
+
+-- SEPARATOR ESP
+local EspLine = Instance.new("Frame", EspPage)
+EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+local TargetSearchBox = Instance.new("TextBox", EspPage)
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
+local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
+table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
+
+CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
+    targetEspActive = state
+end)
+
+-- Fungsi Pembersih Objek ESP Lawas
+local function clearEspElements(p)
+    if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
+    if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
+end
+
+-- =========================================================
+-- LOOP MANAGER UTAMA (Gabungan Semua Fungsi Runtime)
+-- =========================================================
+RS.Stepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local myHrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    -- Logika Speed & Noclip
+    if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
+    if NoclipEnabled and char then
+        for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+    end
+    
+    -- Logika Sistem Kay Animation
+    if hum then
+        if animMode == "PRESET" then
+            playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
+        elseif animMode == "CUSTOM" then
+            local id = (hum.MoveDirection.Magnitude > 0 and inWalk.Text:gsub("%D","") or inIdle.Text:gsub("%D",""))
+            if id ~= "" then playKayAnim(id) end
+        else
+            if char and char:FindFirstChild("Animate") and char.Animate.Enabled == false then char.Animate.Enabled = true end
+            if kayAnimTrack then kayAnimTrack:Stop() kayAnimTrack = nil end
+        end
+    end
+
+    -- Logika Pemrosesan ESP Global & Target
+    local queryTarget = string.lower(TargetSearchBox.Text)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
+            local tChar = p.Character
+            local tHrp = tChar.HumanoidRootPart
+            local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
+
+            -- Cek Kondisi Apakah Harus Dirender
+            if (globalEspActive) or (targetEspActive and isMatchTarget) then
+                local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
+                
+                -- 1. Buat/Update Teks ESP (BillboardGui)
+                local bill = tHrp:FindFirstChild("KayEsp_Bill")
+                if not bill then
+                    bill = Instance.new("BillboardGui", tHrp)
+                    bill.Name = "KayEsp_Bill"
+                    bill.Size = UDim2.new(0, 200, 0, 50)
+                    bill.AlwaysOnTop = true
+                    bill.ExtentsOffset = Vector3.new(0, 3, 0)
+                    
+                    local txt = Instance.new("TextLabel", bill)
+                    txt.Name = "EspLabel"
+                    txt.Size = UDim2.new(1, 0, 1, 0)
+                    txt.BackgroundTransparency = 1
+                    txt.Font = Enum.Font.GothamBold
+                    txt.TextSize = 12
+                    txt.TextStrokeTransparency = 0.5
+                end
+                
+                -- Update Teks & Warna Sesuai Tema Aktif
+                local label = bill:FindFirstChild("EspLabel")
+                if label then
+                    label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
+                    label.TextColor3 = CurrentTheme.AccentColor
+                end
+
+                -- 2. Buat Efek Highlight Menyala Khusus Target Satu Orang
+                if targetEspActive and isMatchTarget then
+                    local high = tChar:FindFirstChild("KayEsp_Highlight")
+                    if not high then
+                        high = Instance.new("Highlight", tChar)
+                        high.Name = "KayEsp_Highlight"
+                        high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    end
+                    high.FillColor = CurrentTheme.AccentColor
+                    high.OutlineColor = Color3.fromRGB(255,255,255)
+                    high.FillTransparency = 0.6
+                else
+                    if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                end
+            else
+                clearEspElements(tHrp)
+                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+            end
+        end
+    end
+end)
+
+-- Bersihkan ESP jika ada player keluar
+Players.PlayerRemoving:Connect(function(p)
+    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+end)
+
+-- =========================================================
 -- HALAMAN THEMES
 -- =========================================================
 local ThemesPage = CreateTab("Themes")
@@ -606,11 +703,10 @@ for themeName, data in pairs(Themes) do
     
     ThemeBtn.MouseButton1Click:Connect(function()
         ApplyTheme(themeName)
-        -- Ikut meng-update teks preset jika sedang tidak aktif
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
     end)
 end
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8 & Kay Anim successfully integrated.")
+print("[SYSTEM] Kay Hub V8: All features integrated flawlessly including ESP.")
