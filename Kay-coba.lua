@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.3 - UPDATE POP-UP CLOSE CONFIRMATION ]] --
+-- [[ KAY HUB PRO V8.4 - FIX DRAGGABLE MIC & MENU ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -44,8 +44,8 @@ local Themes = {
 
 local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
-local AllUIElements = {} -- Menyimpan referensi elemen untuk update tema instan
-local ScriptRunning = true -- Pengontrol status script aktif
+local AllUIElements = {} 
+local ScriptRunning = true 
 
 -- UI Utama (ScreenGui)
 local KayHub = Instance.new("ScreenGui")
@@ -61,24 +61,44 @@ MainStroke.Thickness = 1
 table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
--- Fungsi Drag & Drop Ringkas
+-- =========================================================
+-- FUNGSI DRAG & DROP TERBARU (SANGAT SMOOTH & ANTI MACET)
+-- =========================================================
 local function MakeDraggable(gui)
-    local dragInput, dragStart, startPos
+    local dragging, dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
     gui.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local dragging = true
-            dragStart, startPos = input.Position, gui.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-            UIS.InputChanged:Connect(function(inp)
-                if inp == dragInput and dragging then
-                    local delta = inp.Position - dragStart
-                    gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
                 end
             end)
         end
     end)
-    gui.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+
+    gui.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
 end
+
 MakeDraggable(MainFrame)
 
 -- Sidebar Minimalis
@@ -115,7 +135,7 @@ local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, false, KayHub
+ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 MakeDraggable(ToggleButton)
@@ -136,9 +156,7 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- =========================================================
--- PANEL STRUKTUR: POP-UP KONFIRMASI CLOSE
--- =========================================================
+-- POP-UP KONFIRMASI CLOSE
 local ConfirmOverlay = Instance.new("Frame")
 ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.BackgroundTransparency, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), 0.4, false, 10, MainFrame
 table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
@@ -154,20 +172,17 @@ local ConfirmTitle = Instance.new("TextLabel", ConfirmBox)
 ConfirmTitle.Size, ConfirmTitle.Position, ConfirmTitle.BackgroundTransparency, ConfirmTitle.Text, ConfirmTitle.Font, ConfirmTitle.TextSize, ConfirmTitle.ZIndex = UDim2.new(1, 0, 0, 55), UDim2.new(0, 0, 0, 5), 1, "Apakah kamu yakin ingin\nmenutup script ini?", Enum.Font.GothamBold, 12, 12
 table.insert(AllUIElements, {Obj = ConfirmTitle, Prop = "TextColor3", Key = "TextColor"})
 
--- Tombol YA
 local YesButton = Instance.new("TextButton", ConfirmBox)
 YesButton.Size, YesButton.Position, YesButton.Text, YesButton.Font, YesButton.TextSize, YesButton.TextColor3, YesButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(0, 18, 0, 75), "YA", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
 YesButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
 Instance.new("UICorner", YesButton).CornerRadius = UDim.new(0, 6)
 
--- Tombol TIDAK
 local NoButton = Instance.new("TextButton", ConfirmBox)
 NoButton.Size, NoButton.Position, NoButton.Text, NoButton.Font, NoButton.TextSize, NoButton.TextColor3, NoButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(1, -123, 0, 75), "TIDAK", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
 Instance.new("UICorner", NoButton).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = NoButton, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = NoButton, Prop = "TextColor3", Key = "MutedText"})
 
--- Fungsi Update Tema Global
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
@@ -178,17 +193,11 @@ local function ApplyTheme(themeName)
             end)
         end
     end
-    
     for _, tab in pairs(Tabs) do
-        if tab.Page.Visible then
-            tab.Btn.TextColor3 = CurrentTheme.AccentColor
-        else
-            tab.Btn.TextColor3 = CurrentTheme.MutedText
-        end
+        tab.Btn.TextColor3 = tab.Page.Visible and CurrentTheme.AccentColor or CurrentTheme.MutedText
     end
 end
 
--- Pembuat Tab & Toggle Simpel
 local FirstTab = true
 local function CreateTab(tabName)
     local Page = Instance.new("ScrollingFrame")
@@ -272,24 +281,28 @@ local function initVoiceBypass()
     end)
 end
 
--- STRUKTUR UI MINI MIC CONTROLLER (ICON BULAT ON/OFF + DRAGGABLE)
+-- STRUKTUR UI MINI MIC CONTROLLER (DIPASTIKAN BISA DIGESER SEKARANG)
 local MicToggleGui = Instance.new("ScreenGui")
 MicToggleGui.Name = "KayHub_MicController"
 MicToggleGui.ResetOnSpawn = false
 
 local PopUpFrame = Instance.new("Frame")
 PopUpFrame.Size = UDim2.new(0, 45, 0, 45)
-PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) -- Posisi melayang bebas
-PopUpFrame.Active = true
-PopUpFrame.Visible = false
-PopUpFrame.Parent = MicToggleGui
-Instance.new("UICorner", PopUpFrame).CornerRadius = UDim.new(1, 0) -- Lingkaran Sempurna
+PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) 
+PopUpFrame.Active = true -- WAJIB TRUE UNTUK DRAG
+local PopUpCorner = Instance.new("UICorner", PopUpFrame)
+PopUpCorner.CornerRadius = UDim.new(1, 0)
 local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
 PopUpStroke.Thickness = 2
 
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
-MakeDraggable(PopUpFrame) -- Fitur Geser (Drag & Drop) untuk Icon Mic Bulat
+
+PopUpFrame.Visible = false
+PopUpFrame.Parent = MicToggleGui
+
+-- Panggil fungsi drag baru ke Icon Mic Bulat
+MakeDraggable(PopUpFrame)
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
 PopUpBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -316,13 +329,11 @@ end)
 pcall(function() MicToggleGui.Parent = game:GetService("CoreGui") end)
 if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
-
 -- =========================================================
 -- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
 -- =========================================================
 local HomePage = CreateTab("Home")
 
--- [TERBARU] NAMA DIUBAH MENJADI KAY VOICE ANTIBAN & DI ATAS INSTANT INTERACT
 CreateToggle(HomePage, "Kay voice antiban", function(state)
     if state then
         initVoiceBypass()
@@ -350,12 +361,11 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
--- SEPARATOR LINE
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- PLAYER SELECTOR dropdown
+-- PLAYER SELECTOR DROPDOWN
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -580,9 +590,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     animMode = (animMode == "CUSTOM" and "NONE" or "CUSTOM")
     btnToggleAnim.Text = (animMode == "CUSTOM" and "STATUS: ON" or "STATUS: OFF")
     btnToggleAnim.BackgroundColor3 = (animMode == "CUSTOM" and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40))
-    if animMode ~= "PRESET" then
-        btnPreset.TextColor3 = CurrentTheme.TextColor
-    end
+    if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
 -- =========================================================
@@ -684,9 +692,7 @@ UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Charac
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
-CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
-    globalEspActive = state
-end)
+CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
 
 local EspLine = Instance.new("Frame", EspPage)
 EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
@@ -700,9 +706,7 @@ table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", K
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
 table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
 
-CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
-    targetEspActive = state
-end)
+CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
 
 local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
@@ -722,7 +726,6 @@ for themeName, data in pairs(Themes) do
     local ThemeBtn = Instance.new("TextButton", ThemesPage)
     ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
     Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
-    
     local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
     TBtnStroke.Thickness = 1
     
@@ -734,44 +737,33 @@ for themeName, data in pairs(Themes) do
         if ConfirmOverlay.Visible then return end
         ApplyTheme(themeName)
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
-        if PopUpFrame.Visible and not voiceMutedState then
-            PopUpStroke.Color = CurrentTheme.AccentColor
-        end
+        if PopUpFrame.Visible and not voiceMutedState then PopUpStroke.Color = CurrentTheme.AccentColor end
     end)
 end
 
 -- =========================================================
 -- SISTEM LOGIKA TRIGER POP-UP DAN EXECUTE CLOSE ACTION
 -- =========================================================
-CloseButton.MouseButton1Click:Connect(function()
-    if not ScriptRunning then return end
-    ConfirmOverlay.Visible = true
-end)
-
-NoButton.MouseButton1Click:Connect(function()
-    ConfirmOverlay.Visible = false
-end)
+CloseButton.MouseButton1Click:Connect(function() if not ScriptRunning then return end ConfirmOverlay.Visible = true end)
+NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end)
 
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
     if promptConnection then promptConnection:Disconnect() end
     if MicToggleGui then MicToggleGui:Destroy() end
-    
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 16 end
         if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
     end)
-    
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
             if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
             if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
         end
     end
-    
     KayHub:Destroy()
 end)
 
@@ -780,7 +772,6 @@ end)
 -- =========================================================
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
-    
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local myHrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -827,13 +818,11 @@ RS.Stepped:Connect(function()
                     txt.TextSize = 12
                     txt.TextStrokeTransparency = 0.5
                 end
-                
                 local label = bill:FindFirstChild("EspLabel")
                 if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-
                 if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -859,6 +848,5 @@ Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
--- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.3: 'Kay voice antiban' successfully updated with Draggable floating mic button.")
+print("[SYSTEM] Kay Hub V8.4: Draggable issues fixed perfectly.")
