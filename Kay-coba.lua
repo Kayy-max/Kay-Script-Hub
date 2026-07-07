@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.5 - CRITICAL INPUT PIERCE DRAG FIX ]] --
+-- [[ KAY HUB PRO V8.6 - PIGGYBACK LOOP & PIERCE DRAG SINKRONISASI ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -64,7 +64,7 @@ table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
 -- =========================================================
--- FIXED DRAG FUNCTION: MENANGKAP INPUT ABSOLUT SCREEN
+-- FIXED DRAG FUNCTION: ANTI LOCKING JALUR INPUT GLOBAL
 -- =========================================================
 local function MakeDraggable(guiFrame)
     guiFrame.Active = true
@@ -143,9 +143,7 @@ table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedT
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
--- =========================================================
--- SINKRONISASI CO-DRAG TOGGLE MENU (SQUARE)
--- =========================================================
+-- Tombol Toggle Menu saat Minimized
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 120), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
@@ -273,7 +271,7 @@ local function CreateToggle(parent, text, callback)
     return Frame
 end
 
--- VOICE CHAT BYPASS CONTROL
+-- VOICE CHAT RECONNECT BYPASS ENGINE
 local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
 local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
 
@@ -292,7 +290,7 @@ local function initVoiceBypass()
 end
 
 -- =========================================================
--- HARDFIX: SINKRONISASI UTAMA & HOLLOW BUTTON (ANTI BLOCK CLICK)
+-- HARDFIX PIERCE BUTTON: WINDOW MIC CONTROLLER MELAYANG
 -- =========================================================
 local PopUpFrame = Instance.new("Frame")
 PopUpFrame.Name = "KayHub_MicIcon"
@@ -301,7 +299,7 @@ PopUpFrame.Position = UDim2.new(0.85, 0, 0.2, 0)
 PopUpFrame.Active = true
 PopUpFrame.Selectable = true
 PopUpFrame.Visible = false
-PopUpFrame.ZIndex = 5        -- Diatur di level 5
+PopUpFrame.ZIndex = 5        
 PopUpFrame.Parent = KayHub
 
 local PopUpCorner = Instance.new("UICorner", PopUpFrame)
@@ -312,7 +310,6 @@ PopUpStroke.Thickness = 2
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
 
--- Terapkan fungsi drag langsung ke pembungkus luar (Frame)
 MakeDraggable(PopUpFrame)
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
@@ -321,10 +318,9 @@ PopUpBtn.BackgroundTransparency = 1
 PopUpBtn.Text = "🎙️"
 PopUpBtn.TextSize = 18
 PopUpBtn.Font = Enum.Font.GothamBold
-PopUpBtn.ZIndex = 6                 -- Berada sedikit di atas frame
-PopUpBtn.Active = false             -- DISALURKAN: Mencegah tombol mengunci / memblokir event klik drag frame!
+PopUpBtn.ZIndex = 6                 
+PopUpBtn.Active = false             -- Tembus klik mouse ke frame luar agar bisa di-drag tanpa mengunci
 
--- Menggunakan pendeteksi input global via MouseButton1Up/Down alternatif agar sinkron tanpa melukai drag
 local voiceMutedState = false
 local clickStartPos = Vector3.new()
 
@@ -337,8 +333,7 @@ end)
 PopUpFrame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         local deltaMove = (input.Position - clickStartPos).Magnitude
-        -- JIKA mouse dilepas dan jarak geraknya sangat kecil (< 5 pixel), berarti USER HANYA KLIK, BUKAN SERET!
-        if deltaMove < 5 then
+        if deltaMove < 5 then -- Cek validasi Klik murni (bukan Seret)
             if not ScriptRunning then return end
             voiceMutedState = not voiceMutedState
             pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
@@ -354,19 +349,65 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- LOGIKA HALAMAN UTAMA (HOME)
+-- LOGIKA UTAMA: PIGGYBACK DATA (HOME PAGE)
 local HomePage = CreateTab("Home")
+local targetPlayerObj = nil 
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
+local isAttached, autoEmoteEnabled = false, true
+local attachmentConnection, respawnConnection, currentEmoteTrack
 
-CreateToggle(HomePage, "Kay voice antiban", function(state)
-    if state then
-        initVoiceBypass()
-        PopUpFrame.Visible = true
-        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
-    else
-        PopUpFrame.Visible = false
-        pcall(function() VoiceChatInternal:PublishPause(false) end)
+local function removeWelds()
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
+        end
     end
-end)
+end
+
+-- FIXING PIGGYBACK LOOP (Dipisahkan penuh agar bebas hambatan input)
+local function startLoop(targetChar)
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    
+    if myChar and myHRP and myHumanoid and targetChar then
+        local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
+        if targetHRP then
+            myHumanoid.PlatformStand = true
+            for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
+            
+            attachmentConnection = RS.Heartbeat:Connect(function()
+                if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
+                    if attachmentConnection then attachmentConnection:Disconnect() end
+                    return
+                end
+                
+                local currentTargetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+                if currentTargetHRP and myHRP then
+                    local offset = currentTargetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+                    pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", 1000) end)
+                    myHRP.CFrame = offset
+                    myHRP.Velocity = Vector3.new(0, 0, 0)
+                    myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end
+            end)
+        end
+    end
+end
+
+local function detach()
+    isAttached = false
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if respawnConnection then respawnConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        if myHumanoid then myHumanoid.PlatformStand = false end
+        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
+    end
+    if currentEmoteTrack then currentEmoteTrack:Stop() end
+end
 
 -- Instant Interact
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -434,58 +475,6 @@ end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
 refreshPlayerList()
 
--- Eksekusi Piggyback
-local targetPlayerObj = nil 
-local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
-local isAttached, autoEmoteEnabled = false, true
-local attachmentConnection, respawnConnection, currentEmoteTrack
-
-local function removeWelds()
-    if LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
-        end
-    end
-end
-
-local function startLoop(targetChar)
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
-    
-    if myHRP and targetHRP and myHumanoid then
-        myHumanoid.PlatformStand = true
-        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
-        
-        attachmentConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
-                if attachmentConnection then attachmentConnection:Disconnect() end
-                return
-            end
-            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP) end)
-            myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        end)
-    end
-end
-
-local function detach()
-    isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    if myChar then
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        if myHumanoid then myHumanoid.PlatformStand = false end
-        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
-    end
-    if currentEmoteTrack then currentEmoteTrack:Stop() end
-end
-
 local function runAttachLogic()
     if not targetPlayerObj or ConfirmOverlay.Visible then return end
     isAttached = true
@@ -511,7 +500,7 @@ ActionFrame.Size, ActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 32),
 local ActionLayout = Instance.new("UIListLayout", ActionFrame)
 ActionLayout.FillDirection, ActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 6)
 
-local function createActionBtn(txt, color, cb)
+createActionBtn = function(txt, color, cb)
     local b = Instance.new("TextButton", ActionFrame)
     b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0.49, 0, 1, 0), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
@@ -551,7 +540,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
--- CUSTOM ANIMATION 
+-- CUSTOM ANIMATION PAGE
 local AnimPage = CreateTab("Animations")
 local animMode = "NONE"
 local kayAnimTrack = nil
@@ -613,7 +602,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- CHEAT / UTILITIES PAGE
+-- FUN / CHEATS PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
@@ -704,7 +693,7 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- EXTRA SENSORY PERCEPTION (ESP)
+-- EXTRA SENSORY PERCEPTION (ESP) PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -729,7 +718,21 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- HALAMAN THEMES
+-- VOICE CHAT BYPASS CONTROL TAB
+local VoicePage = CreateTab("Voice")
+
+CreateToggle(VoicePage, "Kay voice antiban", function(state)
+    if state then
+        initVoiceBypass()
+        PopUpFrame.Visible = true
+        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+    else
+        PopUpFrame.Visible = false
+        pcall(function() VoiceChatInternal:PublishPause(false) end)
+    end
+end)
+
+-- THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -755,7 +758,7 @@ for themeName, data in pairs(Themes) do
     end)
 end
 
--- CLOSE & SHUTDOWN CONFIGURATION
+-- CLOSE ACTION CONFIGURATION
 CloseButton.MouseButton1Click:Connect(function() if not ScriptRunning then return end ConfirmOverlay.Visible = true end)
 NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end)
 
@@ -778,7 +781,7 @@ YesButton.MouseButton1Click:Connect(function()
     KayHub:Destroy()
 end)
 
--- RUNSERVICE STEPPED ENGINE LOOP
+-- ENGINE LOOP UTAMA (RUNSERVICE STEPPED)
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -858,4 +861,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.5: Input Pierce Hard-Fix Applied Successfully.")
+print("[SYSTEM] Kay Hub V8.6: Piggyback Fixed & Drag Pierce Synchronized.")
