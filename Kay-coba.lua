@@ -632,6 +632,122 @@ local function clearEspElements(p)
 end
 
 -- =========================================================
+-- INTEGRASI FITUR: VOICE / MIC BYPASS CONTROLLER (NEW TAB)
+-- =========================================================
+local VoicePage = CreateTab("Voice")
+
+local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
+local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
+
+-- Setup Awal Reconnect Bypass Jalur Skrip Asli Anda
+local function initVoiceBypass()
+    pcall(function()
+        VoiceChatService:leaveVoice()
+        task.wait(1.5)
+        local conn = getconnections(VoiceChatInternal.StateChanged)
+        local vcConnectionCount = #conn
+        if vcConnectionCount > 0 and conn[vcConnectionCount] then
+            conn[vcConnectionCount]:Disable()
+        end
+        task.wait(2.5)
+        VoiceChatService:joinVoice()
+    end)
+end
+
+-- Struktur UI Pop-Up Mic Melayang
+local MicToggleGui = Instance.new("ScreenGui")
+MicToggleGui.Name = "KayHub_MicController"
+MicToggleGui.ResetOnSpawn = false
+
+local PopUpFrame = Instance.new("Frame")
+PopUpFrame.Size = UDim2.new(0, 180, 0, 90)
+PopUpFrame.Position = UDim2.new(0.5, -90, 0.4, -45)
+PopUpFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+PopUpFrame.Active = true
+PopUpFrame.Visible = false
+PopUpFrame.Parent = MicToggleGui
+
+local PopUpCorner = Instance.new("UICorner", PopUpFrame)
+PopUpCorner.CornerRadius = UDim.new(0, 8)
+MakeDraggable(PopUpFrame) -- Membuat Pop-Up Mic bisa digeser bebas
+
+local PopUpTitle = Instance.new("TextLabel", PopUpFrame)
+PopUpTitle.Size = UDim2.new(1, 0, 0, 30)
+PopUpTitle.BackgroundTransparency = 1
+PopUpTitle.Text = "MIC CONTROLLER"
+PopUpTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+PopUpTitle.Font = Enum.Font.SourceSansBold
+PopUpTitle.TextSize = 14
+
+local PopUpBtn = Instance.new("TextButton", PopUpFrame)
+PopUpBtn.Size = UDim2.new(0, 140, 0, 40)
+PopUpBtn.Position = UDim2.new(0, 20, 0, 35)
+PopUpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+PopUpBtn.Text = "🎤 MIC: ON"
+PopUpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+PopUpBtn.Font = Enum.Font.SourceSansBold
+PopUpBtn.TextSize = 16
+Instance.new("UICorner", PopUpBtn).CornerRadius = UDim.new(0, 6)
+
+local voiceMutedState = false
+PopUpBtn.MouseButton1Click:Connect(function()
+    if not ScriptRunning then return end
+    voiceMutedState = not voiceMutedState
+    pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
+    
+    if voiceMutedState then
+        PopUpBtn.Text = "🔇 MIC: OFF (MUTED)"
+        PopUpBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    else
+        PopUpBtn.Text = "🎤 MIC: ON"
+        PopUpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    end
+end)
+
+-- Pasangkan ke CoreGui atau PlayerGui aman
+pcall(function() MicToggleGui.Parent = game:GetService("CoreGui") end)
+if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- Membuat Toggle Aktivasi Pop-Up Di Dalam Tab Voice
+CreateToggle(VoicePage, "Aktifkan Mic Controller Window", function(state)
+    if state then
+        initVoiceBypass() -- Jalankan sistem koneksi bypass di awal
+        PopUpFrame.Visible = true
+    else
+        PopUpFrame.Visible = false
+        pcall(function() VoiceChatInternal:PublishPause(false) end) -- Amankan kembalikan mic jika dimatikan
+    end
+end)
+
+-- =========================================================
+-- HALAMAN THEMES
+-- =========================================================
+local ThemesPage = CreateTab("Themes")
+
+local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
+InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
+table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
+
+for themeName, data in pairs(Themes) do
+    local ThemeBtn = Instance.new("TextButton", ThemesPage)
+    ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
+    Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
+    
+    local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
+    TBtnStroke.Thickness = 1
+    
+    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "TextColor3", Key = "TextColor"})
+    table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
+    
+    ThemeBtn.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
+        ApplyTheme(themeName)
+        if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
+    end)
+end
+
+-- =========================================================
 -- SISTEM LOGIKA TRIGER POP-UP DAN EXECUTE CLOSE ACTION
 -- =========================================================
 CloseButton.MouseButton1Click:Connect(function()
@@ -647,6 +763,7 @@ YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
     if promptConnection then promptConnection:Disconnect() end
+    if MicToggleGui then MicToggleGui:Destroy() end
     
     pcall(function()
         local char = LocalPlayer.Character
@@ -749,34 +866,6 @@ Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
--- =========================================================
--- HALAMAN THEMES
--- =========================================================
-local ThemesPage = CreateTab("Themes")
-
-local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
-InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
-table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
-
-for themeName, data in pairs(Themes) do
-    local ThemeBtn = Instance.new("TextButton", ThemesPage)
-    ThemeBtn.Size, ThemeBtn.Text, ThemeBtn.Font, ThemeBtn.TextSize = UDim2.new(1, -10, 0, 36), themeName, Enum.Font.GothamBold, 13
-    Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
-    
-    local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
-    TBtnStroke.Thickness = 1
-    
-    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-    table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "TextColor3", Key = "TextColor"})
-    table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
-    
-    ThemeBtn.MouseButton1Click:Connect(function()
-        if ConfirmOverlay.Visible then return end
-        ApplyTheme(themeName)
-        if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
-    end)
-end
-
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.3: Script safe close popup confirmation integrated.")
+print("[SYSTEM] Kay Hub V8.3: Voice Controller Window & Tab successfully integrated.")
