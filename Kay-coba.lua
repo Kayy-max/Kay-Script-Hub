@@ -472,7 +472,7 @@ local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "TextColor3", Key = "MutedText"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
