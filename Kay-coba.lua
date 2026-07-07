@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.6 - PIGGYBACK LOOP & PIERCE DRAG SINKRONISASI ]] --
+-- [[ KAY HUB PRO V8.8 - ULTRA INSTANT PHYSICS REPLICATION UPDATE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -63,22 +63,17 @@ MainStroke.Thickness = 1
 table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
--- =========================================================
--- FIXED DRAG FUNCTION: ANTI LOCKING JALUR INPUT GLOBAL
--- =========================================================
+-- DRAG FUNCTION ENGINE
 local function MakeDraggable(guiFrame)
     guiFrame.Active = true
     guiFrame.Selectable = true
-    
     local dragging = false
     local dragInput, dragStart, startPos
-
     guiFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = guiFrame.Position
-            
             local connection
             connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
@@ -88,26 +83,18 @@ local function MakeDraggable(guiFrame)
             end)
         end
     end)
-
     guiFrame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
     end)
-
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
-            guiFrame.Position = UDim2.new(
-                startPos.X.Scale, 
-                startPos.X.Offset + delta.X, 
-                startPos.Y.Scale, 
-                startPos.Y.Offset + delta.Y
-            )
+            guiFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
-
 MakeDraggable(MainFrame)
 
 -- Sidebar Minimalis
@@ -198,14 +185,10 @@ local function ApplyTheme(themeName)
     for _, item in pairs(AllUIElements) do
         local targetColor = CurrentTheme[item.Key]
         if item.Obj and item.Obj.Parent then
-            pcall(function()
-                TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
-            end)
+            pcall(function() TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play() end)
         end
     end
-    for _, tab in pairs(Tabs) do
-        tab.Btn.TextColor3 = tab.Page.Visible and CurrentTheme.AccentColor or CurrentTheme.MutedText
-    end
+    for _, tab in pairs(Tabs) do tab.Btn.TextColor3 = tab.Page.Visible and CurrentTheme.AccentColor or CurrentTheme.MutedText end
 end
 
 local FirstTab = true
@@ -223,13 +206,8 @@ local function CreateTab(tabName)
     
     TabButton.MouseButton1Click:Connect(function()
         if ConfirmOverlay.Visible then return end
-        for _, t in pairs(Tabs) do 
-            t.Page.Visible = false 
-            t.Btn.TextColor3 = CurrentTheme.MutedText
-        end
-        Page.Visible = true
-        TabButton.TextColor3 = CurrentTheme.AccentColor
-        CurrentTabTitle.Text = tabName
+        for _, t in pairs(Tabs) do t.Page.Visible, t.Btn.TextColor3 = false, CurrentTheme.MutedText end
+        Page.Visible, TabButton.TextColor3, CurrentTabTitle.Text = true, CurrentTheme.AccentColor, tabName
     end)
     table.insert(Tabs, {Page = Page, Btn = TabButton, Name = tabName})
     return Page
@@ -261,17 +239,15 @@ local function CreateToggle(parent, text, callback)
         Enabled = not Enabled
         data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
-        
         local targetBG = Enabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
         local targetText = Enabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
         TS:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetBG, TextColor3 = targetText}):Play()
-        
         callback(Enabled)
     end)
     return Frame
 end
 
--- VOICE CHAT RECONNECT BYPASS ENGINE
+-- VOICE CHAT SYSTEM CORE
 local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
 local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
 
@@ -281,63 +257,38 @@ local function initVoiceBypass()
         task.wait(1.5)
         local conn = getconnections(VoiceChatInternal.StateChanged)
         local vcConnectionCount = #conn
-        if vcConnectionCount > 0 and conn[vcConnectionCount] then
-            conn[vcConnectionCount]:Disable()
-        end
+        if vcConnectionCount > 0 and conn[vcConnectionCount] then conn[vcConnectionCount]:Disable() end
         task.wait(2.5)
         VoiceChatService:joinVoice()
     end)
 end
 
--- =========================================================
--- HARDFIX PIERCE BUTTON: WINDOW MIC CONTROLLER MELAYANG
--- =========================================================
+-- FLOATING MIC CONTROLLER OVERLAY
 local PopUpFrame = Instance.new("Frame")
 PopUpFrame.Name = "KayHub_MicIcon"
-PopUpFrame.Size = UDim2.new(0, 46, 0, 46)
-PopUpFrame.Position = UDim2.new(0.85, 0, 0.2, 0) 
-PopUpFrame.Active = true
-PopUpFrame.Selectable = true
-PopUpFrame.Visible = false
-PopUpFrame.ZIndex = 5        
-PopUpFrame.Parent = KayHub
-
+PopUpFrame.Size, PopUpFrame.Position, PopUpFrame.Active, PopUpFrame.Selectable, PopUpFrame.Visible, PopUpFrame.ZIndex, PopUpFrame.Parent = UDim2.new(0, 46, 0, 46), UDim2.new(0.85, 0, 0.2, 0), true, true, false, 5, KayHub
 local PopUpCorner = Instance.new("UICorner", PopUpFrame)
 PopUpCorner.CornerRadius = UDim.new(1, 0)
 local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
 PopUpStroke.Thickness = 2
-
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
-
 MakeDraggable(PopUpFrame)
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
-PopUpBtn.Size = UDim2.new(1, 0, 1, 0)
-PopUpBtn.BackgroundTransparency = 1
-PopUpBtn.Text = "🎙️"
-PopUpBtn.TextSize = 18
-PopUpBtn.Font = Enum.Font.GothamBold
-PopUpBtn.ZIndex = 6                 
-PopUpBtn.Active = false             -- Tembus klik mouse ke frame luar agar bisa di-drag tanpa mengunci
+PopUpBtn.Size, PopUpBtn.BackgroundTransparency, PopUpBtn.Text, PopUpBtn.TextSize, PopUpBtn.Font, PopUpBtn.ZIndex, PopUpBtn.Active = UDim2.new(1, 0, 1, 0), 1, "🎙️", 18, Enum.Font.GothamBold, 6, false
 
 local voiceMutedState = false
 local clickStartPos = Vector3.new()
 
-PopUpFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        clickStartPos = input.Position
-    end
-end)
-
+PopUpFrame.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then clickStartPos = input.Position end end)
 PopUpFrame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         local deltaMove = (input.Position - clickStartPos).Magnitude
-        if deltaMove < 5 then -- Cek validasi Klik murni (bukan Seret)
+        if deltaMove < 5 then 
             if not ScriptRunning then return end
             voiceMutedState = not voiceMutedState
             pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
-            
             if voiceMutedState then
                 PopUpBtn.Text = "🔇"
                 TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
@@ -349,12 +300,12 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- LOGIKA UTAMA: PIGGYBACK DATA (HOME PAGE)
+-- LOGIKA HALAMAN UTAMA (HOME PAGE)
 local HomePage = CreateTab("Home")
 local targetPlayerObj = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
-local attachmentConnection, respawnConnection, currentEmoteTrack
+local attachmentPreRender, attachmentPostRender, respawnConnection, currentEmoteTrack
 
 local function removeWelds()
     if LocalPlayer.Character then
@@ -364,9 +315,13 @@ local function removeWelds()
     end
 end
 
--- FIXING PIGGYBACK LOOP (Dipisahkan penuh agar bebas hambatan input)
+-- =========================================================
+-- ULTRA INSTANT PIGGYBACK HARCORE BYPASS HOOK (V8.8)
+-- =========================================================
 local function startLoop(targetChar)
-    if attachmentConnection then attachmentConnection:Disconnect() end
+    if attachmentPreRender then attachmentPreRender:Disconnect() end
+    if attachmentPostRender then attachmentPostRender:Disconnect() end
+    
     local myChar = LocalPlayer.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
@@ -375,30 +330,45 @@ local function startLoop(targetChar)
         local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
         if targetHRP then
             myHumanoid.PlatformStand = true
+            
+            -- Matikan tabrakan bagian tubuh total agar tidak nyangkut saat teleportasi mikro
             for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
             
-            attachmentConnection = RS.Heartbeat:Connect(function()
-                if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
-                    if attachmentConnection then attachmentConnection:Disconnect() end
-                    return
-                end
-                
+            local function syncPosition()
+                if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then return end
                 local currentTargetHRP = targetChar:FindFirstChild("HumanoidRootPart")
                 if currentTargetHRP and myHRP then
+                    -- Hitung Matrix Posisi Instan
+                    local targetVelocity = currentTargetHRP.AssemblyLinearVelocity
                     local offset = currentTargetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-                    pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", 1000) end)
+                    
+                    -- Hardcore Physics Spoofing & Network Replication Forcing
+                    pcall(function() 
+                        sethiddenproperty(myHRP, "PhysicsRepRootPart", currentTargetHRP) 
+                        sethiddenproperty(LocalPlayer, "SimulationRadius", 9e9)
+                        sethiddenproperty(LocalPlayer, "MaxSimulationRadius", 9e9)
+                    end)
+                    
+                    -- Paksa CFrame & Samakan Velocity secara real-time untuk memotong delay interpolasi
                     myHRP.CFrame = offset
-                    myHRP.Velocity = Vector3.new(0, 0, 0)
-                    myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    myHRP.AssemblyLinearVelocity = targetVelocity
+                    myHRP.AssemblyAngularVelocity = currentTargetHRP.AssemblyAngularVelocity
+                    myHRP.Velocity = targetVelocity
+                    myHRP.RotVelocity = currentTargetHRP.AssemblyAngularVelocity
                 end
-            end)
+            end
+            
+            -- Dual-Hook Render Pipeline (Sebelum & Sesudah Fisika Roblox Berjalan)
+            attachmentPreRender = RS.PreSimulation:Connect(syncPosition)
+            attachmentPostRender = RS.PostSimulation:Connect(syncPosition)
         end
     end
 end
 
 local function detach()
     isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
+    if attachmentPreRender then attachmentPreRender:Disconnect() end
+    if attachmentPostRender then attachmentPostRender:Disconnect() end
     if respawnConnection then respawnConnection:Disconnect() end
     local myChar = LocalPlayer.Character
     if myChar then
@@ -429,7 +399,7 @@ local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- DROPDOWN TARGET
+-- DROPDOWN MENU TARGET PLAYER
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -500,7 +470,7 @@ ActionFrame.Size, ActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 32),
 local ActionLayout = Instance.new("UIListLayout", ActionFrame)
 ActionLayout.FillDirection, ActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 6)
 
-createActionBtn = function(txt, color, cb)
+local function createActionBtn(txt, color, cb)
     local b = Instance.new("TextButton", ActionFrame)
     b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0.49, 0, 1, 0), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
@@ -602,7 +572,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- FUN / CHEATS PAGE
+-- FUN / UTILITIES PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
@@ -693,7 +663,7 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- EXTRA SENSORY PERCEPTION (ESP) PAGE
+-- ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -718,9 +688,8 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- VOICE CHAT BYPASS CONTROL TAB
+-- VOICE TAB
 local VoicePage = CreateTab("Voice")
-
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
     if state then
         initVoiceBypass()
@@ -734,7 +703,6 @@ end)
 
 -- THEMES PAGE
 local ThemesPage = CreateTab("Themes")
-
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
 InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
 table.insert(AllUIElements, {Obj = InfoThemeLabel, Prop = "TextColor3", Key = "TextColor"})
@@ -745,11 +713,9 @@ for themeName, data in pairs(Themes) do
     Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
     local TBtnStroke = Instance.new("UIStroke", ThemeBtn)
     TBtnStroke.Thickness = 1
-    
     table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
     table.insert(AllUIElements, {Obj = ThemeBtn, Prop = "TextColor3", Key = "TextColor"})
     table.insert(AllUIElements, {Obj = TBtnStroke, Prop = "Color", Key = "StrokeColor"})
-    
     ThemeBtn.MouseButton1Click:Connect(function()
         if ConfirmOverlay.Visible then return end
         ApplyTheme(themeName)
@@ -758,10 +724,9 @@ for themeName, data in pairs(Themes) do
     end)
 end
 
--- CLOSE ACTION CONFIGURATION
+-- CLOSE ACTION WINDOWS
 CloseButton.MouseButton1Click:Connect(function() if not ScriptRunning then return end ConfirmOverlay.Visible = true end)
 NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end)
-
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
@@ -781,7 +746,7 @@ YesButton.MouseButton1Click:Connect(function()
     KayHub:Destroy()
 end)
 
--- ENGINE LOOP UTAMA (RUNSERVICE STEPPED)
+-- CORE MONITOR LOOP (RUNSERVICE STEPPED)
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -818,17 +783,9 @@ RS.Stepped:Connect(function()
                 if not bill then
                     bill = Instance.new("BillboardGui", tHrp)
                     bill.Name = "KayEsp_Bill"
-                    bill.Size = UDim2.new(0, 200, 0, 50)
-                    bill.AlwaysOnTop = true
-                    bill.ExtentsOffset = Vector3.new(0, 3, 0)
-                    
+                    bill.Size, bill.AlwaysOnTop, bill.ExtentsOffset = UDim2.new(0, 200, 0, 50), true, Vector3.new(0, 3, 0)
                     local txt = Instance.new("TextLabel", bill)
-                    txt.Name = "EspLabel"
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.BackgroundTransparency = 1
-                    txt.Font = Enum.Font.GothamBold
-                    txt.TextSize = 12
-                    txt.TextStrokeTransparency = 0.5
+                    txt.Name, txt.Size, txt.BackgroundTransparency, txt.Font, txt.TextSize, txt.TextStrokeTransparency = "EspLabel", UDim2.new(1, 0, 1, 0), 1, Enum.Font.GothamBold, 12, 0.5
                 end
                 local label = bill:FindFirstChild("EspLabel")
                 if label then
@@ -839,12 +796,9 @@ RS.Stepped:Connect(function()
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
                         high = Instance.new("Highlight", tChar)
-                        high.Name = "KayEsp_Highlight"
-                        high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        high.Name, high.DepthMode = "KayEsp_Highlight", Enum.HighlightDepthMode.AlwaysOnTop
                     end
-                    high.FillColor = CurrentTheme.AccentColor
-                    high.OutlineColor = Color3.fromRGB(255,255,255)
-                    high.FillTransparency = 0.6
+                    high.FillColor, high.OutlineColor, high.FillTransparency = CurrentTheme.AccentColor, Color3.fromRGB(255,255,255), 0.6
                 else
                     if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
@@ -856,9 +810,7 @@ RS.Stepped:Connect(function()
     end
 end)
 
-Players.PlayerRemoving:Connect(function(p)
-    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
-end)
+Players.PlayerRemoving:Connect(function(p) if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.6: Piggyback Fixed & Drag Pierce Synchronized.")
+print("[SYSTEM] Kay Hub V8.8: Ultimate Physics Bypass Synced Successfully.")
