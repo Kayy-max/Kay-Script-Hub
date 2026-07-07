@@ -1,8 +1,8 @@
--- [[ KAY HUB PRO V8.4 - FIX DRAGGABLE MIC & MENU ]] --
+-- [[ KAY HUB PRO V8.4 - ULTIMATE ANTI-STUCK DRAG FIX ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- DAFTAR PRESET TEMA LENGKAP (MERUBAH SELURUH WARNA UI)
+-- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
     ["Sleek Dark"] = {
         BGColor = Color3.fromRGB(15, 15, 15),
@@ -49,11 +49,13 @@ local ScriptRunning = true
 
 -- UI Utama (ScreenGui)
 local KayHub = Instance.new("ScreenGui")
+KayHub.Name = "KayHub_Main"
+KayHub.ResetOnSpawn = false
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, KayHub
+MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -62,31 +64,32 @@ table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
 -- =========================================================
--- FUNGSI DRAG & DROP TERBARU (SANGAT SMOOTH & ANTI MACET)
+-- SYSTEM FIX: FUNGSI DRAG BARU (SANGAT AGRESIF & ANTI FAIL)
 -- =========================================================
-local function MakeDraggable(gui)
-    local dragging, dragInput, dragStart, startPos
+local function MakeDraggable(guiFrame)
+    guiFrame.Active = true
+    guiFrame.Selectable = true
+    
+    local dragging = false
+    local dragInput, dragStart, startPos
 
-    local function update(input)
-        local delta = input.Position - dragStart
-        gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-
-    gui.InputBegan:Connect(function(input)
+    guiFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
-            startPos = gui.Position
-
-            input.Changed:Connect(function()
+            startPos = guiFrame.Position
+            
+            local connection
+            connection = input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
                     dragging = false
+                    if connection then connection:Disconnect() end
                 end
             end)
         end
     end)
 
-    gui.InputChanged:Connect(function(input)
+    guiFrame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             dragInput = input
         end
@@ -94,11 +97,18 @@ local function MakeDraggable(gui)
 
     UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
-            update(input)
+            local delta = input.Position - dragStart
+            guiFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
 end
 
+-- Terapkan drag ke Menu Utama
 MakeDraggable(MainFrame)
 
 -- Sidebar Minimalis
@@ -134,8 +144,11 @@ table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedT
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
+-- =========================================================
+-- TOMBOL TOGGLE ALTERNATIF JIKA MINIMIZE (SQUARE MENU)
+-- =========================================================
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 50), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
+ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 120), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 MakeDraggable(ToggleButton)
@@ -281,15 +294,19 @@ local function initVoiceBypass()
     end)
 end
 
--- STRUKTUR UI MINI MIC CONTROLLER (DIPASTIKAN BISA DIGESER SEKARANG)
-local MicToggleGui = Instance.new("ScreenGui")
-MicToggleGui.Name = "KayHub_MicController"
-MicToggleGui.ResetOnSpawn = false
-
+-- =========================================================
+-- SYSTEM RE-HAUL: ICON MIC SEKARANG BERGABUNG DI SCREEN_GUI UTAMA 
+-- (Langkah krusial agar fungsi drag tidak block/stuck)
+-- =========================================================
 local PopUpFrame = Instance.new("Frame")
-PopUpFrame.Size = UDim2.new(0, 45, 0, 45)
-PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) 
-PopUpFrame.Active = true -- WAJIB TRUE UNTUK DRAG
+PopUpFrame.Name = "KayHub_MicIcon"
+PopUpFrame.Size = UDim2.new(0, 46, 0, 46)
+PopUpFrame.Position = UDim2.new(0.85, 0, 0.2, 0) 
+PopUpFrame.Active = true
+PopUpFrame.Selectable = true
+PopUpFrame.Visible = false
+PopUpFrame.Parent = KayHub -- Dipindahkan ke ScreenGui utama agar sinkron!
+
 local PopUpCorner = Instance.new("UICorner", PopUpFrame)
 PopUpCorner.CornerRadius = UDim.new(1, 0)
 local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
@@ -298,10 +315,7 @@ PopUpStroke.Thickness = 2
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
 
-PopUpFrame.Visible = false
-PopUpFrame.Parent = MicToggleGui
-
--- Panggil fungsi drag baru ke Icon Mic Bulat
+-- Panggil fungsi drag absolut ke Icon Mic Bulat
 MakeDraggable(PopUpFrame)
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
@@ -325,9 +339,6 @@ PopUpBtn.MouseButton1Click:Connect(function()
         TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
     end
 end)
-
-pcall(function() MicToggleGui.Parent = game:GetService("CoreGui") end)
-if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 -- =========================================================
 -- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
@@ -751,7 +762,6 @@ YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
     if promptConnection then promptConnection:Disconnect() end
-    if MicToggleGui then MicToggleGui:Destroy() end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -849,4 +859,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.4: Draggable issues fixed perfectly.")
+print("[SYSTEM] Kay Hub V8.4: Advanced Draggable Patch Applied Successfully.")
