@@ -137,7 +137,7 @@ MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
 -- =========================================================
--- PANEL STRUKTUR: POP-UP KONFIRMASI CLOSE (NEW FITUR)
+-- PANEL STRUKTUR: POP-UP KONFIRMASI CLOSE
 -- =========================================================
 local ConfirmOverlay = Instance.new("Frame")
 ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.BackgroundTransparency, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), 0.4, false, 10, MainFrame
@@ -253,59 +253,86 @@ local function CreateToggle(parent, text, callback)
 end
 
 -- =========================================================
+-- LOGIKA & INTEGRASI VOICE CHAT BYPASS
+-- =========================================================
+local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
+local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
+
+local function initVoiceBypass()
+    pcall(function()
+        VoiceChatService:leaveVoice()
+        task.wait(1.5)
+        local conn = getconnections(VoiceChatInternal.StateChanged)
+        local vcConnectionCount = #conn
+        if vcConnectionCount > 0 and conn[vcConnectionCount] then
+            conn[vcConnectionCount]:Disable()
+        end
+        task.wait(2.5)
+        VoiceChatService:joinVoice()
+    end)
+end
+
+-- STRUKTUR UI MINI MIC CONTROLLER (ICON BULAT ON/OFF)
+local MicToggleGui = Instance.new("ScreenGui")
+MicToggleGui.Name = "KayHub_MicController"
+MicToggleGui.ResetOnSpawn = false
+
+local PopUpFrame = Instance.new("Frame")
+PopUpFrame.Size = UDim2.new(0, 45, 0, 45)
+PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) -- Letak default melayang aman
+PopUpFrame.Active = true
+PopUpFrame.Visible = false
+PopUpFrame.Parent = MicToggleGui
+Instance.new("UICorner", PopUpFrame).CornerRadius = UDim.new(1, 0) -- Membuat frame bulat sempurna
+local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
+PopUpStroke.Thickness = 2
+
+table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
+MakeDraggable(PopUpFrame)
+
+local PopUpBtn = Instance.new("TextButton", PopUpFrame)
+PopUpBtn.Size = UDim2.new(1, 0, 1, 0)
+PopUpBtn.BackgroundTransparency = 1
+PopUpBtn.Text = "🎙️" -- Icon default ON
+PopUpBtn.TextSize = 18
+PopUpBtn.Font = Enum.Font.GothamBold
+
+local voiceMutedState = false
+PopUpBtn.MouseButton1Click:Connect(function()
+    if not ScriptRunning then return end
+    voiceMutedState = not voiceMutedState
+    pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
+    
+    if voiceMutedState then
+        PopUpBtn.Text = "🔇"
+        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
+    else
+        PopUpBtn.Text = "🎙️"
+        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+    end
+end)
+
+pcall(function() MicToggleGui.Parent = game:GetService("CoreGui") end)
+if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+
+-- =========================================================
 -- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
 -- =========================================================
 local HomePage = CreateTab("Home")
-local targetPlayerObj = nil 
-local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
-local isAttached, autoEmoteEnabled = false, true
-local attachmentConnection, respawnConnection, currentEmoteTrack
 
-local function removeWelds()
-    if LocalPlayer.Character then
-        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
-        end
+-- [BARU] TOGGLE MIC CONTROLLER DI ATAS INSTANT INTERACT
+CreateToggle(HomePage, "Aktifkan Mic Controller Window", function(state)
+    if state then
+        initVoiceBypass()
+        PopUpFrame.Visible = true
+        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+    else
+        PopUpFrame.Visible = false
+        pcall(function() VoiceChatInternal:PublishPause(false) end)
     end
-end
-
-local function startLoop(targetChar)
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
-    
-    if myHRP and targetHRP and myHumanoid then
-        myHumanoid.PlatformStand = true
-        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
-        
-        attachmentConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
-                if attachmentConnection then attachmentConnection:Disconnect() end
-                return
-            end
-            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP) end)
-            myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        end)
-    end
-end
-
-local function detach()
-    isAttached = false
-    if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
-    local myChar = LocalPlayer.Character
-    if myChar then
-        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        if myHumanoid then myHumanoid.PlatformStand = false end
-        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
-    end
-    if currentEmoteTrack then currentEmoteTrack:Stop() end
-end
+end)
 
 -- Fitur Instant Interact
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -375,6 +402,57 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(
 refreshPlayerList()
 
 -- Eksekusi Piggyback
+local targetPlayerObj = nil 
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
+local isAttached, autoEmoteEnabled = false, true
+local attachmentConnection, respawnConnection, currentEmoteTrack
+
+local function removeWelds()
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
+        end
+    end
+end
+
+local function startLoop(targetChar)
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
+    
+    if myHRP and targetHRP and myHumanoid then
+        myHumanoid.PlatformStand = true
+        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = false end end
+        
+        attachmentConnection = RS.Heartbeat:Connect(function()
+            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
+                if attachmentConnection then attachmentConnection:Disconnect() end
+                return
+            end
+            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP) end)
+            myHRP.CFrame = offset
+            myHRP.Velocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end)
+    end
+end
+
+local function detach()
+    isAttached = false
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if respawnConnection then respawnConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        if myHumanoid then myHumanoid.PlatformStand = false end
+        for _, part in pairs(myChar:GetChildren()) do if part:IsA("BasePart") then part.CanCollide = true end end
+    end
+    if currentEmoteTrack then currentEmoteTrack:Stop() end
+end
+
 local function runAttachLogic()
     if not targetPlayerObj or ConfirmOverlay.Visible then return end
     isAttached = true
@@ -632,94 +710,6 @@ local function clearEspElements(p)
 end
 
 -- =========================================================
--- INTEGRASI FITUR: VOICE / MIC BYPASS CONTROLLER (NEW TAB)
--- =========================================================
-local VoicePage = CreateTab("Voice")
-
-local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
-local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
-
--- Setup Awal Reconnect Bypass Jalur Skrip Asli Anda
-local function initVoiceBypass()
-    pcall(function()
-        VoiceChatService:leaveVoice()
-        task.wait(1.5)
-        local conn = getconnections(VoiceChatInternal.StateChanged)
-        local vcConnectionCount = #conn
-        if vcConnectionCount > 0 and conn[vcConnectionCount] then
-            conn[vcConnectionCount]:Disable()
-        end
-        task.wait(2.5)
-        VoiceChatService:joinVoice()
-    end)
-end
-
--- Struktur UI Pop-Up Mic Melayang
-local MicToggleGui = Instance.new("ScreenGui")
-MicToggleGui.Name = "KayHub_MicController"
-MicToggleGui.ResetOnSpawn = false
-
-local PopUpFrame = Instance.new("Frame")
-PopUpFrame.Size = UDim2.new(0, 180, 0, 90)
-PopUpFrame.Position = UDim2.new(0.5, -90, 0.4, -45)
-PopUpFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PopUpFrame.Active = true
-PopUpFrame.Visible = false
-PopUpFrame.Parent = MicToggleGui
-
-local PopUpCorner = Instance.new("UICorner", PopUpFrame)
-PopUpCorner.CornerRadius = UDim.new(0, 8)
-MakeDraggable(PopUpFrame) -- Membuat Pop-Up Mic bisa digeser bebas
-
-local PopUpTitle = Instance.new("TextLabel", PopUpFrame)
-PopUpTitle.Size = UDim2.new(1, 0, 0, 30)
-PopUpTitle.BackgroundTransparency = 1
-PopUpTitle.Text = "MIC CONTROLLER"
-PopUpTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-PopUpTitle.Font = Enum.Font.SourceSansBold
-PopUpTitle.TextSize = 14
-
-local PopUpBtn = Instance.new("TextButton", PopUpFrame)
-PopUpBtn.Size = UDim2.new(0, 140, 0, 40)
-PopUpBtn.Position = UDim2.new(0, 20, 0, 35)
-PopUpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-PopUpBtn.Text = "🎤 MIC: ON"
-PopUpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-PopUpBtn.Font = Enum.Font.SourceSansBold
-PopUpBtn.TextSize = 16
-Instance.new("UICorner", PopUpBtn).CornerRadius = UDim.new(0, 6)
-
-local voiceMutedState = false
-PopUpBtn.MouseButton1Click:Connect(function()
-    if not ScriptRunning then return end
-    voiceMutedState = not voiceMutedState
-    pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
-    
-    if voiceMutedState then
-        PopUpBtn.Text = "🔇 MIC: OFF (MUTED)"
-        PopUpBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    else
-        PopUpBtn.Text = "🎤 MIC: ON"
-        PopUpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    end
-end)
-
--- Pasangkan ke CoreGui atau PlayerGui aman
-pcall(function() MicToggleGui.Parent = game:GetService("CoreGui") end)
-if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
-
--- Membuat Toggle Aktivasi Pop-Up Di Dalam Tab Voice
-CreateToggle(VoicePage, "Aktifkan Mic Controller Window", function(state)
-    if state then
-        initVoiceBypass() -- Jalankan sistem koneksi bypass di awal
-        PopUpFrame.Visible = true
-    else
-        PopUpFrame.Visible = false
-        pcall(function() VoiceChatInternal:PublishPause(false) end) -- Amankan kembalikan mic jika dimatikan
-    end
-end)
-
--- =========================================================
 -- HALAMAN THEMES
 -- =========================================================
 local ThemesPage = CreateTab("Themes")
@@ -744,6 +734,10 @@ for themeName, data in pairs(Themes) do
         if ConfirmOverlay.Visible then return end
         ApplyTheme(themeName)
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
+        -- Otomatis update warna stroke indicator mic jika mic dalam kondisi aktif/ON
+        if PopUpFrame.Visible and not voiceMutedState then
+            PopUpStroke.Color = CurrentTheme.AccentColor
+        end
     end)
 end
 
@@ -752,11 +746,11 @@ end
 -- =========================================================
 CloseButton.MouseButton1Click:Connect(function()
     if not ScriptRunning then return end
-    ConfirmOverlay.Visible = true -- Tampilkan Pop-Up Pertanyaan
+    ConfirmOverlay.Visible = true
 end)
 
 NoButton.MouseButton1Click:Connect(function()
-    ConfirmOverlay.Visible = false -- Sembunyikan Pop-Up (Batal)
+    ConfirmOverlay.Visible = false
 end)
 
 YesButton.MouseButton1Click:Connect(function()
@@ -779,7 +773,7 @@ YesButton.MouseButton1Click:Connect(function()
         end
     end
     
-    KayHub:Destroy() -- Matikan total seluruh GUI
+    KayHub:Destroy()
 end)
 
 -- =========================================================
@@ -868,4 +862,4 @@ end)
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.3: Voice Controller Window & Tab successfully integrated.")
+print("[SYSTEM] Kay Hub V8.3: Floating Mic Indicator fully integrated on Home Page.")
