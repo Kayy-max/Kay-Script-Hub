@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.4 - ULTIMATE ANTI-STUCK DRAG FIX ]] --
+-- [[ KAY HUB PRO V8.5 - CRITICAL INPUT PIERCE DRAG FIX ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -64,7 +64,7 @@ table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
 -- =========================================================
--- SYSTEM FIX: FUNGSI DRAG BARU (SANGAT AGRESIF & ANTI FAIL)
+-- FIXED DRAG FUNCTION: MENANGKAP INPUT ABSOLUT SCREEN
 -- =========================================================
 local function MakeDraggable(guiFrame)
     guiFrame.Active = true
@@ -108,7 +108,6 @@ local function MakeDraggable(guiFrame)
     end)
 end
 
--- Terapkan drag ke Menu Utama
 MakeDraggable(MainFrame)
 
 -- Sidebar Minimalis
@@ -145,7 +144,7 @@ local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
 -- =========================================================
--- TOMBOL TOGGLE ALTERNATIF JIKA MINIMIZE (SQUARE MENU)
+-- SINKRONISASI CO-DRAG TOGGLE MENU (SQUARE)
 -- =========================================================
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 120), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
@@ -274,9 +273,7 @@ local function CreateToggle(parent, text, callback)
     return Frame
 end
 
--- =========================================================
--- LOGIKA & INTEGRASI VOICE CHAT BYPASS
--- =========================================================
+-- VOICE CHAT BYPASS CONTROL
 local VoiceChatService = cloneref(game:GetService("VoiceChatService"))
 local VoiceChatInternal = cloneref(game:GetService("VoiceChatInternal"))
 
@@ -295,8 +292,7 @@ local function initVoiceBypass()
 end
 
 -- =========================================================
--- SYSTEM RE-HAUL: ICON MIC SEKARANG BERGABUNG DI SCREEN_GUI UTAMA 
--- (Langkah krusial agar fungsi drag tidak block/stuck)
+-- HARDFIX: SINKRONISASI UTAMA & HOLLOW BUTTON (ANTI BLOCK CLICK)
 -- =========================================================
 local PopUpFrame = Instance.new("Frame")
 PopUpFrame.Name = "KayHub_MicIcon"
@@ -305,7 +301,8 @@ PopUpFrame.Position = UDim2.new(0.85, 0, 0.2, 0)
 PopUpFrame.Active = true
 PopUpFrame.Selectable = true
 PopUpFrame.Visible = false
-PopUpFrame.Parent = KayHub -- Dipindahkan ke ScreenGui utama agar sinkron!
+PopUpFrame.ZIndex = 5        -- Diatur di level 5
+PopUpFrame.Parent = KayHub
 
 local PopUpCorner = Instance.new("UICorner", PopUpFrame)
 PopUpCorner.CornerRadius = UDim.new(1, 0)
@@ -315,7 +312,7 @@ PopUpStroke.Thickness = 2
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
 
--- Panggil fungsi drag absolut ke Icon Mic Bulat
+-- Terapkan fungsi drag langsung ke pembungkus luar (Frame)
 MakeDraggable(PopUpFrame)
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
@@ -324,25 +321,40 @@ PopUpBtn.BackgroundTransparency = 1
 PopUpBtn.Text = "🎙️"
 PopUpBtn.TextSize = 18
 PopUpBtn.Font = Enum.Font.GothamBold
+PopUpBtn.ZIndex = 6                 -- Berada sedikit di atas frame
+PopUpBtn.Active = false             -- DISALURKAN: Mencegah tombol mengunci / memblokir event klik drag frame!
 
+-- Menggunakan pendeteksi input global via MouseButton1Up/Down alternatif agar sinkron tanpa melukai drag
 local voiceMutedState = false
-PopUpBtn.MouseButton1Click:Connect(function()
-    if not ScriptRunning then return end
-    voiceMutedState = not voiceMutedState
-    pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
-    
-    if voiceMutedState then
-        PopUpBtn.Text = "🔇"
-        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
-    else
-        PopUpBtn.Text = "🎙️"
-        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+local clickStartPos = Vector3.new()
+
+PopUpFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        clickStartPos = input.Position
     end
 end)
 
--- =========================================================
--- LOGIKA UTAMA: PIGGYBACK (HOME PAGE)
--- =========================================================
+PopUpFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local deltaMove = (input.Position - clickStartPos).Magnitude
+        -- JIKA mouse dilepas dan jarak geraknya sangat kecil (< 5 pixel), berarti USER HANYA KLIK, BUKAN SERET!
+        if deltaMove < 5 then
+            if not ScriptRunning then return end
+            voiceMutedState = not voiceMutedState
+            pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
+            
+            if voiceMutedState then
+                PopUpBtn.Text = "🔇"
+                TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
+            else
+                PopUpBtn.Text = "🎙️"
+                TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+            end
+        end
+    end
+end)
+
+-- LOGIKA HALAMAN UTAMA (HOME)
 local HomePage = CreateTab("Home")
 
 CreateToggle(HomePage, "Kay voice antiban", function(state)
@@ -356,7 +368,7 @@ CreateToggle(HomePage, "Kay voice antiban", function(state)
     end
 end)
 
--- Fitur Instant Interact
+-- Instant Interact
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local isInstantActive = false
 local promptConnection = nil
@@ -376,7 +388,7 @@ local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- PLAYER SELECTOR DROPDOWN
+-- DROPDOWN TARGET
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -508,7 +520,6 @@ end
 createActionBtn("TEMPEL", Color3.fromRGB(20, 140, 80), runAttachLogic)
 createActionBtn("LEPAS", Color3.fromRGB(160, 40, 40), detach)
 
--- Navigasi Posisi Mini-Grid
 local NavFrame = Instance.new("Frame", HomePage)
 NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
 local NavGrid = Instance.new("UIGridLayout", NavFrame)
@@ -540,9 +551,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
--- =========================================================
--- INTEGRASI FITUR: KAY ANIMATION
--- =========================================================
+-- CUSTOM ANIMATION 
 local AnimPage = CreateTab("Animations")
 local animMode = "NONE"
 local kayAnimTrack = nil
@@ -604,9 +613,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- =========================================================
--- FUN & CHEATS FEATURES
--- =========================================================
+-- CHEAT / UTILITIES PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
@@ -697,9 +704,7 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- =========================================================
--- INTEGRASI FITUR: ESP EXTRA SENSORY PERCEPTION
--- =========================================================
+-- EXTRA SENSORY PERCEPTION (ESP)
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -724,9 +729,7 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- =========================================================
 -- HALAMAN THEMES
--- =========================================================
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -752,9 +755,7 @@ for themeName, data in pairs(Themes) do
     end)
 end
 
--- =========================================================
--- SISTEM LOGIKA TRIGER POP-UP DAN EXECUTE CLOSE ACTION
--- =========================================================
+-- CLOSE & SHUTDOWN CONFIGURATION
 CloseButton.MouseButton1Click:Connect(function() if not ScriptRunning then return end ConfirmOverlay.Visible = true end)
 NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end)
 
@@ -777,9 +778,7 @@ YesButton.MouseButton1Click:Connect(function()
     KayHub:Destroy()
 end)
 
--- =========================================================
--- LOOP MANAGER UTAMA
--- =========================================================
+-- RUNSERVICE STEPPED ENGINE LOOP
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -859,4 +858,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.4: Advanced Draggable Patch Applied Successfully.")
+print("[SYSTEM] Kay Hub V8.5: Input Pierce Hard-Fix Applied Successfully.")
