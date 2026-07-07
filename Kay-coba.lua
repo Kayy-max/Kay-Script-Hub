@@ -42,7 +42,7 @@ local Themes = {
     }
 }
 
-local CurrentTheme = Themes["Ruby Premium"] -- DEFAULT KE RUBY PREMIUM
+local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} 
 local ScriptRunning = true 
@@ -455,18 +455,6 @@ CreateToggle(HomePage, "Instant Interact", function(state)
     end
 end)
 
--- SEKARANG KAY VOICE ANTIBAN ADA DI HALAMAN HOME
-CreateToggle(HomePage, "Kay voice antiban", function(state)
-    if state then
-        initVoiceBypass()
-        PopUpFrame.Visible = true
-        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
-    else
-        PopUpFrame.Visible = false
-        pcall(function() VoiceChatInternal:PublishPause(false) end)
-    end
-end)
-
 local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
@@ -760,6 +748,20 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
+-- VOICE TAB
+local VoicePage = CreateTab("Voice")
+
+CreateToggle(VoicePage, "Kay voice antiban", function(state)
+    if state then
+        initVoiceBypass()
+        PopUpFrame.Visible = true
+        TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+    else
+        PopUpFrame.Visible = false
+        pcall(function() VoiceChatInternal:PublishPause(false) end)
+    end
+end)
+
 -- THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
@@ -888,5 +890,5 @@ Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
-ApplyTheme("Ruby Premium") -- MENERAPKAN TEMA RUBY PREMIUM SAAT STARTUP
-print("[SYSTEM] Kay Hub V8.7: Custom Theme & Layout Configurations Applied.")
+ApplyTheme("Sleek Dark")
+print("[SYSTEM] Kay Hub V8.7: Advanced Physics Replicator Applied.")
