@@ -42,7 +42,7 @@ local Themes = {
     }
 }
 
-local CurrentTheme = Themes["Ruby Premium"] -- SEKARANG DEFAULT KE RUBY PREMIUM
+local CurrentTheme = Themes["Ruby Premium"] -- DEFAULT KE RUBY PREMIUM
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} 
 local ScriptRunning = true 
@@ -884,7 +884,7 @@ RS.Stepped:Connect(function()
     end
 end)
 
-#Players.PlayerRemoving:Connect(function(p)
+Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
