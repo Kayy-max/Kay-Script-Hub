@@ -272,29 +272,29 @@ local function initVoiceBypass()
     end)
 end
 
--- STRUKTUR UI MINI MIC CONTROLLER (ICON BULAT ON/OFF)
+-- STRUKTUR UI MINI MIC CONTROLLER (ICON BULAT ON/OFF + DRAGGABLE)
 local MicToggleGui = Instance.new("ScreenGui")
 MicToggleGui.Name = "KayHub_MicController"
 MicToggleGui.ResetOnSpawn = false
 
 local PopUpFrame = Instance.new("Frame")
 PopUpFrame.Size = UDim2.new(0, 45, 0, 45)
-PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) -- Letak default melayang aman
+PopUpFrame.Position = UDim2.new(0.85, 0, 0.15, 0) -- Posisi melayang bebas
 PopUpFrame.Active = true
 PopUpFrame.Visible = false
 PopUpFrame.Parent = MicToggleGui
-Instance.new("UICorner", PopUpFrame).CornerRadius = UDim.new(1, 0) -- Membuat frame bulat sempurna
+Instance.new("UICorner", PopUpFrame).CornerRadius = UDim.new(1, 0) -- Lingkaran Sempurna
 local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
 PopUpStroke.Thickness = 2
 
 table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
 table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
-MakeDraggable(PopUpFrame)
+MakeDraggable(PopUpFrame) -- Fitur Geser (Drag & Drop) untuk Icon Mic Bulat
 
 local PopUpBtn = Instance.new("TextButton", PopUpFrame)
 PopUpBtn.Size = UDim2.new(1, 0, 1, 0)
 PopUpBtn.BackgroundTransparency = 1
-PopUpBtn.Text = "🎙️" -- Icon default ON
+PopUpBtn.Text = "🎙️"
 PopUpBtn.TextSize = 18
 PopUpBtn.Font = Enum.Font.GothamBold
 
@@ -322,8 +322,8 @@ if not MicToggleGui.Parent then MicToggleGui.Parent = LocalPlayer:WaitForChild("
 -- =========================================================
 local HomePage = CreateTab("Home")
 
--- [BARU] TOGGLE MIC CONTROLLER DI ATAS INSTANT INTERACT
-CreateToggle(HomePage, "Aktifkan Mic Controller Window", function(state)
+-- [TERBARU] NAMA DIUBAH MENJADI KAY VOICE ANTIBAN & DI ATAS INSTANT INTERACT
+CreateToggle(HomePage, "Kay voice antiban", function(state)
     if state then
         initVoiceBypass()
         PopUpFrame.Visible = true
@@ -734,7 +734,6 @@ for themeName, data in pairs(Themes) do
         if ConfirmOverlay.Visible then return end
         ApplyTheme(themeName)
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
-        -- Otomatis update warna stroke indicator mic jika mic dalam kondisi aktif/ON
         if PopUpFrame.Visible and not voiceMutedState then
             PopUpStroke.Color = CurrentTheme.AccentColor
         end
@@ -862,4 +861,4 @@ end)
 
 -- Eksekusi Tema Default di Awal Buka
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.3: Floating Mic Indicator fully integrated on Home Page.")
+print("[SYSTEM] Kay Hub V8.3: 'Kay voice antiban' successfully updated with Draggable floating mic button.")
