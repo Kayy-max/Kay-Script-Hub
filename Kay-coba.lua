@@ -349,7 +349,7 @@ end)
 
 -- LOGIKA HALAMAN UTAMA (HOME PAGE)
 local HomePage = CreateTab("Home")
-local targetPlayerName = nil -- Menggunakan string Name agar engine tahan banting saat rejoin
+local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
 local attachmentConnection, currentEmoteTrack
@@ -402,7 +402,6 @@ local function startLoop(targetChar)
     end
 end
 
--- Fungsi pemicu auto-attach cerdas
 local function checkAndAttach()
     if not isAttached or not targetPlayerName then return end
     
@@ -411,7 +410,6 @@ local function checkAndAttach()
         removeWelds()
         startLoop(targetPlayer.Character)
         
-        -- Trigger Emote
         if autoEmoteEnabled then
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
@@ -433,7 +431,6 @@ local function runAttachLogic()
     
     if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
     
-    -- Listener: target mati / respawn
     targetCharAddedConnection = selectedPlayer.CharacterAdded:Connect(function()
         if isAttached then 
             task.wait(0.5) 
@@ -444,9 +441,9 @@ local function runAttachLogic()
     checkAndAttach()
 end
 
+-- PERBAIKAN UTAMA: Lepas kaitan fisik saja, tapi Nama Target TIDAK dihapus
 local function detach()
     isAttached = false
-    targetPlayerName = nil
     if attachmentConnection then attachmentConnection:Disconnect() end
     if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
     
@@ -473,7 +470,6 @@ local function detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
 end
 
--- Otomatis nempel kembali jika TARGET REJOIN server yang sama
 Players.PlayerAdded:Connect(function(player)
     if isAttached and targetPlayerName and player.Name == targetPlayerName then
         task.wait(1) 
@@ -485,7 +481,6 @@ Players.PlayerAdded:Connect(function(player)
     end
 end)
 
--- Otomatis nempel kembali jika KITA SENDIRI mati / respawn
 LocalPlayer.CharacterAdded:Connect(function()
     if isAttached and targetPlayerName then
         task.wait(0.5) 
@@ -715,7 +710,7 @@ SpeedToggle.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
     SpeedToggle.Text = SpeedEnabled and "Speed: ON" or "Speed: OFF"
     local tBG = SpeedEnabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
-    local tTX = SpeedEnabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
+    local tTX = SpeedEnabled beats Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
     TS:Create(SpeedToggle, TweenInfo.new(0.2), {BackgroundColor3 = tBG, TextColor3 = tTX}):Play()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
@@ -843,6 +838,7 @@ NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
+    targetPlayerName = nil -- Benar-benar dihapus hanya ketika script diclose total
     if promptConnection then promptConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
