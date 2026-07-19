@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE ]] --
+-- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE WITH AUTH SYSTEM ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -54,15 +54,6 @@ KayHub.ResetOnSpawn = false
 pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Thickness = 1
-
-table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
-table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
-
 -- =========================================================
 -- DRAG FUNCTION ENGINE
 -- =========================================================
@@ -108,7 +99,78 @@ local function MakeDraggable(guiFrame)
     end)
 end
 
+local MainFrame = Instance.new("Frame")
+MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
+MainFrame.Visible = false -- Sembunyikan dulu sampai password benar
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Thickness = 1
+
+table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
+table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
+
 MakeDraggable(MainFrame)
+
+-- =========================================================
+-- SYSTEM VERIFIKASI / PASSWORD
+-- =========================================================
+local CorrectPassword = "kay602122"
+local WrongAttempts = 0
+local MaxAttempts = 3
+
+local AuthFrame = Instance.new("Frame")
+AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, KayHub
+Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
+local AuthStroke = Instance.new("UIStroke", AuthFrame)
+AuthStroke.Thickness = 1
+
+table.insert(AllUIElements, {Obj = AuthFrame, Prop = "BackgroundColor3", Key = "BGColor"})
+table.insert(AllUIElements, {Obj = AuthStroke, Prop = "Color", Key = "StrokeColor"})
+MakeDraggable(AuthFrame)
+
+local AuthTitle = Instance.new("TextLabel", AuthFrame)
+AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
+table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
+
+local PasswordInput = Instance.new("TextBox", AuthFrame)
+PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
+Instance.new("UICorner", PasswordInput).CornerRadius = UDim.new(0, 6)
+local PwdStroke = Instance.new("UIStroke", PasswordInput)
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = PwdStroke, Prop = "Color", Key = "StrokeColor"})
+
+local InfoLabel = Instance.new("TextLabel", AuthFrame)
+InfoLabel.Size, InfoLabel.Position, InfoLabel.BackgroundTransparency, InfoLabel.Text, InfoLabel.Font, InfoLabel.TextSize = UDim2.new(1, 0, 0, 20), UDim2.new(0, 0, 0, 95), 1, "Sisa percobaan: " .. (MaxAttempts - WrongAttempts), Enum.Font.Gotham, 11
+table.insert(AllUIElements, {Obj = InfoLabel, Prop = "TextColor3", Key = "MutedText"})
+
+local VerifyBtn = Instance.new("TextButton", AuthFrame)
+VerifyBtn.Size, VerifyBtn.Position, VerifyBtn.Text, VerifyBtn.Font, VerifyBtn.TextSize, VerifyBtn.TextColor3 = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 125), "VERIFIKASI", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    if PasswordInput.Text == CorrectPassword then
+        InfoLabel.Text = "Akses Diterima! Memuat script..."
+        InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
+        task.wait(1)
+        AuthFrame:Destroy()
+        MainFrame.Visible = true
+    -- Pemicu Auto Close jika salah 3x
+    else
+        WrongAttempts = WrongAttempts + 1
+        InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
+        InfoLabel.TextColor3 = Color3.fromRGB(240, 50, 50)
+        PasswordInput.Text = ""
+        
+        if WrongAttempts >= MaxAttempts then
+            InfoLabel.Text = "Terlalu banyak kesalahan. Menutup..."
+            task.wait(1.5)
+            KayHub:Destroy()
+            ScriptRunning = false
+        end
+    end
+end)
 
 -- Sidebar Minimalis
 local Sidebar = Instance.new("Frame")
@@ -156,7 +218,7 @@ table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeCo
 
 local isMinimized = false
 local function toggleMenu()
-    if not ScriptRunning then return end
+    if not ScriptRunning or AuthFrame.Parent ~= nil then return end
     isMinimized = not isMinimized
     TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
     if isMinimized then task.wait(0.2) end
@@ -349,7 +411,7 @@ end)
 
 -- LOGIKA HALAMAN UTAMA (HOME PAGE)
 local HomePage = CreateTab("Home")
-local targetPlayerName = nil -- Menggunakan string Name agar engine tahan banting saat rejoin
+local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
 local attachmentConnection, currentEmoteTrack
@@ -363,9 +425,6 @@ local function removeWelds()
     end
 end
 
--- =========================================================
--- VARIABEL FITUR 2: PIGGYBACK FE (AUTO-RECONSTRUCT ENGINE)
--- =========================================================
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
     local myChar = LocalPlayer.Character
@@ -402,7 +461,6 @@ local function startLoop(targetChar)
     end
 end
 
--- Fungsi pemicu auto-attach cerdas
 local function checkAndAttach()
     if not isAttached or not targetPlayerName then return end
     
@@ -411,7 +469,6 @@ local function checkAndAttach()
         removeWelds()
         startLoop(targetPlayer.Character)
         
-        -- Trigger Emote
         if autoEmoteEnabled then
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
@@ -433,7 +490,6 @@ local function runAttachLogic()
     
     if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
     
-    -- Listener: target mati / respawn
     targetCharAddedConnection = selectedPlayer.CharacterAdded:Connect(function()
         if isAttached then 
             task.wait(0.5) 
@@ -473,7 +529,6 @@ local function detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
 end
 
--- Otomatis nempel kembali jika TARGET REJOIN server yang sama
 Players.PlayerAdded:Connect(function(player)
     if isAttached and targetPlayerName and player.Name == targetPlayerName then
         task.wait(1) 
@@ -485,7 +540,6 @@ Players.PlayerAdded:Connect(function(player)
     end
 end)
 
--- Otomatis nempel kembali jika KITA SENDIRI mati / respawn
 LocalPlayer.CharacterAdded:Connect(function()
     if isAttached and targetPlayerName then
         task.wait(0.5) 
