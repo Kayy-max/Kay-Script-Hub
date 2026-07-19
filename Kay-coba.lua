@@ -441,7 +441,6 @@ local function runAttachLogic()
     checkAndAttach()
 end
 
--- PERBAIKAN UTAMA: Lepas kaitan fisik saja, tapi Nama Target TIDAK dihapus
 local function detach()
     isAttached = false
     if attachmentConnection then attachmentConnection:Disconnect() end
@@ -710,7 +709,7 @@ SpeedToggle.MouseButton1Click:Connect(function()
     SpeedEnabled = not SpeedEnabled
     SpeedToggle.Text = SpeedEnabled and "Speed: ON" or "Speed: OFF"
     local tBG = SpeedEnabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
-    local tTX = SpeedEnabled beats Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
+    local tTX = SpeedEnabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText -- DI SINI SUDAH FIX (Bukan 'beats' lagi)
     TS:Create(SpeedToggle, TweenInfo.new(0.2), {BackgroundColor3 = tBG, TextColor3 = tTX}):Play()
     if not SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16 end
 end)
@@ -838,7 +837,7 @@ NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
     detach()
-    targetPlayerName = nil -- Benar-benar dihapus hanya ketika script diclose total
+    targetPlayerName = nil
     if promptConnection then promptConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
