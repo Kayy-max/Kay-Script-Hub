@@ -349,10 +349,11 @@ end)
 
 -- LOGIKA HALAMAN UTAMA (HOME PAGE)
 local HomePage = CreateTab("Home")
-local targetPlayerObj = nil 
+local targetPlayerName = nil -- Menggunakan string Name agar engine tahan banting saat rejoin
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
-local attachmentConnection, respawnConnection, currentEmoteTrack
+local attachmentConnection, currentEmoteTrack
+local targetCharAddedConnection = nil
 
 local function removeWelds()
     if LocalPlayer.Character then
@@ -363,7 +364,7 @@ local function removeWelds()
 end
 
 -- =========================================================
--- VARIABEL FITUR 2: PIGGYBACK FE (UPDATED ENGINE IMPLEMENTATION)
+-- VARIABEL FITUR 2: PIGGYBACK FE (AUTO-RECONSTRUCT ENGINE)
 -- =========================================================
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
@@ -401,10 +402,54 @@ local function startLoop(targetChar)
     end
 end
 
+-- Fungsi pemicu auto-attach cerdas
+local function checkAndAttach()
+    if not isAttached or not targetPlayerName then return end
+    
+    local targetPlayer = Players:FindFirstChild(targetPlayerName)
+    if targetPlayer and targetPlayer.Character and LocalPlayer.Character then
+        removeWelds()
+        startLoop(targetPlayer.Character)
+        
+        -- Trigger Emote
+        if autoEmoteEnabled then
+            local char = LocalPlayer.Character
+            if currentEmoteTrack then currentEmoteTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://107480602323379"
+            pcall(function()
+                currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
+                currentEmoteTrack:Play()
+            end)
+        end
+    end
+end
+
+local function runAttachLogic()
+    local selectedPlayer = Players:FindFirstChild(targetPlayerName or "")
+    if not selectedPlayer or ConfirmOverlay.Visible then return end
+    
+    isAttached = true
+    
+    if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+    
+    -- Listener: target mati / respawn
+    targetCharAddedConnection = selectedPlayer.CharacterAdded:Connect(function()
+        if isAttached then 
+            task.wait(0.5) 
+            checkAndAttach() 
+        end
+    end)
+    
+    checkAndAttach()
+end
+
 local function detach()
     isAttached = false
+    targetPlayerName = nil
     if attachmentConnection then attachmentConnection:Disconnect() end
-    if respawnConnection then respawnConnection:Disconnect() end
+    if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+    
     local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
@@ -428,13 +473,36 @@ local function detach()
     if currentEmoteTrack then currentEmoteTrack:Stop() end
 end
 
+-- Otomatis nempel kembali jika TARGET REJOIN server yang sama
+Players.PlayerAdded:Connect(function(player)
+    if isAttached and targetPlayerName and player.Name == targetPlayerName then
+        task.wait(1) 
+        if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+        targetCharAddedConnection = player.CharacterAdded:Connect(function()
+            if isAttached then task.wait(0.5) checkAndAttach() end
+        end)
+        checkAndAttach()
+    end
+end)
+
+-- Otomatis nempel kembali jika KITA SENDIRI mati / respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    if isAttached and targetPlayerName then
+        task.wait(0.5) 
+        checkAndAttach()
+    end
+end)
+
 local function forceUpdatePosition()
-    if isAttached and targetPlayerObj and targetPlayerObj.Character then
-        local myChar = LocalPlayer.Character
-        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-        local targetHRP = targetPlayerObj.Character:FindFirstChild("HumanoidRootPart")
-        if myHRP and targetHRP then
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+    if isAttached and targetPlayerName then
+        local targetPlayer = Players:FindFirstChild(targetPlayerName)
+        if targetPlayer and targetPlayer.Character then
+            local myChar = LocalPlayer.Character
+            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHRP and targetHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            end
         end
     end
 end
@@ -494,7 +562,7 @@ local function refreshPlayerList(filter)
                 table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
                 btn.MouseButton1Click:Connect(function()
                     if ConfirmOverlay.Visible then return end
-                    targetPlayerObj = player 
+                    targetPlayerName = player.Name
                     DropdownBtn.Text = "Selected: " .. player.DisplayName
                     PlayerListFrame.Visible = false
                 end)
@@ -504,26 +572,6 @@ local function refreshPlayerList(filter)
 end
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
 refreshPlayerList()
-
-local function runAttachLogic()
-    if not targetPlayerObj or ConfirmOverlay.Visible then return end
-    isAttached = true
-    removeWelds()
-    if respawnConnection then respawnConnection:Disconnect() end
-    if targetPlayerObj.Character then startLoop(targetPlayerObj.Character) end
-    respawnConnection = targetPlayerObj.CharacterAdded:Connect(function(char) if isAttached then task.wait(0.5) startLoop(char) end end)
-    
-    if autoEmoteEnabled and targetPlayerObj.Character and LocalPlayer.Character then
-        local char = LocalPlayer.Character
-        if currentEmoteTrack then currentEmoteTrack:Stop() end
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://107480602323379"
-        pcall(function()
-            currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
-            currentEmoteTrack:Play()
-        end)
-    end
-end
 
 local ActionFrame = Instance.new("Frame", HomePage)
 ActionFrame.Size, ActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 32), 1
