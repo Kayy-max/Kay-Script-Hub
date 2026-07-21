@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.8 - REJOIN & AUTO TELEPORT BACK (FIXED) ]] --
+-- [[ KAY HUB PRO V8.9 - REJOIN & AUTO TELEPORT BACK (SIDEBAR FIXED) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
@@ -188,18 +188,20 @@ VerifyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Sidebar Minimalis
+-- Sidebar Minimalis & Scrollable jika Tab Banyak
 local Sidebar = Instance.new("Frame")
 Sidebar.Size, Sidebar.Parent = UDim2.new(0, 120, 1, 0), MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 50), 1, "KAY HUB V8", Enum.Font.GothamBold, 15, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V8", Enum.Font.GothamBold, 14, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
-local SidebarList = Instance.new("UIListLayout")
-SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment, SidebarList.Parent = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center, Sidebar
+local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
+SidebarContainer.Size, SidebarContainer.Position, SidebarContainer.BackgroundTransparency, SidebarContainer.BorderSizePixel, SidebarContainer.ScrollBarThickness, SidebarContainer.AutomaticCanvasSize = UDim2.new(1, 0, 1, -40), UDim2.new(0, 0, 0, 40), 1, 0, 0, Enum.AutomaticSize.Y
+local SidebarList = Instance.new("UIListLayout", SidebarContainer)
+SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center
 
 -- Container Konten
 local ContentContainer = Instance.new("Frame")
@@ -293,8 +295,8 @@ local function CreateTab(tabName)
     local PageList = Instance.new("UIListLayout", Page)
     PageList.Padding, PageList.HorizontalAlignment = UDim.new(0, 6), Enum.HorizontalAlignment.Center
     
-    local TabButton = Instance.new("TextButton")
-    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.Font, TabButton.TextSize, TabButton.Parent = UDim2.new(0.9, 0, 0, 32), 1, tabName, Enum.Font.GothamBold, 12, Sidebar
+    local TabButton = Instance.new("TextButton", SidebarContainer)
+    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.Font, TabButton.TextSize = UDim2.new(0.9, 0, 0, 28), 1, tabName, Enum.Font.GothamBold, 11
     
     table.insert(AllUIElements, {Obj = TabButton, Prop = "TextColor3", Key = FirstTab and "AccentColor" or "MutedText"})
     if FirstTab then Page.Visible, CurrentTabTitle.Text, FirstTab = true, tabName, false end
@@ -425,7 +427,7 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- LOGIKA HALAMAN UTAMA (HOME PAGE)
+-- TAB 1: HOME PAGE
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
@@ -503,14 +505,10 @@ local function runAttachLogic()
     if not selectedPlayer or ConfirmOverlay.Visible then return end
     
     isAttached = true
-    
     if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
     
     targetCharAddedConnection = selectedPlayer.CharacterAdded:Connect(function()
-        if isAttached then 
-            task.wait(0.5) 
-            checkAndAttach() 
-        end
+        if isAttached then task.wait(0.5) checkAndAttach() end
     end)
     
     checkAndAttach()
@@ -527,17 +525,13 @@ local function detach()
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
-        
         if myHRP then 
-            pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
-            end)
+            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", nil) end)
             myHRP.Velocity = Vector3.new(0, 0, 0) 
             myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             myHRP.RotVelocity = Vector3.new(0, 0, 0)
         end
-        
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = true end
         end
@@ -557,10 +551,7 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 LocalPlayer.CharacterAdded:Connect(function()
-    if isAttached and targetPlayerName then
-        task.wait(0.5) 
-        checkAndAttach()
-    end
+    if isAttached and targetPlayerName then task.wait(0.5) checkAndAttach() end
 end)
 
 local function forceUpdatePosition()
@@ -688,7 +679,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
--- CUSTOM ANIMATION PAGE
+-- TAB 2: ANIMATIONS PAGE
 local AnimPage = CreateTab("Animations")
 local animMode = "NONE"
 local kayAnimTrack = nil
@@ -750,7 +741,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- FUN / UTILITIES PAGE
+-- TAB 3: FUN / UTILITIES PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
@@ -841,7 +832,7 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- ESP PAGE
+-- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -866,7 +857,7 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- SERVER CONTROL PAGE (DITAMBAHKAN)
+-- TAB 5: SERVER PAGE (DITAMBAHKAN DAN MUNCUL DI SIDEBAR MENU)
 local ServerPage = CreateTab("Server")
 
 local RejoinBtn = Instance.new("TextButton", ServerPage)
@@ -924,7 +915,7 @@ RejoinTPBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- VOICE TAB
+-- TAB 6: VOICE PAGE
 local VoicePage = CreateTab("Voice")
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
@@ -938,7 +929,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- THEMES PAGE
+-- TAB 7: THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -1067,4 +1058,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.8 Loaded Successfully.")
+print("[SYSTEM] Kay Hub V8.9: Sidebar & Server Tab Fixed.")
