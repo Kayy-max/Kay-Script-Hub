@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.0 - AUTO BYPASS & PLAYER COUNTER FIXED ]] --
+-- [[ KAY HUB PRO V9.1 - FULL AUTOMATIC NO PASSWORD ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
@@ -128,9 +128,10 @@ local function MakeDraggable(guiFrame)
     end)
 end
 
+-- MAINFRAME LANGSUNG VISIBLE (SISTEM PASSWORD DIHAPUS)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-MainFrame.Visible = false 
+MainFrame.Visible = true 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -139,75 +140,6 @@ table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "
 table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
 MakeDraggable(MainFrame)
-
--- =========================================================
--- SYSTEM VERIFIKASI / PASSWORD
--- =========================================================
-local CorrectPassword = "kay602122"
-local WrongAttempts = 0
-local MaxAttempts = 3
-
-local AuthFrame = Instance.new("Frame")
-AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, KayHub
-AuthFrame.Visible = true
-Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
-local AuthStroke = Instance.new("UIStroke", AuthFrame)
-AuthStroke.Thickness = 1
-
-table.insert(AllUIElements, {Obj = AuthFrame, Prop = "BackgroundColor3", Key = "BGColor"})
-table.insert(AllUIElements, {Obj = AuthStroke, Prop = "Color", Key = "StrokeColor"})
-MakeDraggable(AuthFrame)
-
-local AuthTitle = Instance.new("TextLabel", AuthFrame)
-AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
-table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
-
-local PasswordInput = Instance.new("TextBox", AuthFrame)
-PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
-Instance.new("UICorner", PasswordInput).CornerRadius = UDim.new(0, 6)
-local PwdStroke = Instance.new("UIStroke", PasswordInput)
-table.insert(AllUIElements, {Obj = PasswordInput, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = PasswordInput, Prop = "TextColor3", Key = "TextColor"})
-table.insert(AllUIElements, {Obj = PwdStroke, Prop = "Color", Key = "StrokeColor"})
-
-local InfoLabel = Instance.new("TextLabel", AuthFrame)
-InfoLabel.Size, InfoLabel.Position, InfoLabel.BackgroundTransparency, InfoLabel.Text, InfoLabel.Font, InfoLabel.TextSize = UDim2.new(1, 0, 0, 20), UDim2.new(0, 0, 0, 95), 1, "Sisa percobaan: " .. (MaxAttempts - WrongAttempts), Enum.Font.Gotham, 11
-table.insert(AllUIElements, {Obj = InfoLabel, Prop = "TextColor3", Key = "MutedText"})
-
-local VerifyBtn = Instance.new("TextButton", AuthFrame)
-VerifyBtn.Size, VerifyBtn.Position, VerifyBtn.Text, VerifyBtn.Font, VerifyBtn.TextSize, VerifyBtn.TextColor3 = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 125), "VERIFIKASI", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
-
-local function UnlockHub()
-    pcall(function()
-        if getgenv then getgenv().KayHub_Verified = true end
-    end)
-    AuthFrame.Visible = false
-    AuthFrame:Destroy()
-    MainFrame.Visible = true
-end
-
-VerifyBtn.MouseButton1Click:Connect(function()
-    if PasswordInput.Text == CorrectPassword then
-        InfoLabel.Text = "Akses Diterima! Memuat script..."
-        InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
-        task.wait(0.3)
-        UnlockHub()
-    else
-        WrongAttempts = WrongAttempts + 1
-        InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
-        InfoLabel.TextColor3 = Color3.fromRGB(240, 50, 50)
-        PasswordInput.Text = ""
-        
-        if WrongAttempts >= MaxAttempts then
-            InfoLabel.Text = "Terlalu banyak kesalahan. Menutup..."
-            task.wait(1.5)
-            KayHub:Destroy()
-            ScriptRunning = false
-        end
-    end
-end)
 
 -- Sidebar Minimalis & Scrollable jika Tab Banyak
 local Sidebar = Instance.new("Frame")
@@ -1114,12 +1046,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-
--- SYSTEM EXECUTOR AUTO-BYPASS CHECK AT THE END
-pcall(function()
-    if getgenv and getgenv().KayHub_Verified then
-        UnlockHub()
-    end
-end)
-
-print("[SYSTEM] Kay Hub V9.0 Fully Loaded.")
+print("[SYSTEM] Kay Hub V9.1: Direct Open Engine Ready.")
