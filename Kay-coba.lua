@@ -1,23 +1,6 @@
--- [[ KAY HUB PRO V8.8 - REJOIN & AUTO TELEPORT BACK (FIXED) ]] --
+-- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE WITH AUTH SYSTEM ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
-local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
-
--- LOGIKA AUTO TELEPORT BACK SETELAH REJOIN
-task.spawn(function()
-    pcall(function()
-        if getgenv and getgenv().KayHub_SavedPos then
-            local pos = getgenv().KayHub_SavedPos
-            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local hrp = char:WaitForChild("HumanoidRootPart", 10)
-            if hrp and pos then
-                task.wait(1.5)
-                hrp.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
-                getgenv().KayHub_SavedPos = nil
-            end
-        end
-    end)
-end)
 
 -- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
@@ -118,7 +101,7 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-MainFrame.Visible = false 
+MainFrame.Visible = false -- Sembunyikan dulu sampai password benar
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -173,6 +156,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         task.wait(1)
         AuthFrame:Destroy()
         MainFrame.Visible = true
+    -- Pemicu Auto Close jika salah 3x
     else
         WrongAttempts = WrongAttempts + 1
         InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
@@ -866,64 +850,6 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- SERVER CONTROL PAGE (DITAMBAHKAN)
-local ServerPage = CreateTab("Server")
-
-local RejoinBtn = Instance.new("TextButton", ServerPage)
-RejoinBtn.Size, RejoinBtn.Text, RejoinBtn.Font, RejoinBtn.TextSize = UDim2.new(1, -10, 0, 38), "🔄 Rejoin Server Saat Ini", Enum.Font.GothamBold, 12
-Instance.new("UICorner", RejoinBtn).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = RejoinBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = RejoinBtn, Prop = "TextColor3", Key = "TextColor"})
-
-local RejoinTPBtn = Instance.new("TextButton", ServerPage)
-RejoinTPBtn.Size, RejoinTPBtn.Text, RejoinTPBtn.Font, RejoinTPBtn.TextSize = UDim2.new(1, -10, 0, 38), "📍 Rejoin + Balik Posisi Semula", Enum.Font.GothamBold, 12
-Instance.new("UICorner", RejoinTPBtn).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = RejoinTPBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
-RejoinTPBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
-
--- Fungsi Rejoin Biasa
-RejoinBtn.MouseButton1Click:Connect(function()
-    if ConfirmOverlay.Visible then return end
-    pcall(function()
-        if #Players:GetPlayers() <= 1 then
-            TeleportService:Teleport(game.PlaceId, LocalPlayer)
-        else
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-        end
-    end)
-end)
-
--- Fungsi Rejoin + Auto Teleport ke Posisi Sebelumnya
-RejoinTPBtn.MouseButton1Click:Connect(function()
-    if ConfirmOverlay.Visible then return end
-    pcall(function()
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if hrp then
-            local currentPos = hrp.Position
-            
-            local queueCode = string.format([[
-                getgenv().KayHub_SavedPos = Vector3.new(%f, %f, %f)
-            ]], currentPos.X, currentPos.Y, currentPos.Z)
-            
-            pcall(function()
-                if queue_on_teleport then
-                    queue_on_teleport(queueCode)
-                elseif syn and syn.queue_on_teleport then
-                    syn.queue_on_teleport(queueCode)
-                end
-            end)
-            
-            if #Players:GetPlayers() <= 1 then
-                TeleportService:Teleport(game.PlaceId, LocalPlayer)
-            else
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-            end
-        end
-    end)
-end)
-
 -- VOICE TAB
 local VoicePage = CreateTab("Voice")
 
@@ -1067,4 +993,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.8 Loaded Successfully.")
+print("[SYSTEM] Kay Hub V8.7: Advanced Physics Replicator Applied.")
