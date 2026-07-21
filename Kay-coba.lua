@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.9 - REJOIN, AUTO-BYPASS PWD & PLAYER COUNTER ]] --
+-- [[ KAY HUB PRO V9.0 - AUTO BYPASS & PLAYER COUNTER FIXED ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
@@ -64,11 +64,23 @@ local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} 
 local ScriptRunning = true 
 
+-- Hapus UI Lama jika ada
+if game:GetService("CoreGui"):FindFirstChild("KayHub_Main") then
+    game:GetService("CoreGui").KayHub_Main:Destroy()
+end
+
 -- UI Utama (ScreenGui)
 local KayHub = Instance.new("ScreenGui")
 KayHub.Name = "KayHub_Main"
 KayHub.ResetOnSpawn = false
-pcall(function() KayHub.Parent = game:GetService("CoreGui") end)
+
+pcall(function() 
+    if gethui then
+        KayHub.Parent = gethui()
+    else
+        KayHub.Parent = game:GetService("CoreGui")
+    end
+end)
 if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 -- =========================================================
@@ -129,7 +141,7 @@ table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColo
 MakeDraggable(MainFrame)
 
 -- =========================================================
--- SYSTEM VERIFIKASI / PASSWORD (AUTO-BYPASS ON REJOIN)
+-- SYSTEM VERIFIKASI / PASSWORD
 -- =========================================================
 local CorrectPassword = "kay602122"
 local WrongAttempts = 0
@@ -137,6 +149,7 @@ local MaxAttempts = 3
 
 local AuthFrame = Instance.new("Frame")
 AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, KayHub
+AuthFrame.Visible = true
 Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
 local AuthStroke = Instance.new("UIStroke", AuthFrame)
 AuthStroke.Thickness = 1
@@ -167,21 +180,19 @@ Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
 
 local function UnlockHub()
-    if getgenv then getgenv().KayHub_Verified = true end
+    pcall(function()
+        if getgenv then getgenv().KayHub_Verified = true end
+    end)
+    AuthFrame.Visible = false
     AuthFrame:Destroy()
     MainFrame.Visible = true
-end
-
--- Pengecekan otomatis jika sebelumnya sudah terverifikasi
-if getgenv and getgenv().KayHub_Verified then
-    UnlockHub()
 end
 
 VerifyBtn.MouseButton1Click:Connect(function()
     if PasswordInput.Text == CorrectPassword then
         InfoLabel.Text = "Akses Diterima! Memuat script..."
         InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
-        task.wait(0.5)
+        task.wait(0.3)
         UnlockHub()
     else
         WrongAttempts = WrongAttempts + 1
@@ -221,12 +232,12 @@ local TopBar = Instance.new("Frame")
 TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.4, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.35, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
 -- INDIKATOR TOTAL PLAYER DI TOPBAR
 local PlayerCountTopBar = Instance.new("TextLabel")
-PlayerCountTopBar.Size, PlayerCountTopBar.Position, PlayerCountTopBar.BackgroundTransparency, PlayerCountTopBar.Text, PlayerCountTopBar.Font, PlayerCountTopBar.TextSize, PlayerCountTopBar.TextXAlignment, PlayerCountTopBar.Parent = UDim2.new(0.35, 0, 1, 0), UDim2.new(0.35, 0, 0, 0), 1, "👥 0/0", Enum.Font.Gotham, 11, Enum.TextXAlignment.Right, TopBar
+PlayerCountTopBar.Size, PlayerCountTopBar.Position, PlayerCountTopBar.BackgroundTransparency, PlayerCountTopBar.Text, PlayerCountTopBar.Font, PlayerCountTopBar.TextSize, PlayerCountTopBar.TextXAlignment, PlayerCountTopBar.Parent = UDim2.new(0.4, 0, 1, 0), UDim2.new(0.32, 0, 0, 0), 1, "👥 0/0", Enum.Font.Gotham, 11, Enum.TextXAlignment.Right, TopBar
 table.insert(AllUIElements, {Obj = PlayerCountTopBar, Prop = "TextColor3", Key = "MutedText"})
 
 local function updatePlayerCount()
@@ -260,7 +271,7 @@ table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeCo
 
 local isMinimized = false
 local function toggleMenu()
-    if not ScriptRunning or (AuthFrame and AuthFrame.Parent ~= nil) then return end
+    if not ScriptRunning then return end
     isMinimized = not isMinimized
     TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
     if isMinimized then task.wait(0.2) end
@@ -1103,4 +1114,12 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.9: Auto-Bypass & Player Counter Ready.")
+
+-- SYSTEM EXECUTOR AUTO-BYPASS CHECK AT THE END
+pcall(function()
+    if getgenv and getgenv().KayHub_Verified then
+        UnlockHub()
+    end
+end)
+
+print("[SYSTEM] Kay Hub V9.0 Fully Loaded.")
