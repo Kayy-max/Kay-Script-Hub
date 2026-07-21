@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE WITH AUTH SYSTEM ]] --
+-- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE WITH AUTH SYSTEM (NO-SHAKE FIXED) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -156,7 +156,6 @@ VerifyBtn.MouseButton1Click:Connect(function()
         task.wait(1)
         AuthFrame:Destroy()
         MainFrame.Visible = true
-    -- Pemicu Auto Close jika salah 3x
     else
         WrongAttempts = WrongAttempts + 1
         InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
@@ -425,6 +424,7 @@ local function removeWelds()
     end
 end
 
+-- LOGIKA TEMPEL PERBAIKAN (MENGHILANGKAN GETARAN)
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
     local myChar = LocalPlayer.Character
@@ -435,14 +435,20 @@ local function startLoop(targetChar)
     if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
         
-        for _, part in pairs(myChar:GetChildren()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-        
-        attachmentConnection = RS.Heartbeat:Connect(function()
+        -- Gunakan RenderStepped agar animasi pergerakan mulus tanpa tremor/jitter
+        attachmentConnection = RS.RenderStepped:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
+            end
+            
+            -- Matikan tabrakan dan bersihkan kecepatan fisik setiap frame
+            for _, part in pairs(myChar:GetChildren()) do
+                if part:IsA("BasePart") then 
+                    part.CanCollide = false 
+                    part.AssemblyLinearVelocity = Vector3.zero
+                    part.AssemblyAngularVelocity = Vector3.zero
+                end
             end
             
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
@@ -453,10 +459,10 @@ local function startLoop(targetChar)
             end)
             
             myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new()
-            myHRP.AssemblyLinearVelocity = Vector3.new()
-            myHRP.AssemblyAngularVelocity = Vector3.new()
-            myHRP.RotVelocity = Vector3.new()
+            myHRP.Velocity = Vector3.zero
+            myHRP.RotVelocity = Vector3.zero
+            myHRP.AssemblyLinearVelocity = Vector3.zero
+            myHRP.AssemblyAngularVelocity = Vector3.zero
         end)
     end
 end
@@ -516,10 +522,10 @@ local function detach()
             pcall(function()
                 sethiddenproperty(myHRP, "PhysicsRepRootPart", nil)
             end)
-            myHRP.Velocity = Vector3.new(0, 0, 0) 
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+            myHRP.Velocity = Vector3.zero
+            myHRP.RotVelocity = Vector3.zero
+            myHRP.AssemblyLinearVelocity = Vector3.zero
+            myHRP.AssemblyAngularVelocity = Vector3.zero
         end
         
         for _, part in pairs(myChar:GetChildren()) do
@@ -921,7 +927,7 @@ RS.Stepped:Connect(function()
     local myHrp = char and char:FindFirstChild("HumanoidRootPart")
     
     if SpeedEnabled and hum then hum.WalkSpeed = SpeedValue end
-    if NoclipEnabled and char then
+    if NoclipEnabled and char and not isAttached then
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
@@ -993,4 +999,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.7: Advanced Physics Replicator Applied.")
+print("[SYSTEM] Kay Hub V8.7: Advanced Physics Replicator Applied (No Shake Fix).")
