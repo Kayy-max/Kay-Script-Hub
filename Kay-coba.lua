@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS & IDLE-ONLY ANIMATION SYNC UPDATE ]] --
+-- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS REPLICATION UPDATE WITH AUTH SYSTEM ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -101,7 +101,7 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 440, 0, 300), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-MainFrame.Visible = false
+MainFrame.Visible = false -- Sembunyikan dulu sampai password benar
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -156,6 +156,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         task.wait(1)
         AuthFrame:Destroy()
         MainFrame.Visible = true
+    -- Pemicu Auto Close jika salah 3x
     else
         WrongAttempts = WrongAttempts + 1
         InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
@@ -408,15 +409,12 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- LOGIKA HALAMAN UTAMA (HOME PAGE & IDLE-ONLY ANIMATION ENGINE)
+-- LOGIKA HALAMAN UTAMA (HOME PAGE)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
-local idleSyncEnabled = true -- SYNC ANIMASI KHUSUS SAAT TARGET IDLE (DIEM)
 local attachmentConnection, currentEmoteTrack
-local syncAnimConnection = nil
-local playingSyncTracks = {}
 local targetCharAddedConnection = nil
 
 local function removeWelds()
@@ -427,90 +425,14 @@ local function removeWelds()
     end
 end
 
-local function getTargetAnimPart(targetChar)
-    return targetChar:FindFirstChild("UpperTorso") 
-        or targetChar:FindFirstChild("Torso") 
-        or targetChar:FindFirstChild("HumanoidRootPart")
-end
-
-local function stopSyncAnimations()
-    for animId, track in pairs(playingSyncTracks) do
-        pcall(function() track:Stop() end)
-    end
-    playingSyncTracks = {}
-end
-
--- REPLIKASI KHUSUS ANIMASI IDLE
-local function syncIdleAnimations(targetChar)
-    if syncAnimConnection then syncAnimConnection:Disconnect() end
-    stopSyncAnimations()
-
-    local targetHum = targetChar:WaitForChild("Humanoid", 5)
-    local myHum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-
-    if targetHum and myHum then
-        syncAnimConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not idleSyncEnabled or not targetHum or not myHum then
-                stopSyncAnimations()
-                if syncAnimConnection then syncAnimConnection:Disconnect() end
-                return
-            end
-
-            -- Cek apakah target sedang DIEM (MoveDirection == 0)
-            local isTargetIdle = (targetHum.MoveDirection.Magnitude == 0)
-
-            if isTargetIdle then
-                local playingTracks = targetHum:GetPlayingAnimationTracks()
-                local activeTrackIDs = {}
-
-                for _, targetTrack in pairs(playingTracks) do
-                    local animId = targetTrack.Animation and targetTrack.Animation.AnimationId
-                    if animId then
-                        -- Menyaring animasi agar hanya mereplikasi animasi Idle/Pose saja (Akurasi Tinggi)
-                        local isMovementAnim = targetTrack.Name:lower():find("walk") or targetTrack.Name:lower():find("run") or targetTrack.Name:lower():find("jump")
-                        if not isMovementAnim then
-                            activeTrackIDs[animId] = true
-                            if not playingSyncTracks[animId] then
-                                pcall(function()
-                                    local myTrack = myHum:LoadAnimation(targetTrack.Animation)
-                                    myTrack:Play()
-                                    myTrack.TimePosition = targetTrack.TimePosition
-                                    myTrack:AdjustSpeed(targetTrack.Speed)
-                                    playingSyncTracks[animId] = myTrack
-                                end)
-                            else
-                                local myTrack = playingSyncTracks[animId]
-                                if math.abs(myTrack.TimePosition - targetTrack.TimePosition) > 0.1 then
-                                    myTrack.TimePosition = targetTrack.TimePosition
-                                end
-                                myTrack:AdjustSpeed(targetTrack.Speed)
-                            end
-                        end
-                    end
-                end
-
-                -- Matikan animasi yang sudah selesai di target
-                for animId, myTrack in pairs(playingSyncTracks) do
-                    if not activeTrackIDs[animId] then
-                        myTrack:Stop()
-                        playingSyncTracks[animId] = nil
-                    end
-                end
-            else
-                -- Jika target MULAI JALAN/BERGERAK, hentikan sync animasi idle kita
-                stopSyncAnimations()
-            end
-        end)
-    end
-end
-
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
     local myChar = LocalPlayer.Character
     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
-    if myHRP and targetChar and myHumanoid then
+    if myHRP and targetHRP and myHumanoid then
         myHumanoid.PlatformStand = true
         
         for _, part in pairs(myChar:GetChildren()) do
@@ -518,16 +440,15 @@ local function startLoop(targetChar)
         end
         
         attachmentConnection = RS.Heartbeat:Connect(function()
-            local targetPart = getTargetAnimPart(targetChar)
-            if not isAttached or not targetChar or not targetPart or not myChar:FindFirstChild("HumanoidRootPart") then
+            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
                 return
             end
             
-            local offset = targetPart.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
             pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetPart)
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
                 sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
             end)
             
@@ -548,9 +469,7 @@ local function checkAndAttach()
         removeWelds()
         startLoop(targetPlayer.Character)
         
-        if idleSyncEnabled then
-            syncIdleAnimations(targetPlayer.Character)
-        elseif autoEmoteEnabled then
+        if autoEmoteEnabled then
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
             local anim = Instance.new("Animation")
@@ -586,8 +505,6 @@ local function detach()
     targetPlayerName = nil
     if attachmentConnection then attachmentConnection:Disconnect() end
     if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
-    if syncAnimConnection then syncAnimConnection:Disconnect() end
-    stopSyncAnimations()
     
     local myChar = LocalPlayer.Character
     if myChar then
@@ -636,9 +553,9 @@ local function forceUpdatePosition()
         if targetPlayer and targetPlayer.Character then
             local myChar = LocalPlayer.Character
             local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            local targetPart = getTargetAnimPart(targetPlayer.Character)
-            if myHRP and targetPart then
-                myHRP.CFrame = targetPart.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHRP and targetHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             end
         end
     end
@@ -745,15 +662,14 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
-local ToggleIdleSyncBtn = Instance.new("TextButton", NavFrame)
-ToggleIdleSyncBtn.BackgroundColor3, ToggleIdleSyncBtn.Text, ToggleIdleSyncBtn.TextColor3, ToggleIdleSyncBtn.Font, ToggleIdleSyncBtn.TextSize = Color3.fromRGB(20, 140, 80), "IDLE SYNC: ON", Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 9
-Instance.new("UICorner", ToggleIdleSyncBtn).CornerRadius = UDim.new(0, 4)
-ToggleIdleSyncBtn.MouseButton1Click:Connect(function()
+local ToggleEmoteBtn = Instance.new("TextButton", NavFrame)
+ToggleEmoteBtn.BackgroundColor3, ToggleEmoteBtn.Text, ToggleEmoteBtn.TextColor3, ToggleEmoteBtn.Font, ToggleEmoteBtn.TextSize = Color3.fromRGB(20, 140, 80), "EMOTE: ON", Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 9
+Instance.new("UICorner", ToggleEmoteBtn).CornerRadius = UDim.new(0, 4)
+ToggleEmoteBtn.MouseButton1Click:Connect(function()
     if ConfirmOverlay.Visible then return end
-    idleSyncEnabled = not idleSyncEnabled
-    ToggleIdleSyncBtn.BackgroundColor3 = idleSyncEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
-    ToggleIdleSyncBtn.Text = idleSyncEnabled and "IDLE SYNC: ON" or "IDLE SYNC: OFF"
-    if isAttached then checkAndAttach() end
+    autoEmoteEnabled = not autoEmoteEnabled
+    ToggleEmoteBtn.BackgroundColor3 = autoEmoteEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
+    ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
 -- CUSTOM ANIMATION PAGE
@@ -1009,8 +925,7 @@ RS.Stepped:Connect(function()
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
-    -- Hanya jalankan Animasi Manual/Custom jika sedang TIDAK menempel dengan Idle Sync
-    if hum and not (isAttached and idleSyncEnabled) then
+    if hum then
         if animMode == "PRESET" then
             playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
         elseif animMode == "CUSTOM" then
@@ -1048,7 +963,7 @@ RS.Stepped:Connect(function()
                     txt.TextStrokeTransparency = 0.5
                 end
                 local label = bill:FindFirstChild("EspLabel")
-                if label me
+                if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
@@ -1078,4 +993,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.7: Idle-Only Animation Sync Piggyback System Applied.")
+print("[SYSTEM] Kay Hub V8.7: Advanced Physics Replicator Applied.")
