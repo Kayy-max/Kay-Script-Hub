@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.9 - REJOIN & AUTO TELEPORT BACK (SIDEBAR FIXED) ]] --
+-- [[ KAY HUB PRO V8.9 - REJOIN, AUTO-BYPASS PWD & PLAYER COUNTER ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
@@ -129,7 +129,7 @@ table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColo
 MakeDraggable(MainFrame)
 
 -- =========================================================
--- SYSTEM VERIFIKASI / PASSWORD
+-- SYSTEM VERIFIKASI / PASSWORD (AUTO-BYPASS ON REJOIN)
 -- =========================================================
 local CorrectPassword = "kay602122"
 local WrongAttempts = 0
@@ -166,13 +166,23 @@ VerifyBtn.Size, VerifyBtn.Position, VerifyBtn.Text, VerifyBtn.Font, VerifyBtn.Te
 Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
 
+local function UnlockHub()
+    if getgenv then getgenv().KayHub_Verified = true end
+    AuthFrame:Destroy()
+    MainFrame.Visible = true
+end
+
+-- Pengecekan otomatis jika sebelumnya sudah terverifikasi
+if getgenv and getgenv().KayHub_Verified then
+    UnlockHub()
+end
+
 VerifyBtn.MouseButton1Click:Connect(function()
     if PasswordInput.Text == CorrectPassword then
         InfoLabel.Text = "Akses Diterima! Memuat script..."
         InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
-        task.wait(1)
-        AuthFrame:Destroy()
-        MainFrame.Visible = true
+        task.wait(0.5)
+        UnlockHub()
     else
         WrongAttempts = WrongAttempts + 1
         InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
@@ -211,8 +221,22 @@ local TopBar = Instance.new("Frame")
 TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.5, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.4, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
+
+-- INDIKATOR TOTAL PLAYER DI TOPBAR
+local PlayerCountTopBar = Instance.new("TextLabel")
+PlayerCountTopBar.Size, PlayerCountTopBar.Position, PlayerCountTopBar.BackgroundTransparency, PlayerCountTopBar.Text, PlayerCountTopBar.Font, PlayerCountTopBar.TextSize, PlayerCountTopBar.TextXAlignment, PlayerCountTopBar.Parent = UDim2.new(0.35, 0, 1, 0), UDim2.new(0.35, 0, 0, 0), 1, "👥 0/0", Enum.Font.Gotham, 11, Enum.TextXAlignment.Right, TopBar
+table.insert(AllUIElements, {Obj = PlayerCountTopBar, Prop = "TextColor3", Key = "MutedText"})
+
+local function updatePlayerCount()
+    local currentPlayers = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
+    PlayerCountTopBar.Text = string.format("👥 %d/%d Players", currentPlayers, maxPlayers)
+end
+Players.PlayerAdded:Connect(updatePlayerCount)
+Players.PlayerRemoving:Connect(updatePlayerCount)
+updatePlayerCount()
 
 -- Minimize Button Elegan
 local MinButton = Instance.new("TextButton")
@@ -236,7 +260,7 @@ table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeCo
 
 local isMinimized = false
 local function toggleMenu()
-    if not ScriptRunning or AuthFrame.Parent ~= nil then return end
+    if not ScriptRunning or (AuthFrame and AuthFrame.Parent ~= nil) then return end
     isMinimized = not isMinimized
     TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 440, 0, 0) or UDim2.new(0, 440, 0, 300)}):Play()
     if isMinimized then task.wait(0.2) end
@@ -857,8 +881,29 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB 5: SERVER PAGE (DITAMBAHKAN DAN MUNCUL DI SIDEBAR MENU)
+-- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
+
+-- KOTAK INFORMASI STATS SERVER
+local ServerInfoBox = Instance.new("Frame", ServerPage)
+ServerInfoBox.Size = UDim2.new(1, -10, 0, 50)
+Instance.new("UICorner", ServerInfoBox).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = ServerInfoBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+local ServerInfoLabel = Instance.new("TextLabel", ServerInfoBox)
+ServerInfoLabel.Size, ServerInfoLabel.Position, ServerInfoLabel.BackgroundTransparency, ServerInfoLabel.Font, ServerInfoLabel.TextSize = UDim2.new(1, -10, 1, 0), UDim2.new(0, 10, 0, 0), 1, Enum.Font.Gotham, 12
+ServerInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(AllUIElements, {Obj = ServerInfoLabel, Prop = "TextColor3", Key = "TextColor"})
+
+local function refreshServerTabInfo()
+    local currentCount = #Players:GetPlayers()
+    local maxCount = Players.MaxPlayers
+    ServerInfoLabel.Text = string.format("📊 Status Server:\n• Total Player saat ini: %d / %d", currentCount, maxCount)
+end
+
+Players.PlayerAdded:Connect(refreshServerTabInfo)
+Players.PlayerRemoving:Connect(refreshServerTabInfo)
+refreshServerTabInfo()
 
 local RejoinBtn = Instance.new("TextButton", ServerPage)
 RejoinBtn.Size, RejoinBtn.Text, RejoinBtn.Font, RejoinBtn.TextSize = UDim2.new(1, -10, 0, 38), "🔄 Rejoin Server Saat Ini", Enum.Font.GothamBold, 12
@@ -1058,4 +1103,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.9: Sidebar & Server Tab Fixed.")
+print("[SYSTEM] Kay Hub V8.9: Auto-Bypass & Player Counter Ready.")
