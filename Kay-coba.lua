@@ -1,20 +1,22 @@
--- [[ KAY HUB PRO V8.8 - REJOIN & AUTO TELEPORT BACK UPDATE ]] --
+-- [[ KAY HUB PRO V8.8 - REJOIN & AUTO TELEPORT BACK (FIXED) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
 -- LOGIKA AUTO TELEPORT BACK SETELAH REJOIN
 task.spawn(function()
-    if getgenv and getgenv().KayHub_SavedPos then
-        local pos = getgenv().KayHub_SavedPos
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hrp = char:WaitForChild("HumanoidRootPart", 10)
-        if hrp and pos then
-            task.wait(1.5) -- Tunggu Map & Karakter Loaded sempurna
-            hrp.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
-            getgenv().KayHub_SavedPos = nil
+    pcall(function()
+        if getgenv and getgenv().KayHub_SavedPos then
+            local pos = getgenv().KayHub_SavedPos
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local hrp = char:WaitForChild("HumanoidRootPart", 10)
+            if hrp and pos then
+                task.wait(1.5)
+                hrp.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+                getgenv().KayHub_SavedPos = nil
+            end
         end
-    end
+    end)
 end)
 
 -- DAFTAR PRESET TEMA LENGKAP
@@ -882,39 +884,44 @@ RejoinTPBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
 -- Fungsi Rejoin Biasa
 RejoinBtn.MouseButton1Click:Connect(function()
     if ConfirmOverlay.Visible then return end
-    if #Players:GetPlayers() <= 1 then
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    else
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-    end
-end)
-
--- Fungsi Rejoin + Auto Teleport ke Posisi Sebelumnya
-RejoinTPBtn.MouseButton1Click:Connect(function()
-    if ConfirmOverlay.Visible then return end
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if hrp then
-        local currentPos = hrp.Position
-        
-        -- Menggunakan queue_on_teleport jika di-support oleh executor kamu
-        local queueCode = string.format([[
-            getgenv().KayHub_SavedPos = Vector3.new(%f, %f, %f)
-        ]], currentPos.X, currentPos.Y, currentPos.Z)
-        
-        if queue_on_teleport then
-            queue_on_teleport(queueCode)
-        elseif syn and syn.queue_on_teleport then
-            syn.queue_on_teleport(queueCode)
-        end
-        
+    pcall(function()
         if #Players:GetPlayers() <= 1 then
             TeleportService:Teleport(game.PlaceId, LocalPlayer)
         else
             TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
         end
-    end
+    end)
+end)
+
+-- Fungsi Rejoin + Auto Teleport ke Posisi Sebelumnya
+RejoinTPBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        
+        if hrp then
+            local currentPos = hrp.Position
+            
+            local queueCode = string.format([[
+                getgenv().KayHub_SavedPos = Vector3.new(%f, %f, %f)
+            ]], currentPos.X, currentPos.Y, currentPos.Z)
+            
+            pcall(function()
+                if queue_on_teleport then
+                    queue_on_teleport(queueCode)
+                elseif syn and syn.queue_on_teleport then
+                    syn.queue_on_teleport(queueCode)
+                end
+            end)
+            
+            if #Players:GetPlayers() <= 1 then
+                TeleportService:Teleport(game.PlaceId, LocalPlayer)
+            else
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+            end
+        end
+    end)
 end)
 
 -- VOICE TAB
@@ -1030,7 +1037,7 @@ RS.Stepped:Connect(function()
                     txt.TextStrokeTransparency = 0.5
                 end
                 local label = bill:FindFirstChild("EspLabel")
-                if label me
+                if label then
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
@@ -1060,4 +1067,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.8: Rejoin & Auto Teleport Feature Added.")
+print("[SYSTEM] Kay Hub V8.8 Loaded Successfully.")
