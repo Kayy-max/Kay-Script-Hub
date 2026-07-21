@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS & ANIMATION REPLICATION UPDATE ]] --
+-- [[ KAY HUB PRO V8.7 - PIGGYBACK ADVANCED PHYSICS & IDLE-ONLY ANIMATION SYNC UPDATE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
@@ -408,12 +408,12 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- LOGIKA HALAMAN UTAMA (HOME PAGE & ANIMATED PIGGYBACK ENGINE)
+-- LOGIKA HALAMAN UTAMA (HOME PAGE & IDLE-ONLY ANIMATION ENGINE)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
-local syncTargetAnimEnabled = true -- FITUR BARU: Mengikuti animasi target secara realtime
+local idleSyncEnabled = true -- SYNC ANIMASI KHUSUS SAAT TARGET IDLE (DIEM)
 local attachmentConnection, currentEmoteTrack
 local syncAnimConnection = nil
 local playingSyncTracks = {}
@@ -427,14 +427,12 @@ local function removeWelds()
     end
 end
 
--- MENDAPATKAN TORSO/BODY PART YANG DIGERAKKAN OLEH ANIMASI TARGET
 local function getTargetAnimPart(targetChar)
     return targetChar:FindFirstChild("UpperTorso") 
         or targetChar:FindFirstChild("Torso") 
         or targetChar:FindFirstChild("HumanoidRootPart")
 end
 
--- LOGIKA REPLIKASI DAN SYNC ANIMASI TARGET KE KARAKTER KITA
 local function stopSyncAnimations()
     for animId, track in pairs(playingSyncTracks) do
         pcall(function() track:Stop() end)
@@ -442,7 +440,8 @@ local function stopSyncAnimations()
     playingSyncTracks = {}
 end
 
-local function syncTargetAnimations(targetChar)
+-- REPLIKASI KHUSUS ANIMASI IDLE
+local function syncIdleAnimations(targetChar)
     if syncAnimConnection then syncAnimConnection:Disconnect() end
     stopSyncAnimations()
 
@@ -451,44 +450,55 @@ local function syncTargetAnimations(targetChar)
 
     if targetHum and myHum then
         syncAnimConnection = RS.Heartbeat:Connect(function()
-            if not isAttached or not syncTargetAnimEnabled or not targetHum or not myHum then
+            if not isAttached or not idleSyncEnabled or not targetHum or not myHum then
                 stopSyncAnimations()
                 if syncAnimConnection then syncAnimConnection:Disconnect() end
                 return
             end
 
-            local playingTracks = targetHum:GetPlayingAnimationTracks()
-            local activeTrackIDs = {}
+            -- Cek apakah target sedang DIEM (MoveDirection == 0)
+            local isTargetIdle = (targetHum.MoveDirection.Magnitude == 0)
 
-            for _, targetTrack in pairs(playingTracks) do
-                local animId = targetTrack.Animation and targetTrack.Animation.AnimationId
-                if animId then
-                    activeTrackIDs[animId] = true
-                    if not playingSyncTracks[animId] then
-                        pcall(function()
-                            local myTrack = myHum:LoadAnimation(targetTrack.Animation)
-                            myTrack:Play()
-                            myTrack.TimePosition = targetTrack.TimePosition
-                            myTrack:AdjustSpeed(targetTrack.Speed)
-                            playingSyncTracks[animId] = myTrack
-                        end)
-                    else
-                        -- Sinkronisasi waktu dan kecepatan animasi agar pas
-                        local myTrack = playingSyncTracks[animId]
-                        if math.abs(myTrack.TimePosition - targetTrack.TimePosition) > 0.1 then
-                            myTrack.TimePosition = targetTrack.TimePosition
+            if isTargetIdle then
+                local playingTracks = targetHum:GetPlayingAnimationTracks()
+                local activeTrackIDs = {}
+
+                for _, targetTrack in pairs(playingTracks) do
+                    local animId = targetTrack.Animation and targetTrack.Animation.AnimationId
+                    if animId then
+                        -- Menyaring animasi agar hanya mereplikasi animasi Idle/Pose saja (Akurasi Tinggi)
+                        local isMovementAnim = targetTrack.Name:lower():find("walk") or targetTrack.Name:lower():find("run") or targetTrack.Name:lower():find("jump")
+                        if not isMovementAnim then
+                            activeTrackIDs[animId] = true
+                            if not playingSyncTracks[animId] then
+                                pcall(function()
+                                    local myTrack = myHum:LoadAnimation(targetTrack.Animation)
+                                    myTrack:Play()
+                                    myTrack.TimePosition = targetTrack.TimePosition
+                                    myTrack:AdjustSpeed(targetTrack.Speed)
+                                    playingSyncTracks[animId] = myTrack
+                                end)
+                            else
+                                local myTrack = playingSyncTracks[animId]
+                                if math.abs(myTrack.TimePosition - targetTrack.TimePosition) > 0.1 then
+                                    myTrack.TimePosition = targetTrack.TimePosition
+                                end
+                                myTrack:AdjustSpeed(targetTrack.Speed)
+                            end
                         end
-                        myTrack:AdjustSpeed(targetTrack.Speed)
                     end
                 end
-            end
 
-            -- Hentikan animasi di karakter kita jika target sudah tidak memainkan animasi tersebut
-            for animId, myTrack in pairs(playingSyncTracks) do
-                if not activeTrackIDs[animId] then
-                    myTrack:Stop()
-                    playingSyncTracks[animId] = nil
+                -- Matikan animasi yang sudah selesai di target
+                for animId, myTrack in pairs(playingSyncTracks) do
+                    if not activeTrackIDs[animId] then
+                        myTrack:Stop()
+                        playingSyncTracks[animId] = nil
+                    end
                 end
+            else
+                -- Jika target MULAI JALAN/BERGERAK, hentikan sync animasi idle kita
+                stopSyncAnimations()
             end
         end)
     end
@@ -514,7 +524,6 @@ local function startLoop(targetChar)
                 return
             end
             
-            -- Menempel ke Part Torso target yang bergerak secara dinamis sesuai animasi
             local offset = targetPart.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
             pcall(function()
@@ -539,8 +548,8 @@ local function checkAndAttach()
         removeWelds()
         startLoop(targetPlayer.Character)
         
-        if syncTargetAnimEnabled then
-            syncTargetAnimations(targetPlayer.Character)
+        if idleSyncEnabled then
+            syncIdleAnimations(targetPlayer.Character)
         elseif autoEmoteEnabled then
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
@@ -736,14 +745,14 @@ createNav("KIRI", function() posX = posX - 0.2 end)
 createNav("KANAN", function() posX = posX + 0.2 end)
 createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
 
-local ToggleSyncAnimBtn = Instance.new("TextButton", NavFrame)
-ToggleSyncAnimBtn.BackgroundColor3, ToggleSyncAnimBtn.Text, ToggleSyncAnimBtn.TextColor3, ToggleSyncAnimBtn.Font, ToggleSyncAnimBtn.TextSize = Color3.fromRGB(20, 140, 80), "SYNC ANIM: ON", Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 9
-Instance.new("UICorner", ToggleSyncAnimBtn).CornerRadius = UDim.new(0, 4)
-ToggleSyncAnimBtn.MouseButton1Click:Connect(function()
+local ToggleIdleSyncBtn = Instance.new("TextButton", NavFrame)
+ToggleIdleSyncBtn.BackgroundColor3, ToggleIdleSyncBtn.Text, ToggleIdleSyncBtn.TextColor3, ToggleIdleSyncBtn.Font, ToggleIdleSyncBtn.TextSize = Color3.fromRGB(20, 140, 80), "IDLE SYNC: ON", Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 9
+Instance.new("UICorner", ToggleIdleSyncBtn).CornerRadius = UDim.new(0, 4)
+ToggleIdleSyncBtn.MouseButton1Click:Connect(function()
     if ConfirmOverlay.Visible then return end
-    syncTargetAnimEnabled = not syncTargetAnimEnabled
-    ToggleSyncAnimBtn.BackgroundColor3 = syncTargetAnimEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
-    ToggleSyncAnimBtn.Text = syncTargetAnimEnabled and "SYNC ANIM: ON" or "SYNC ANIM: OFF"
+    idleSyncEnabled = not idleSyncEnabled
+    ToggleIdleSyncBtn.BackgroundColor3 = idleSyncEnabled and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
+    ToggleIdleSyncBtn.Text = idleSyncEnabled and "IDLE SYNC: ON" or "IDLE SYNC: OFF"
     if isAttached then checkAndAttach() end
 end)
 
@@ -1000,8 +1009,8 @@ RS.Stepped:Connect(function()
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
-    -- Hanya jalankan Animasi Manual/Custom jika sedang TIDAK menempel dengan Sync Animasi
-    if hum and not (isAttached and syncTargetAnimEnabled) then
+    -- Hanya jalankan Animasi Manual/Custom jika sedang TIDAK menempel dengan Idle Sync
+    if hum and not (isAttached and idleSyncEnabled) then
         if animMode == "PRESET" then
             playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
         elseif animMode == "CUSTOM" then
@@ -1039,7 +1048,7 @@ RS.Stepped:Connect(function()
                     txt.TextStrokeTransparency = 0.5
                 end
                 local label = bill:FindFirstChild("EspLabel")
-                if label then
+                if label me
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
@@ -1069,4 +1078,4 @@ Players.PlayerRemoving:Connect(function(p)
 end)
 
 ApplyTheme("Sleek Dark")
-print("[SYSTEM] Kay Hub V8.7: Advanced Physics & Animated Piggyback System Applied.")
+print("[SYSTEM] Kay Hub V8.7: Idle-Only Animation Sync Piggyback System Applied.")
