@@ -268,9 +268,9 @@ table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedT
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
--- Tombol Toggle Menu (Logo Gambar saat Minimized)
+-- Tombol Toggle Menu (Logo Gambar Baru saat Minimized)
 local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Image, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 50, 0, 50), UDim2.new(0, 15, 0, 120), "rbxassetid://119877478757639", true, false, KayHub
+ToggleButton.Size, ToggleButton.Position, ToggleButton.Image, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 50, 0, 50), UDim2.new(0, 15, 0, 120), "rbxassetid://90097519386549", true, false, KayHub
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 12)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 ToggleStroke.Thickness = 1.5
@@ -1134,4 +1134,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.2 Fully Loaded with Custom Logo Toggle.")
+print("[SYSTEM] Kay Hub V9.2 Updated with Asset ID 90097519386549.")
