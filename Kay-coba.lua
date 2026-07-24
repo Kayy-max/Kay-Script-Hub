@@ -270,7 +270,14 @@ CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, Clos
 
 -- Tombol Toggle Menu (Logo Gambar Baru saat Minimized)
 local ToggleButton = Instance.new("ImageButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Image, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 50, 0, 50), UDim2.new(0, 15, 0, 120), "rbxassetid://90097519386549", true, false, KayHub
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Position = UDim2.new(0, 15, 0, 120)
+ToggleButton.Image = "rbxassetid://108065629268631"
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Active = true
+ToggleButton.Visible = false
+ToggleButton.Parent = KayHub
 Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 12)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
 ToggleStroke.Thickness = 1.5
@@ -1134,4 +1141,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.2 Updated with Asset ID 90097519386549.")
+print("[SYSTEM] Kay Hub V9.2 Updated with Asset ID 108065629268631.")
