@@ -268,16 +268,16 @@ table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedT
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
--- Tombol Toggle Menu saat Minimized
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size, ToggleButton.Position, ToggleButton.Text, ToggleButton.Font, ToggleButton.TextSize, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 80, 0, 32), UDim2.new(0, 15, 0, 120), "Kay Hub", Enum.Font.GothamBold, 12, true, false, KayHub
-Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 8)
+-- Tombol Toggle Menu (Logo Gambar saat Minimized)
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Size, ToggleButton.Position, ToggleButton.Image, ToggleButton.Active, ToggleButton.Visible, ToggleButton.Parent = UDim2.new(0, 50, 0, 50), UDim2.new(0, 15, 0, 120), "rbxassetid://119877478757639", true, false, KayHub
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 12)
 local ToggleStroke = Instance.new("UIStroke", ToggleButton)
+ToggleStroke.Thickness = 1.5
 MakeDraggable(ToggleButton)
 
 table.insert(AllUIElements, {Obj = ToggleButton, Prop = "BackgroundColor3", Key = "SidebarColor"})
-table.insert(AllUIElements, {Obj = ToggleButton, Prop = "TextColor3", Key = "AccentColor"})
-table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "StrokeColor"})
+table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "AccentColor"})
 
 local isMinimized = false
 local function toggleMenu()
@@ -1134,4 +1134,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.2 Fully Loaded with Teleport Bypass.")
+print("[SYSTEM] Kay Hub V9.2 Fully Loaded with Custom Logo Toggle.")
