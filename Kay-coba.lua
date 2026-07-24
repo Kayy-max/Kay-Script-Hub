@@ -268,23 +268,18 @@ table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedT
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
 
--- Tombol Toggle Menu (Logo Gambar Baru saat Minimized)
+-- Tombol Toggle Menu (Logo Gambar Baru saat Minimized - Transparan Sempurna)
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Size = UDim2.new(0, 50, 0, 50)
 ToggleButton.Position = UDim2.new(0, 15, 0, 120)
-ToggleButton.Image = "rbxassetid://108065629268631"
-ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Image = "rbxassetid://102532136962074"
+ToggleButton.BackgroundTransparency = 1 -- Background diubah jadi transparan total
+ToggleButton.BorderSizePixel = 0
 ToggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.Active = true
 ToggleButton.Visible = false
 ToggleButton.Parent = KayHub
-Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(0, 12)
-local ToggleStroke = Instance.new("UIStroke", ToggleButton)
-ToggleStroke.Thickness = 1.5
 MakeDraggable(ToggleButton)
-
-table.insert(AllUIElements, {Obj = ToggleButton, Prop = "BackgroundColor3", Key = "SidebarColor"})
-table.insert(AllUIElements, {Obj = ToggleStroke, Prop = "Color", Key = "AccentColor"})
 
 local isMinimized = false
 local function toggleMenu()
@@ -1141,4 +1136,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.2 Updated with Asset ID 108065629268631.")
+print("[SYSTEM] Kay Hub V9.2 Updated with Asset ID 102532136962074.")
