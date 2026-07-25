@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.5 - FIXED TARGET ESP ]] --
+-- [[ KAY HUB PRO V9.5 - FULL INTEGRATED ESP & SCRIPT ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -965,7 +965,6 @@ end)
 -- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
-local selectedEspTargetName = nil -- PERBAIKAN: Menyimpan nama target terpisah untuk ESP Satu Orang
 
 -- 1. GLOBAL ESP
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
@@ -974,7 +973,7 @@ local EspLine1 = Instance.new("Frame", EspPage)
 EspLine1.Size, EspLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = EspLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH) - FIXED
+-- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH)
 local TargetSearchBox = Instance.new("TextBox", EspPage)
 TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target ESP...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
@@ -1009,7 +1008,6 @@ local function refreshEspPlayerList(filter)
                 table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
                 btn.MouseButton1Click:Connect(function()
                     if ConfirmOverlay.Visible then return end
-                    selectedEspTargetName = player.Name
                     TargetSearchBox.Text = player.Name
                     EspDropdownBtn.Text = "Target ESP: " .. player.DisplayName
                     EspPlayerList.Visible = false
@@ -1018,18 +1016,18 @@ local function refreshEspPlayerList(filter)
         end
     end
 end
-TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
-    selectedEspTargetName = TargetSearchBox.Text
-    refreshEspPlayerList(TargetSearchBox.Text) 
-end)
+TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshEspPlayerList(TargetSearchBox.Text) end)
 refreshEspPlayerList()
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
 
+-- Fungsi Pembersih Elemen ESP Sesuai Permintaan
 local function clearEspElements(p)
+    if not p then return end
     if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
+
 
 -- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
@@ -1420,14 +1418,13 @@ YesButton.MouseButton1Click:Connect(function()
     end)
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
-            if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
-            if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
+            clearEspElements(p.Character)
         end
     end
     KayHub:Destroy()
 end)
 
--- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED) - FIXED ESP TARGET LOGIC
+-- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED)
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -1451,19 +1448,18 @@ RS.Stepped:Connect(function()
         end
     end
 
-    local queryTargetEsp = string.lower(selectedEspTargetName or TargetSearchBox.Text or "")
+    local queryTargetEsp = string.lower(TargetSearchBox.Text)
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
-            
             local isMatchTargetEsp = (queryTargetEsp ~= "" and (string.find(string.lower(p.Name), queryTargetEsp) or string.find(string.lower(p.DisplayName), queryTargetEsp)))
 
             if (globalEspActive) or (targetEspActive and isMatchTargetEsp) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
-                local bill = tHrp:FindFirstChild("KayEsp_Bill")
+                local bill = tChar:FindFirstChild("KayEsp_Bill")
                 if not bill then
-                    bill = Instance.new("BillboardGui", tHrp)
+                    bill = Instance.new("BillboardGui", tChar)
                     bill.Name = "KayEsp_Bill"
                     bill.Size = UDim2.new(0, 200, 0, 50)
                     bill.AlwaysOnTop = true
@@ -1482,7 +1478,6 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-
                 if targetEspActive and isMatchTargetEsp then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -1497,15 +1492,14 @@ RS.Stepped:Connect(function()
                     if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
             else
-                clearEspElements(tHrp)
-                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                clearEspElements(tChar)
             end
         end
     end
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+    if p.Character then clearEspElements(p.Character) end
     if spectateActive then updateCameraSpectate() end
 end)
 
@@ -1517,4 +1511,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.5 Updated: Fixed Target ESP.")
+print("[SYSTEM] Kay Hub V9.5 Fully Updated: ESP & Custom Clear Functions Integrated.")
