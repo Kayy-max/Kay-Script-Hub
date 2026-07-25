@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.5 - UPDATED WITH FUN SPECTATE & INFINITY CAMERA ]] --
+-- [[ KAY HUB PRO V9.5 - FIXED TARGET ESP ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -965,6 +965,7 @@ end)
 -- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
+local selectedEspTargetName = nil -- PERBAIKAN: Menyimpan nama target terpisah untuk ESP Satu Orang
 
 -- 1. GLOBAL ESP
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
@@ -973,7 +974,7 @@ local EspLine1 = Instance.new("Frame", EspPage)
 EspLine1.Size, EspLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = EspLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH)
+-- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH) - FIXED
 local TargetSearchBox = Instance.new("TextBox", EspPage)
 TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target ESP...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
@@ -1008,6 +1009,7 @@ local function refreshEspPlayerList(filter)
                 table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
                 btn.MouseButton1Click:Connect(function()
                     if ConfirmOverlay.Visible then return end
+                    selectedEspTargetName = player.Name
                     TargetSearchBox.Text = player.Name
                     EspDropdownBtn.Text = "Target ESP: " .. player.DisplayName
                     EspPlayerList.Visible = false
@@ -1016,7 +1018,10 @@ local function refreshEspPlayerList(filter)
         end
     end
 end
-TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshEspPlayerList(TargetSearchBox.Text) end)
+TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
+    selectedEspTargetName = TargetSearchBox.Text
+    refreshEspPlayerList(TargetSearchBox.Text) 
+end)
 refreshEspPlayerList()
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
@@ -1422,7 +1427,7 @@ YesButton.MouseButton1Click:Connect(function()
     KayHub:Destroy()
 end)
 
--- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED)
+-- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED) - FIXED ESP TARGET LOGIC
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -1446,11 +1451,12 @@ RS.Stepped:Connect(function()
         end
     end
 
-    local queryTargetEsp = string.lower(TargetSearchBox.Text)
+    local queryTargetEsp = string.lower(selectedEspTargetName or TargetSearchBox.Text or "")
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
+            
             local isMatchTargetEsp = (queryTargetEsp ~= "" and (string.find(string.lower(p.Name), queryTargetEsp) or string.find(string.lower(p.DisplayName), queryTargetEsp)))
 
             if (globalEspActive) or (targetEspActive and isMatchTargetEsp) then
@@ -1476,6 +1482,7 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
+
                 if targetEspActive and isMatchTargetEsp then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
@@ -1510,4 +1517,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.5 Updated: Spectate Moved to Fun & Infinity Camera Added.")
+print("[SYSTEM] Kay Hub V9.5 Updated: Fixed Target ESP.")
