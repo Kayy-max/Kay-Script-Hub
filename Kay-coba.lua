@@ -160,7 +160,7 @@ MakeDraggable(AuthFrame)
 
 local AuthTitle = Instance.new("TextLabel", AuthFrame)
 AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
-table.insert(AllUIElements, {Obj = AuthTitle, Prop = "AccentColor", Key = "AccentColor"})
+table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
 
 local PasswordInput = Instance.new("TextBox", AuthFrame)
 PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
@@ -633,7 +633,7 @@ local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "TextColor3", Key = "MutedText"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
@@ -867,6 +867,8 @@ UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Charac
 -- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
+local spectateActive = false
+local currentSpectateTarget = nil
 
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
 
@@ -882,7 +884,84 @@ table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", K
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
 table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
 
+local EspDropdownBtn = Instance.new("TextButton", EspPage)
+EspDropdownBtn.Size, EspDropdownBtn.Text, EspDropdownBtn.Font, EspDropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Target ESP / Spectate ▼", Enum.Font.GothamBold, 11
+Instance.new("UICorner", EspDropdownBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "TextColor3", Key = "MutedText"})
+
+local EspPlayerList = Instance.new("ScrollingFrame", EspPage)
+EspPlayerList.Size, EspPlayerList.Visible, EspPlayerList.ScrollBarThickness, EspPlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
+Instance.new("UICorner", EspPlayerList).CornerRadius = UDim.new(0, 6)
+local EspListLayout = Instance.new("UIListLayout", EspPlayerList)
+table.insert(AllUIElements, {Obj = EspPlayerList, Prop = "BackgroundColor3", Key = "SidebarColor"})
+
+EspDropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end EspPlayerList.Visible = not EspPlayerList.Visible end)
+
+local function refreshEspPlayerList(filter)
+    for _, child in pairs(EspPlayerList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
+                local btn = Instance.new("TextButton", EspPlayerList)
+                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 26), player.DisplayName, Enum.Font.Gotham, 11
+                btn.BorderSizePixel = 0
+                table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
+                table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
+                btn.MouseButton1Click:Connect(function()
+                    if ConfirmOverlay.Visible then return end
+                    TargetSearchBox.Text = player.Name
+                    EspDropdownBtn.Text = "Target: " .. player.DisplayName
+                    EspPlayerList.Visible = false
+                end)
+            end
+        end
+    end
+end
+TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshEspPlayerList(TargetSearchBox.Text) end)
+refreshEspPlayerList()
+
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
+
+-- FITUR SPECTATE / VIEW POV
+local Camera = workspace.CurrentCamera
+
+local function updateCameraSpectate()
+    if spectateActive then
+        local queryTarget = string.lower(TargetSearchBox.Text)
+        local foundPlayer = nil
+        if queryTarget ~= "" then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)) then
+                    foundPlayer = p
+                    break
+                end
+            end
+        end
+        
+        if foundPlayer and foundPlayer.Character and foundPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraSubject = foundPlayer.Character:FindFirstChildOfClass("Humanoid")
+            currentSpectateTarget = foundPlayer
+        else
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            end
+        end
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+end
+
+CreateToggle(EspPage, "Spectate (POV Player)", function(state)
+    spectateActive = state
+    updateCameraSpectate()
+end)
+
+TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    if spectateActive then updateCameraSpectate() end
+end)
 
 local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
@@ -1098,7 +1177,6 @@ local function FetchPublicServers()
     end)
 end
 
--- FUNGSI SERVER TEMAN (TELAH DIPERBAIKI DENGAN DUAL-FETCHING UTK MENCEGAH PENGAMBILAN KOSONG)
 local function FetchFriendsServers()
     for _, child in pairs(ServerListContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
@@ -1109,15 +1187,14 @@ local function FetchFriendsServers()
     table.insert(AllUIElements, {Obj = loader, Prop = "TextColor3", Key = "AccentColor"})
 
     task.spawn(function()
-        local validFriends = {}
-
-        -- Metode 1: Menggunakan Players:GetFriendsAsync()
+        local friendsOnline = {}
+        
         pcall(function()
             local friendPages = Players:GetFriendsAsync(LocalPlayer.UserId)
             while true do
                 for _, item in ipairs(friendPages:GetCurrentPage()) do
                     if item.IsOnline then
-                        table.insert(validFriends, {Id = item.Id, Username = item.Username or item.Name})
+                        table.insert(friendsOnline, item)
                     end
                 end
                 if friendPages.IsFinished then break end
@@ -1125,68 +1202,50 @@ local function FetchFriendsServers()
             end
         end)
 
-        -- Metode Backup API jika GetFriendsAsync terbatas
-        if #validFriends == 0 then
-            pcall(function()
-                local raw = game:HttpGet(string.format("https://friends.roblox.com/v1/users/%s/friends", tostring(LocalPlayer.UserId)))
-                local decoded = HttpService:JSONDecode(raw)
-                if decoded and decoded.data then
-                    for _, fData in ipairs(decoded.data) do
-                        table.insert(validFriends, {Id = fData.id, Username = fData.name or fData.displayName})
+        loader:Destroy()
+
+        local foundFriends = 0
+
+        for _, friend in ipairs(friendsOnline) do
+            task.spawn(function()
+                local success, currentPlaceId, currentJobId = pcall(function()
+                    return TeleportService:GetPlayerPlaceInstanceAsync(friend.Id)
+                end)
+
+                if success and currentPlaceId and currentJobId then
+                    if currentJobId ~= game.JobId then
+                        foundFriends = foundFriends + 1
+
+                        local ItemFrame = Instance.new("Frame", ServerListContainer)
+                        ItemFrame.Size = UDim2.new(1, -6, 0, 32)
+                        Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
+                        table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+                        local Info = Instance.new("TextLabel", ItemFrame)
+                        Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
+                        Info.Text = string.format("👤 %s (Server Sebelah)", friend.Username)
+                        table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
+
+                        local JoinBtn = Instance.new("TextButton", ItemFrame)
+                        JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
+                        Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
+                        table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+                        JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+                        JoinBtn.MouseButton1Click:Connect(function()
+                            if ConfirmOverlay.Visible then return end
+                            setRejoinBypassQueue(nil)
+                            TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
+                        end)
                     end
                 end
             end)
         end
 
-        loader:Destroy()
-
-        if #validFriends == 0 then
+        task.wait(1.2)
+        if foundFriends == 0 and #ServerListContainer:GetChildren() == 0 then
             local emptyLbl = Instance.new("TextLabel", ServerListContainer)
-            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Kamu tidak memiliki teman online.", Enum.Font.Gotham, 11
-            table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
-            return
-        end
-
-        local foundFriendsCount = 0
-
-        for _, friend in ipairs(validFriends) do
-            local success, currentPlaceId, currentJobId = pcall(function()
-                return TeleportService:GetPlayerPlaceInstanceAsync(friend.Id)
-            end)
-
-            if success and currentPlaceId and currentJobId then
-                -- Menampilkan teman yang bermain di Game/Place yang sama tapi berbeda Server
-                if currentPlaceId == game.PlaceId and currentJobId ~= game.JobId then
-                    foundFriendsCount = foundFriendsCount + 1
-
-                    local ItemFrame = Instance.new("Frame", ServerListContainer)
-                    ItemFrame.Size = UDim2.new(1, -6, 0, 32)
-                    Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
-                    table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-                    local Info = Instance.new("TextLabel", ItemFrame)
-                    Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
-                    Info.Text = string.format("👤 %s (Server Lain)", friend.Username)
-                    table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
-
-                    local JoinBtn = Instance.new("TextButton", ItemFrame)
-                    JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
-                    Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
-                    table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
-                    JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
-
-                    JoinBtn.MouseButton1Click:Connect(function()
-                        if ConfirmOverlay.Visible then return end
-                        setRejoinBypassQueue(nil)
-                        TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
-                    end)
-                end
-            end
-        end
-
-        if foundFriendsCount == 0 then
-            local emptyLbl = Instance.new("TextLabel", ServerListContainer)
-            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada teman yang sedang main di game ini.", Enum.Font.Gotham, 11
+            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada teman di server sebelah.", Enum.Font.Gotham, 11
             table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
         end
     end)
@@ -1287,6 +1346,8 @@ NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end
 
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
+    spectateActive = false
+    updateCameraSpectate()
     detach()
     if promptConnection then promptConnection:Disconnect() end
     pcall(function()
@@ -1381,6 +1442,10 @@ end)
 
 Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+    if spectateActive and currentSpectateTarget == p then
+        spectateActive = false
+        updateCameraSpectate()
+    end
 end)
 
 ApplyTheme("Sleek Dark")
@@ -1391,4 +1456,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.4 Restored & Server Browser Updated.")
+print("[SYSTEM] Kay Hub V9.4 Restored & Spectate Added.")
