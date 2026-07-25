@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER ]] --
+-- [[ KAY HUB PRO V9.5 - SEPARATED TARGET ESP & SPECTATE ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -217,7 +217,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V9.4", Enum.Font.GothamBold, 13, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V9.5", Enum.Font.GothamBold, 13, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
@@ -620,7 +620,7 @@ local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- DROPDOWN MENU TARGET PLAYER
+-- DROPDOWN MENU TARGET PLAYER (HOME)
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -633,7 +633,7 @@ local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "TextColor3", Key = "MutedText"})
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
@@ -864,20 +864,22 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- TAB 4: ESP PAGE
+-- TAB 4: ESP & SPECTATE PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 local spectateActive = false
-local currentSpectateTarget = nil
+local Camera = workspace.CurrentCamera
 
+-- 1. GLOBAL ESP
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
 
-local EspLine = Instance.new("Frame", EspPage)
-EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
+local EspLine1 = Instance.new("Frame", EspPage)
+EspLine1.Size, EspLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = EspLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
+-- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH)
 local TargetSearchBox = Instance.new("TextBox", EspPage)
-TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target ESP...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
 local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
@@ -885,15 +887,15 @@ table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "
 table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
 
 local EspDropdownBtn = Instance.new("TextButton", EspPage)
-EspDropdownBtn.Size, EspDropdownBtn.Text, EspDropdownBtn.Font, EspDropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Target ESP / Spectate ▼", Enum.Font.GothamBold, 11
+EspDropdownBtn.Size, EspDropdownBtn.Text, EspDropdownBtn.Font, EspDropdownBtn.TextSize = UDim2.new(1, -10, 0, 30), "▼ Pilih Target ESP ▼", Enum.Font.GothamBold, 11
 Instance.new("UICorner", EspDropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "TextColor3", Key = "MutedText"})
 
 local EspPlayerList = Instance.new("ScrollingFrame", EspPage)
-EspPlayerList.Size, EspPlayerList.Visible, EspPlayerList.ScrollBarThickness, EspPlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
+EspPlayerList.Size, EspPlayerList.Visible, EspPlayerList.ScrollBarThickness, EspPlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 75), false, 2, 0
 Instance.new("UICorner", EspPlayerList).CornerRadius = UDim.new(0, 6)
-local EspListLayout = Instance.new("UIListLayout", EspPlayerList)
+Instance.new("UIListLayout", EspPlayerList)
 table.insert(AllUIElements, {Obj = EspPlayerList, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 EspDropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end EspPlayerList.Visible = not EspPlayerList.Visible end)
@@ -904,14 +906,14 @@ local function refreshEspPlayerList(filter)
         if player ~= LocalPlayer then
             if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
                 local btn = Instance.new("TextButton", EspPlayerList)
-                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 26), player.DisplayName, Enum.Font.Gotham, 11
+                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 25), player.DisplayName, Enum.Font.Gotham, 11
                 btn.BorderSizePixel = 0
                 table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
                 table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
                 btn.MouseButton1Click:Connect(function()
                     if ConfirmOverlay.Visible then return end
                     TargetSearchBox.Text = player.Name
-                    EspDropdownBtn.Text = "Target: " .. player.DisplayName
+                    EspDropdownBtn.Text = "Target ESP: " .. player.DisplayName
                     EspPlayerList.Visible = false
                 end)
             end
@@ -923,12 +925,59 @@ refreshEspPlayerList()
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
 
--- FITUR SPECTATE / VIEW POV
-local Camera = workspace.CurrentCamera
+local EspLine2 = Instance.new("Frame", EspPage)
+EspLine2.Size, EspLine2.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = EspLine2, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+-- 3. SPECTATE / POV (PENCARIAN & SELEKSI TERPISAH)
+local SpectateSearchBox = Instance.new("TextBox", EspPage)
+SpectateSearchBox.Size, SpectateSearchBox.PlaceholderText, SpectateSearchBox.Text, SpectateSearchBox.Font, SpectateSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target Spectate...", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", SpectateSearchBox).CornerRadius = UDim.new(0, 6)
+local SpecSearchStroke = Instance.new("UIStroke", SpectateSearchBox)
+table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = SpecSearchStroke, Prop = "Color", Key = "StrokeColor"})
+
+local SpectateDropdownBtn = Instance.new("TextButton", EspPage)
+SpectateDropdownBtn.Size, SpectateDropdownBtn.Text, SpectateDropdownBtn.Font, SpectateDropdownBtn.TextSize = UDim2.new(1, -10, 0, 30), "▼ Pilih Target Spectate ▼", Enum.Font.GothamBold, 11
+Instance.new("UICorner", SpectateDropdownBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = SpectateDropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SpectateDropdownBtn, Prop = "TextColor3", Key = "MutedText"})
+
+local SpectatePlayerList = Instance.new("ScrollingFrame", EspPage)
+SpectatePlayerList.Size, SpectatePlayerList.Visible, SpectatePlayerList.ScrollBarThickness, SpectatePlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 75), false, 2, 0
+Instance.new("UICorner", SpectatePlayerList).CornerRadius = UDim.new(0, 6)
+Instance.new("UIListLayout", SpectatePlayerList)
+table.insert(AllUIElements, {Obj = SpectatePlayerList, Prop = "BackgroundColor3", Key = "SidebarColor"})
+
+SpectateDropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end SpectatePlayerList.Visible = not SpectatePlayerList.Visible end)
+
+local function refreshSpectatePlayerList(filter)
+    for _, child in pairs(SpectatePlayerList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
+                local btn = Instance.new("TextButton", SpectatePlayerList)
+                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 25), player.DisplayName, Enum.Font.Gotham, 11
+                btn.BorderSizePixel = 0
+                table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
+                table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
+                btn.MouseButton1Click:Connect(function()
+                    if ConfirmOverlay.Visible then return end
+                    SpectateSearchBox.Text = player.Name
+                    SpectateDropdownBtn.Text = "Spectate Target: " .. player.DisplayName
+                    SpectatePlayerList.Visible = false
+                end)
+            end
+        end
+    end
+end
+SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshSpectatePlayerList(SpectateSearchBox.Text) end)
+refreshSpectatePlayerList()
 
 local function updateCameraSpectate()
     if spectateActive then
-        local queryTarget = string.lower(TargetSearchBox.Text)
+        local queryTarget = string.lower(SpectateSearchBox.Text)
         local foundPlayer = nil
         if queryTarget ~= "" then
             for _, p in pairs(Players:GetPlayers()) do
@@ -941,7 +990,6 @@ local function updateCameraSpectate()
         
         if foundPlayer and foundPlayer.Character and foundPlayer.Character:FindFirstChildOfClass("Humanoid") then
             Camera.CameraSubject = foundPlayer.Character:FindFirstChildOfClass("Humanoid")
-            currentSpectateTarget = foundPlayer
         else
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
                 Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -959,7 +1007,7 @@ CreateToggle(EspPage, "Spectate (POV Player)", function(state)
     updateCameraSpectate()
 end)
 
-TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     if spectateActive then updateCameraSpectate() end
 end)
 
@@ -1032,7 +1080,6 @@ local SrvDivider = Instance.new("Frame", ServerPage)
 SrvDivider.Size, SrvDivider.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = SrvDivider, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- MODIFIKASI FILTER SERVER & TOGGLE HIDE FULL SERVERS
 local FilterFrame = Instance.new("Frame", ServerPage)
 FilterFrame.Size, FilterFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 28), 1
 local FilterLayout = Instance.new("UIListLayout", FilterFrame)
@@ -1040,7 +1087,7 @@ FilterLayout.FillDirection, FilterLayout.Padding = Enum.FillDirection.Horizontal
 
 local currentSortMode = "Ascending"
 local isFriendMode = false
-local showFullServers = false -- Default false agar server penuh TIDAK DITAMPILKAN
+local showFullServers = false 
 
 local BtnSepi = Instance.new("TextButton", FilterFrame)
 BtnSepi.Size, BtnSepi.Text, BtnSepi.Font, BtnSepi.TextSize = UDim2.new(0.32, 0, 1, 0), "📉 Sepi", Enum.Font.GothamBold, 10
@@ -1063,7 +1110,6 @@ table.insert(AllUIElements, {Obj = BtnRamai, Prop = "TextColor3", Key = "MutedTe
 table.insert(AllUIElements, {Obj = BtnTeman, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = BtnTeman, Prop = "TextColor3", Key = "MutedText"})
 
--- TOMBOL CHECKBOX/TOGGLE SERVER PENUH
 local ToggleFullServerBtn = Instance.new("TextButton", ServerPage)
 ToggleFullServerBtn.Size, ToggleFullServerBtn.Text, ToggleFullServerBtn.Font, ToggleFullServerBtn.TextSize = UDim2.new(1, -10, 0, 25), "🚫 Server Penuh: HIDE", Enum.Font.GothamBold, 10
 Instance.new("UICorner", ToggleFullServerBtn).CornerRadius = UDim.new(0, 6)
@@ -1389,14 +1435,14 @@ RS.Stepped:Connect(function()
         end
     end
 
-    local queryTarget = string.lower(TargetSearchBox.Text)
+    local queryTargetEsp = string.lower(TargetSearchBox.Text)
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
-            local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
+            local isMatchTargetEsp = (queryTargetEsp ~= "" and (string.find(string.lower(p.Name), queryTargetEsp) or string.find(string.lower(p.DisplayName), queryTargetEsp)))
 
-            if (globalEspActive) or (targetEspActive and isMatchTarget) then
+            if (globalEspActive) or (targetEspActive and isMatchTargetEsp) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
@@ -1419,7 +1465,7 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-                if targetEspActive and isMatchTarget then
+                if targetEspActive and isMatchTargetEsp then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
                         high = Instance.new("Highlight", tChar)
@@ -1442,10 +1488,7 @@ end)
 
 Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
-    if spectateActive and currentSpectateTarget == p then
-        spectateActive = false
-        updateCameraSpectate()
-    end
+    if spectateActive then updateCameraSpectate() end
 end)
 
 ApplyTheme("Sleek Dark")
@@ -1456,4 +1499,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.4 Restored & Spectate Added.")
+print("[SYSTEM] Kay Hub V9.5 Restored & ESP/Spectate Separated.")
