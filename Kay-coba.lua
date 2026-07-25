@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.5 - FULL INTEGRATED ESP & SCRIPT ]] --
+-- [[ KAY HUB PRO V9.5 - UPDATED WITH FUN SPECTATE, INFINITY CAMERA & INTEGRATED ESP ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -961,21 +961,18 @@ SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     if spectateActive then updateCameraSpectate() end
 end)
 
-
--- TAB 4: ESP PAGE
+-- TAB 4: ESP PAGE (Dipindahkan dan Diperbarui ke Gemini Code dari Kay Hub v9.2/v9.5)
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
--- 1. GLOBAL ESP
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
 
-local EspLine1 = Instance.new("Frame", EspPage)
-EspLine1.Size, EspLine1.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = EspLine1, Prop = "BackgroundColor3", Key = "StrokeColor"})
+local EspLine = Instance.new("Frame", EspPage)
+EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- 2. TARGET ESP (PENCARIAN & SELEKSI TERPISAH)
 local TargetSearchBox = Instance.new("TextBox", EspPage)
-TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target ESP...", "", Enum.Font.Gotham, 12
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
 Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
 local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
@@ -1021,13 +1018,10 @@ refreshEspPlayerList()
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
 
--- Fungsi Pembersih Elemen ESP Sesuai Permintaan
 local function clearEspElements(p)
-    if not p then return end
     if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
-
 
 -- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
@@ -1418,7 +1412,8 @@ YesButton.MouseButton1Click:Connect(function()
     end)
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
-            clearEspElements(p.Character)
+            if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+            if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
         end
     end
     KayHub:Destroy()
@@ -1457,9 +1452,9 @@ RS.Stepped:Connect(function()
 
             if (globalEspActive) or (targetEspActive and isMatchTargetEsp) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
-                local bill = tChar:FindFirstChild("KayEsp_Bill")
+                local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
-                    bill = Instance.new("BillboardGui", tChar)
+                    bill = Instance.new("BillboardGui", tHrp)
                     bill.Name = "KayEsp_Bill"
                     bill.Size = UDim2.new(0, 200, 0, 50)
                     bill.AlwaysOnTop = true
@@ -1492,14 +1487,15 @@ RS.Stepped:Connect(function()
                     if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
             else
-                clearEspElements(tChar)
+                clearEspElements(tHrp)
+                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 end)
 
 Players.PlayerRemoving:Connect(function(p)
-    if p.Character then clearEspElements(p.Character) end
+    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
     if spectateActive then updateCameraSpectate() end
 end)
 
@@ -1511,4 +1507,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.5 Fully Updated: ESP & Custom Clear Functions Integrated.")
+print("[SYSTEM] Kay Hub V9.5 Full Combined: ESP, Spectate & Infinity Camera Ready.")
