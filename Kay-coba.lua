@@ -160,7 +160,7 @@ MakeDraggable(AuthFrame)
 
 local AuthTitle = Instance.new("TextLabel", AuthFrame)
 AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
-table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
+table.insert(AllUIElements, {Obj = AuthTitle, Prop = "AccentColor", Key = "AccentColor"})
 
 local PasswordInput = Instance.new("TextBox", AuthFrame)
 PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
@@ -633,7 +633,7 @@ local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "TextColor3", Key = "MutedText"})
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
@@ -1027,7 +1027,6 @@ local function FetchPublicServers()
         local cursor = ""
         local pageCount = 0
 
-        -- Fetch beberapa page dari API agar mendapatkan pilihan server yang cukup banyak
         repeat
             pageCount = pageCount + 1
             local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=%s&limit=100%s", tostring(game.PlaceId), currentSortMode, (cursor ~= "" and "&cursor=" .. cursor or ""))
@@ -1039,7 +1038,6 @@ local function FetchPublicServers()
                 for _, srv in ipairs(result.data) do
                     if type(srv) == "table" and srv.id and srv.id ~= game.JobId and srv.playing and srv.maxPlayers then
                         local isFull = (srv.playing >= srv.maxPlayers)
-                        -- Filter server penuh jika opsi showFullServers disabled
                         if showFullServers or not isFull then
                             table.insert(rawServers, srv)
                         end
@@ -1053,7 +1051,6 @@ local function FetchPublicServers()
 
         loader:Destroy()
 
-        -- Lakukan Re-Sort manual agar urutan dari terkecil / terbesar benar-benar presisi
         table.sort(rawServers, function(a, b)
             if currentSortMode == "Ascending" then
                 return a.playing < b.playing
@@ -1101,7 +1098,7 @@ local function FetchPublicServers()
     end)
 end
 
--- FUNGSI SERVER TEMAN (SUDAH DIPERBAIKI SINKRONISASI ASYNC-NYA)
+-- FUNGSI SERVER TEMAN (TELAH DIPERBAIKI DENGAN DUAL-FETCHING UTK MENCEGAH PENGAMBILAN KOSONG)
 local function FetchFriendsServers()
     for _, child in pairs(ServerListContainer:GetChildren()) do
         if child:IsA("Frame") or child:IsA("TextLabel") then child:Destroy() end
@@ -1112,15 +1109,15 @@ local function FetchFriendsServers()
     table.insert(AllUIElements, {Obj = loader, Prop = "TextColor3", Key = "AccentColor"})
 
     task.spawn(function()
-        local friendsOnline = {}
-        
-        -- Ambil data teman yang sedang online
+        local validFriends = {}
+
+        -- Metode 1: Menggunakan Players:GetFriendsAsync()
         pcall(function()
             local friendPages = Players:GetFriendsAsync(LocalPlayer.UserId)
             while true do
                 for _, item in ipairs(friendPages:GetCurrentPage()) do
                     if item.IsOnline then
-                        table.insert(friendsOnline, item)
+                        table.insert(validFriends, {Id = item.Id, Username = item.Username or item.Name})
                     end
                 end
                 if friendPages.IsFinished then break end
@@ -1128,52 +1125,68 @@ local function FetchFriendsServers()
             end
         end)
 
-        loader:Destroy()
-
-        local foundFriends = 0
-
-        for _, friend in ipairs(friendsOnline) do
-            task.spawn(function()
-                local success, currentPlaceId, currentJobId = pcall(function()
-                    return TeleportService:GetPlayerPlaceInstanceAsync(friend.Id)
-                end)
-
-                -- Mengecek apakah teman berada di server/place valid dan BUKAN di server yang sedang kita tempati
-                if success and currentPlaceId and currentJobId then
-                    if currentJobId ~= game.JobId then
-                        foundFriends = foundFriends + 1
-
-                        local ItemFrame = Instance.new("Frame", ServerListContainer)
-                        ItemFrame.Size = UDim2.new(1, -6, 0, 32)
-                        Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
-                        table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-                        local Info = Instance.new("TextLabel", ItemFrame)
-                        Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
-                        Info.Text = string.format("👤 %s (Server Sebelah)", friend.Username)
-                        table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
-
-                        local JoinBtn = Instance.new("TextButton", ItemFrame)
-                        JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
-                        Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
-                        table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
-                        JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
-
-                        JoinBtn.MouseButton1Click:Connect(function()
-                            if ConfirmOverlay.Visible then return end
-                            setRejoinBypassQueue(nil)
-                            TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
-                        end)
+        -- Metode Backup API jika GetFriendsAsync terbatas
+        if #validFriends == 0 then
+            pcall(function()
+                local raw = game:HttpGet(string.format("https://friends.roblox.com/v1/users/%s/friends", tostring(LocalPlayer.UserId)))
+                local decoded = HttpService:JSONDecode(raw)
+                if decoded and decoded.data then
+                    for _, fData in ipairs(decoded.data) do
+                        table.insert(validFriends, {Id = fData.id, Username = fData.name or fData.displayName})
                     end
                 end
             end)
         end
 
-        -- Memberikan delay singkat agar asynchronous task selesai mengecek
-        task.wait(1.2)
-        if foundFriends == 0 and #ServerListContainer:GetChildren() == 0 then
+        loader:Destroy()
+
+        if #validFriends == 0 then
             local emptyLbl = Instance.new("TextLabel", ServerListContainer)
-            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada teman di server sebelah.", Enum.Font.Gotham, 11
+            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Kamu tidak memiliki teman online.", Enum.Font.Gotham, 11
+            table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
+            return
+        end
+
+        local foundFriendsCount = 0
+
+        for _, friend in ipairs(validFriends) do
+            local success, currentPlaceId, currentJobId = pcall(function()
+                return TeleportService:GetPlayerPlaceInstanceAsync(friend.Id)
+            end)
+
+            if success and currentPlaceId and currentJobId then
+                -- Menampilkan teman yang bermain di Game/Place yang sama tapi berbeda Server
+                if currentPlaceId == game.PlaceId and currentJobId ~= game.JobId then
+                    foundFriendsCount = foundFriendsCount + 1
+
+                    local ItemFrame = Instance.new("Frame", ServerListContainer)
+                    ItemFrame.Size = UDim2.new(1, -6, 0, 32)
+                    Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
+                    table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+                    local Info = Instance.new("TextLabel", ItemFrame)
+                    Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
+                    Info.Text = string.format("👤 %s (Server Lain)", friend.Username)
+                    table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
+
+                    local JoinBtn = Instance.new("TextButton", ItemFrame)
+                    JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
+                    Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
+                    table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+                    JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+                    JoinBtn.MouseButton1Click:Connect(function()
+                        if ConfirmOverlay.Visible then return end
+                        setRejoinBypassQueue(nil)
+                        TeleportService:TeleportToPlaceInstance(currentPlaceId, currentJobId, LocalPlayer)
+                    end)
+                end
+            end
+        end
+
+        if foundFriendsCount == 0 then
+            local emptyLbl = Instance.new("TextLabel", ServerListContainer)
+            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada teman yang sedang main di game ini.", Enum.Font.Gotham, 11
             table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
         end
     end)
