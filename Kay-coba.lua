@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FEATURES RESTORED + SERVER BROWSER ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -953,6 +953,7 @@ local SrvDivider = Instance.new("Frame", ServerPage)
 SrvDivider.Size, SrvDivider.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = SrvDivider, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
+-- MODIFIKASI FILTER SERVER & TOGGLE HIDE FULL SERVERS
 local FilterFrame = Instance.new("Frame", ServerPage)
 FilterFrame.Size, FilterFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 28), 1
 local FilterLayout = Instance.new("UIListLayout", FilterFrame)
@@ -960,6 +961,7 @@ FilterLayout.FillDirection, FilterLayout.Padding = Enum.FillDirection.Horizontal
 
 local currentSortMode = "Ascending"
 local isFriendMode = false
+local showFullServers = false -- Default false agar server penuh TIDAK DITAMPILKAN
 
 local BtnSepi = Instance.new("TextButton", FilterFrame)
 BtnSepi.Size, BtnSepi.Text, BtnSepi.Font, BtnSepi.TextSize = UDim2.new(0.32, 0, 1, 0), "📉 Sepi", Enum.Font.GothamBold, 10
@@ -982,15 +984,22 @@ table.insert(AllUIElements, {Obj = BtnRamai, Prop = "TextColor3", Key = "MutedTe
 table.insert(AllUIElements, {Obj = BtnTeman, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = BtnTeman, Prop = "TextColor3", Key = "MutedText"})
 
+-- TOMBOL CHECKBOX/TOGGLE SERVER PENUH
+local ToggleFullServerBtn = Instance.new("TextButton", ServerPage)
+ToggleFullServerBtn.Size, ToggleFullServerBtn.Text, ToggleFullServerBtn.Font, ToggleFullServerBtn.TextSize = UDim2.new(1, -10, 0, 25), "🚫 Server Penuh: HIDE", Enum.Font.GothamBold, 10
+Instance.new("UICorner", ToggleFullServerBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = ToggleFullServerBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = ToggleFullServerBtn, Prop = "TextColor3", Key = "MutedText"})
+
 local ServerListContainer = Instance.new("ScrollingFrame", ServerPage)
-ServerListContainer.Size, ServerListContainer.BorderSizePixel, ServerListContainer.ScrollBarThickness = UDim2.new(1, -10, 0, 130), 0, 2
+ServerListContainer.Size, ServerListContainer.BorderSizePixel, ServerListContainer.ScrollBarThickness = UDim2.new(1, -10, 0, 110), 0, 2
 Instance.new("UICorner", ServerListContainer).CornerRadius = UDim.new(0, 6)
 local ServerListLayout = Instance.new("UIListLayout", ServerListContainer)
 ServerListLayout.Padding = UDim.new(0, 4)
 table.insert(AllUIElements, {Obj = ServerListContainer, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local StatusFetchLabel = Instance.new("TextLabel", ServerListContainer)
-StatusFetchLabel.Size, StatusFetchLabel.BackgroundTransparency, StatusFetchLabel.Text, StatusFetchLabel.Font, StatusFetchLabel.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tekan 'Muat Ulang Server'...", Enum.Font.Gotham, 11
+StatusFetchLabel.Size, StatusFetchLabel.BackgroundTransparency, StatusFetchLabel.Text, StatusFetchLabel.Font, StatusFetchLabel.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tekan 'Muat Ulang Daftar Server'...", Enum.Font.Gotham, 11
 table.insert(AllUIElements, {Obj = StatusFetchLabel, Prop = "TextColor3", Key = "MutedText"})
 
 local function updateFilterStyle()
@@ -1014,52 +1023,80 @@ local function FetchPublicServers()
     table.insert(AllUIElements, {Obj = loader, Prop = "TextColor3", Key = "AccentColor"})
 
     task.spawn(function()
-        local success, result = pcall(function()
-            local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=%s&limit=100", tostring(game.PlaceId), currentSortMode)
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
+        local rawServers = {}
+        local cursor = ""
+        local pageCount = 0
+
+        -- Fetch beberapa page dari API agar mendapatkan pilihan server yang cukup banyak
+        repeat
+            pageCount = pageCount + 1
+            local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=%s&limit=100%s", tostring(game.PlaceId), currentSortMode, (cursor ~= "" and "&cursor=" .. cursor or ""))
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+
+            if success and result and result.data then
+                for _, srv in ipairs(result.data) do
+                    if type(srv) == "table" and srv.id and srv.id ~= game.JobId and srv.playing and srv.maxPlayers then
+                        local isFull = (srv.playing >= srv.maxPlayers)
+                        -- Filter server penuh jika opsi showFullServers disabled
+                        if showFullServers or not isFull then
+                            table.insert(rawServers, srv)
+                        end
+                    end
+                end
+                cursor = result.nextPageCursor or ""
+            else
+                break
+            end
+        until cursor == "" or pageCount >= 3 or #rawServers >= 30
 
         loader:Destroy()
 
-        if success and result and result.data then
-            local validCount = 0
-            for _, srv in pairs(result.data) do
-                if type(srv) == "table" and srv.id and srv.id ~= game.JobId and srv.playing and srv.maxPlayers then
-                    validCount = validCount + 1
-                    
-                    local ItemFrame = Instance.new("Frame", ServerListContainer)
-                    ItemFrame.Size = UDim2.new(1, -6, 0, 32)
-                    Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
-                    table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-                    local Info = Instance.new("TextLabel", ItemFrame)
-                    Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
-                    Info.Text = string.format("👥 %d/%d Players | Ping: %dms", srv.playing, srv.maxPlayers, srv.ping or 0)
-                    table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
-
-                    local JoinBtn = Instance.new("TextButton", ItemFrame)
-                    JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
-                    Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
-                    table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
-                    JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
-
-                    JoinBtn.MouseButton1Click:Connect(function()
-                        if ConfirmOverlay.Visible then return end
-                        setRejoinBypassQueue(nil)
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LocalPlayer)
-                    end)
-                end
+        -- Lakukan Re-Sort manual agar urutan dari terkecil / terbesar benar-benar presisi
+        table.sort(rawServers, function(a, b)
+            if currentSortMode == "Ascending" then
+                return a.playing < b.playing
+            else
+                return a.playing > b.playing
             end
+        end)
 
-            if validCount == 0 then
-                local emptyLbl = Instance.new("TextLabel", ServerListContainer)
-                emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada server lain ditemukan.", Enum.Font.Gotham, 11
-                table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
+        if #rawServers > 0 then
+            for _, srv in ipairs(rawServers) do
+                local isFull = (srv.playing >= srv.maxPlayers)
+                
+                local ItemFrame = Instance.new("Frame", ServerListContainer)
+                ItemFrame.Size = UDim2.new(1, -6, 0, 32)
+                Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 4)
+                table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+                local Info = Instance.new("TextLabel", ItemFrame)
+                Info.Size, Info.Position, Info.BackgroundTransparency, Info.Font, Info.TextSize, Info.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), 1, Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
+                Info.Text = string.format("👥 %d/%d Players %s", srv.playing, srv.maxPlayers, isFull and "[PENUH]" or "")
+                
+                if isFull then
+                    Info.TextColor3 = Color3.fromRGB(240, 80, 80)
+                else
+                    table.insert(AllUIElements, {Obj = Info, Prop = "TextColor3", Key = "TextColor"})
+                end
+
+                local JoinBtn = Instance.new("TextButton", ItemFrame)
+                JoinBtn.Size, JoinBtn.Position, JoinBtn.Text, JoinBtn.Font, JoinBtn.TextSize = UDim2.new(0, 65, 0, 22), UDim2.new(1, -70, 0, 5), "JOIN", Enum.Font.GothamBold, 10
+                Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
+                table.insert(AllUIElements, {Obj = JoinBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+                JoinBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+                JoinBtn.MouseButton1Click:Connect(function()
+                    if ConfirmOverlay.Visible then return end
+                    setRejoinBypassQueue(nil)
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LocalPlayer)
+                end)
             end
         else
-            local errLbl = Instance.new("TextLabel", ServerListContainer)
-            errLbl.Size, errLbl.BackgroundTransparency, errLbl.Text, errLbl.Font, errLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "⚠️ Gagal mengambil daftar server.", Enum.Font.Gotham, 11
-            errLbl.TextColor3 = Color3.fromRGB(240, 50, 50)
+            local emptyLbl = Instance.new("TextLabel", ServerListContainer)
+            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada server yang memenuhi filter.", Enum.Font.Gotham, 11
+            table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
         end
     end)
 end
@@ -1153,8 +1190,18 @@ BtnTeman.MouseButton1Click:Connect(function()
     FetchFriendsServers()
 end)
 
+ToggleFullServerBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    showFullServers = not showFullServers
+    ToggleFullServerBtn.Text = showFullServers and "✅ Server Penuh: SHOW" or "🚫 Server Penuh: HIDE"
+    ToggleFullServerBtn.TextColor3 = showFullServers and CurrentTheme.AccentColor or CurrentTheme.MutedText
+    if not isFriendMode then
+        FetchPublicServers()
+    end
+end)
+
 local RefreshServerListBtn = Instance.new("TextButton", ServerPage)
-RefreshServerListBtn.Size, RefreshServerListBtn.Text, RefreshServerListBtn.Font, RefreshServerListBtn.TextSize = UDim2.new(1, -10, 0, 30), "🔄 Muat Ulang Daftar Server", Enum.Font.GothamBold, 11
+RefreshServerListBtn.Size, RefreshServerListBtn.Text, RefreshServerListBtn.Font, RefreshServerListBtn.TextSize = UDim2.new(1, -10, 0, 28), "🔄 Muat Ulang Daftar Server", Enum.Font.GothamBold, 11
 Instance.new("UICorner", RefreshServerListBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = RefreshServerListBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = RefreshServerListBtn, Prop = "TextColor3", Key = "TextColor"})
