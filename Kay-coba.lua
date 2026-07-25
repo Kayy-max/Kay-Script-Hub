@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.5 - UPDATED WITH FUN SPECTATE, INFINITY CAMERA & INTEGRATED ESP ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -217,7 +217,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V9.5", Enum.Font.GothamBold, 13, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V9.4", Enum.Font.GothamBold, 13, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
@@ -620,7 +620,7 @@ local Line = Instance.new("Frame", HomePage)
 Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
 table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
 
--- DROPDOWN MENU TARGET PLAYER (HOME)
+-- DROPDOWN MENU TARGET PLAYER
 local SearchBox = Instance.new("TextBox", HomePage)
 SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
 Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
@@ -633,7 +633,7 @@ local DropdownBtn = Instance.new("TextButton", HomePage)
 DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
 Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "TextColor3", Key = "MutedText"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
 
 local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
 PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
@@ -776,8 +776,6 @@ end)
 -- TAB 3: FUN / UTILITIES PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
-local spectateActive = false
-local Camera = workspace.CurrentCamera
 
 local SpeedFrame = Instance.new("Frame", FunPage)
 SpeedFrame.Size = UDim2.new(1, -10, 0, 40)
@@ -866,102 +864,85 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- INFINITY CAMERA FEATURE (FUN TAB)
-CreateToggle(FunPage, "Infinity Camera (Unzoom Max)", function(state)
-    if state then
-        LocalPlayer.CameraMaxZoomDistance = math.huge
+-- FITUR TAMBAHAN: INFINITY CAMERA (UNZOOM TANPA BATAS)
+CreateToggle(FunPage, "Infinity Camera", function(state)
+    pcall(function()
+        if state then
+            LocalPlayer.CameraMaxZoomDistance = 999999
+        else
+            LocalPlayer.CameraMaxZoomDistance = 400 -- Kembali ke default Roblox
+        end
+    end)
+end)
+
+-- FITUR TAMBAHAN: SPECTATE SYSTEM (PILIH & TONTON PLAYER)
+local spectateTargetName = nil
+local isSpectating = false
+local Camera = workspace.CurrentCamera
+
+local SpectateFrame = Instance.new("Frame", FunPage)
+SpectateFrame.Size = UDim2.new(1, -10, 0, 75)
+Instance.new("UICorner", SpectateFrame).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = SpectateFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+local SpectateTitle = Instance.new("TextLabel", SpectateFrame)
+SpectateTitle.Size, SpectateTitle.Position, SpectateTitle.BackgroundTransparency, SpectateTitle.Text, SpectateTitle.Font, SpectateTitle.TextSize = UDim2.new(1, -10, 0, 22), UDim2.new(0, 6, 0, 4), 1, "👀 Spectate Player: OFF", Enum.Font.GothamBold, 11
+table.insert(AllUIElements, {Obj = SpectateTitle, Prop = "TextColor3", Key = "TextColor"})
+
+local SpectateBox = Instance.new("TextBox", SpectateFrame)
+SpectateBox.Size, SpectateBox.Position, SpectateBox.PlaceholderText, SpectateBox.Font, SpectateBox.TextSize = UDim2.new(1, -12, 0, 26), UDim2.new(0, 6, 0, 28), "Ketik nama/display target spectate...", Enum.Font.Gotham, 11
+Instance.new("UICorner", SpectateBox).CornerRadius = UDim.new(0, 4)
+local SBStroke = Instance.new("UIStroke", SpectateBox)
+table.insert(AllUIElements, {Obj = SpectateBox, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = SpectateBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = SBStroke, Prop = "Color", Key = "StrokeColor"})
+
+local SpectateBtn = Instance.new("TextButton", SpectateFrame)
+SpectateBtn.Size, SpectateBtn.Position, SpectateBtn.Text, SpectateBtn.Font, SpectateBtn.TextSize = UDim2.new(1, -12, 0, 20), UDim2.new(0, 6, 0, 53), "TOGGLE SPECTATE", Enum.Font.GothamBold, 10
+Instance.new("UICorner", SpectateBtn).CornerRadius = UDim.new(0, 4)
+table.insert(AllUIElements, {Obj = SpectateBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+SpectateBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+SpectateBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isSpectating = not isSpectating
+    if isSpectating then
+        spectateTargetName = SpectateBox.Text
+        SpectateTitle.Text = "👀 Spectating: " .. (spectateTargetName ~= "" and spectateTargetName or "None")
+        SpectateBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+        SpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        SpectateBtn.Text = "STOP SPECTATE"
     else
-        LocalPlayer.CameraMaxZoomDistance = 128
+        isSpectating = false
+        spectateTargetName = nil
+        SpectateTitle.Text = "👀 Spectate Player: OFF"
+        SpectateBtn.BackgroundColor3 = CurrentTheme.AccentColor
+        SpectateBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+        SpectateBtn.Text = "TOGGLE SPECTATE"
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                Camera.CameraSubject = LocalPlayer.Character.Humanoid
+            end
+        end)
     end
 end)
 
-local FunDivider = Instance.new("Frame", FunPage)
-FunDivider.Size, FunDivider.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
-table.insert(AllUIElements, {Obj = FunDivider, Prop = "BackgroundColor3", Key = "StrokeColor"})
-
--- SPECTATE FEATURE (PINDAH KE TAB FUN)
-local SpectateSearchBox = Instance.new("TextBox", FunPage)
-SpectateSearchBox.Size, SpectateSearchBox.PlaceholderText, SpectateSearchBox.Text, SpectateSearchBox.Font, SpectateSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari target Spectate...", "", Enum.Font.Gotham, 12
-Instance.new("UICorner", SpectateSearchBox).CornerRadius = UDim.new(0, 6)
-local SpecSearchStroke = Instance.new("UIStroke", SpectateSearchBox)
-table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "TextColor3", Key = "TextColor"})
-table.insert(AllUIElements, {Obj = SpecSearchStroke, Prop = "Color", Key = "StrokeColor"})
-
-local SpectateDropdownBtn = Instance.new("TextButton", FunPage)
-SpectateDropdownBtn.Size, SpectateDropdownBtn.Text, SpectateDropdownBtn.Font, SpectateDropdownBtn.TextSize = UDim2.new(1, -10, 0, 30), "▼ Pilih Target Spectate ▼", Enum.Font.GothamBold, 11
-Instance.new("UICorner", SpectateDropdownBtn).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = SpectateDropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = SpectateDropdownBtn, Prop = "TextColor3", Key = "MutedText"})
-
-local SpectatePlayerList = Instance.new("ScrollingFrame", FunPage)
-SpectatePlayerList.Size, SpectatePlayerList.Visible, SpectatePlayerList.ScrollBarThickness, SpectatePlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 75), false, 2, 0
-Instance.new("UICorner", SpectatePlayerList).CornerRadius = UDim.new(0, 6)
-Instance.new("UIListLayout", SpectatePlayerList)
-table.insert(AllUIElements, {Obj = SpectatePlayerList, Prop = "BackgroundColor3", Key = "SidebarColor"})
-
-SpectateDropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end SpectatePlayerList.Visible = not SpectatePlayerList.Visible end)
-
-local function refreshSpectatePlayerList(filter)
-    for _, child in pairs(SpectatePlayerList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
-                local btn = Instance.new("TextButton", SpectatePlayerList)
-                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 25), player.DisplayName, Enum.Font.Gotham, 11
-                btn.BorderSizePixel = 0
-                table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
-                table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
-                btn.MouseButton1Click:Connect(function()
-                    if ConfirmOverlay.Visible then return end
-                    SpectateSearchBox.Text = player.Name
-                    SpectateDropdownBtn.Text = "Spectate Target: " .. player.DisplayName
-                    SpectatePlayerList.Visible = false
-                end)
-            end
-        end
-    end
-end
-SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshSpectatePlayerList(SpectateSearchBox.Text) end)
-refreshSpectatePlayerList()
-
-local function updateCameraSpectate()
-    if spectateActive then
-        local queryTarget = string.lower(SpectateSearchBox.Text)
-        local foundPlayer = nil
-        if queryTarget ~= "" then
+-- Loop Spectate
+RS.RenderStepped:Connect(function()
+    if isSpectating and spectateTargetName and spectateTargetName ~= "" then
+        pcall(function()
             for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)) then
-                    foundPlayer = p
-                    break
+                if p ~= LocalPlayer and (string.find(string.lower(p.Name), string.lower(spectateTargetName)) or string.find(string.lower(p.DisplayName), string.lower(spectateTargetName))) then
+                    if p.Character and p.Character:FindFirstChild("Humanoid") then
+                        Camera.CameraSubject = p.Character.Humanoid
+                    end
                 end
             end
-        end
-        
-        if foundPlayer and foundPlayer.Character and foundPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            Camera.CameraSubject = foundPlayer.Character:FindFirstChildOfClass("Humanoid")
-        else
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-                Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            end
-        end
-    else
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            Camera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        end
+        end)
     end
-end
-
-CreateToggle(FunPage, "Spectate Player", function(state)
-    spectateActive = state
-    updateCameraSpectate()
 end)
 
-SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    if spectateActive then updateCameraSpectate() end
-end)
-
--- TAB 4: ESP PAGE (Dipindahkan dan Diperbarui ke Gemini Code dari Kay Hub v9.2/v9.5)
+-- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -978,43 +959,6 @@ local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
 table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
-
-local EspDropdownBtn = Instance.new("TextButton", EspPage)
-EspDropdownBtn.Size, EspDropdownBtn.Text, EspDropdownBtn.Font, EspDropdownBtn.TextSize = UDim2.new(1, -10, 0, 30), "▼ Pilih Target ESP ▼", Enum.Font.GothamBold, 11
-Instance.new("UICorner", EspDropdownBtn).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = EspDropdownBtn, Prop = "TextColor3", Key = "MutedText"})
-
-local EspPlayerList = Instance.new("ScrollingFrame", EspPage)
-EspPlayerList.Size, EspPlayerList.Visible, EspPlayerList.ScrollBarThickness, EspPlayerList.BorderSizePixel = UDim2.new(1, -10, 0, 75), false, 2, 0
-Instance.new("UICorner", EspPlayerList).CornerRadius = UDim.new(0, 6)
-Instance.new("UIListLayout", EspPlayerList)
-table.insert(AllUIElements, {Obj = EspPlayerList, Prop = "BackgroundColor3", Key = "SidebarColor"})
-
-EspDropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end EspPlayerList.Visible = not EspPlayerList.Visible end)
-
-local function refreshEspPlayerList(filter)
-    for _, child in pairs(EspPlayerList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
-                local btn = Instance.new("TextButton", EspPlayerList)
-                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 25), player.DisplayName, Enum.Font.Gotham, 11
-                btn.BorderSizePixel = 0
-                table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
-                table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
-                btn.MouseButton1Click:Connect(function()
-                    if ConfirmOverlay.Visible then return end
-                    TargetSearchBox.Text = player.Name
-                    EspDropdownBtn.Text = "Target ESP: " .. player.DisplayName
-                    EspPlayerList.Visible = false
-                end)
-            end
-        end
-    end
-end
-TargetSearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshEspPlayerList(TargetSearchBox.Text) end)
-refreshEspPlayerList()
 
 CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state) targetEspActive = state end)
 
@@ -1094,7 +1038,7 @@ FilterLayout.FillDirection, FilterLayout.Padding = Enum.FillDirection.Horizontal
 
 local currentSortMode = "Ascending"
 local isFriendMode = false
-local showFullServers = false 
+local showFullServers = false
 
 local BtnSepi = Instance.new("TextButton", FilterFrame)
 BtnSepi.Size, BtnSepi.Text, BtnSepi.Font, BtnSepi.TextSize = UDim2.new(0.32, 0, 1, 0), "📉 Sepi", Enum.Font.GothamBold, 10
@@ -1399,8 +1343,6 @@ NoButton.MouseButton1Click:Connect(function() ConfirmOverlay.Visible = false end
 
 YesButton.MouseButton1Click:Connect(function()
     ScriptRunning = false
-    spectateActive = false
-    updateCameraSpectate()
     detach()
     if promptConnection then promptConnection:Disconnect() end
     pcall(function()
@@ -1408,7 +1350,7 @@ YesButton.MouseButton1Click:Connect(function()
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = 16 end
         if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
-        LocalPlayer.CameraMaxZoomDistance = 128
+        LocalPlayer.CameraMaxZoomDistance = 400
     end)
     for _, p in pairs(Players:GetPlayers()) do
         if p.Character then
@@ -1443,14 +1385,14 @@ RS.Stepped:Connect(function()
         end
     end
 
-    local queryTargetEsp = string.lower(TargetSearchBox.Text)
+    local queryTarget = string.lower(TargetSearchBox.Text)
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
-            local isMatchTargetEsp = (queryTargetEsp ~= "" and (string.find(string.lower(p.Name), queryTargetEsp) or string.find(string.lower(p.DisplayName), queryTargetEsp)))
+            local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
-            if (globalEspActive) or (targetEspActive and isMatchTargetEsp) then
+            if (globalEspActive) or (targetEspActive and isMatchTarget) then
                 local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
@@ -1473,7 +1415,7 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-                if targetEspActive and isMatchTargetEsp then
+                if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
                         high = Instance.new("Highlight", tChar)
@@ -1496,7 +1438,6 @@ end)
 
 Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
-    if spectateActive then updateCameraSpectate() end
 end)
 
 ApplyTheme("Sleek Dark")
@@ -1507,4 +1448,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.5 Full Combined: ESP, Spectate & Infinity Camera Ready.")
+print("[SYSTEM] Kay Hub V9.4 Restored & Fun Tab Updated with Spectate & Infinity Camera.")
