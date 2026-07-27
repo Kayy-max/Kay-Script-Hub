@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER & TELEPORT TAB ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -870,7 +870,7 @@ CreateToggle(FunPage, "Infinity Camera", function(state)
         if state then
             LocalPlayer.CameraMaxZoomDistance = 999999
         else
-            LocalPlayer.CameraMaxZoomDistance = 400 -- Kembali ke default Roblox
+            LocalPlayer.CameraMaxZoomDistance = 400 
         end
     end)
 end)
@@ -927,7 +927,6 @@ SpectateBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Loop Spectate
 RS.RenderStepped:Connect(function()
     if isSpectating and spectateTargetName and spectateTargetName ~= "" then
         pcall(function()
@@ -1296,7 +1295,69 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 6: VOICE PAGE
+-- TAB 6: TELEPORT PAGE (BARU DIBAWAH SERVER)
+local TeleportPage = CreateTab("Teleport")
+
+local TeleportFrame = Instance.new("Frame", TeleportPage)
+TeleportFrame.Size = UDim2.new(1, -10, 0, 75)
+Instance.new("UICorner", TeleportFrame).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = TeleportFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+local TeleportTitle = Instance.new("TextLabel", TeleportFrame)
+TeleportTitle.Size, TeleportTitle.Position, TeleportTitle.BackgroundTransparency, TeleportTitle.Text, TeleportTitle.Font, TeleportTitle.TextSize = UDim2.new(1, -10, 0, 22), UDim2.new(0, 6, 0, 4), 1, "⚡ Teleport to Player: READY", Enum.Font.GothamBold, 11
+table.insert(AllUIElements, {Obj = TeleportTitle, Prop = "TextColor3", Key = "TextColor"})
+
+local TeleportBox = Instance.new("TextBox", TeleportFrame)
+TeleportBox.Size, TeleportBox.Position, TeleportBox.PlaceholderText, TeleportBox.Font, TeleportBox.TextSize = UDim2.new(1, -12, 0, 26), UDim2.new(0, 6, 0, 28), "Ketik nama/display target teleport...", Enum.Font.Gotham, 11
+Instance.new("UICorner", TeleportBox).CornerRadius = UDim.new(0, 4)
+local TPBStroke = Instance.new("UIStroke", TeleportBox)
+table.insert(AllUIElements, {Obj = TeleportBox, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = TeleportBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = TPBStroke, Prop = "Color", Key = "StrokeColor"})
+
+local TeleportBtn = Instance.new("TextButton", TeleportFrame)
+TeleportBtn.Size, TeleportBtn.Position, TeleportBtn.Text, TeleportBtn.Font, TeleportBtn.TextSize = UDim2.new(1, -12, 0, 20), UDim2.new(0, 6, 0, 53), "TELEPORT SEKARANG", Enum.Font.GothamBold, 10
+Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0, 4)
+table.insert(AllUIElements, {Obj = TeleportBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+TeleportBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+TeleportBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    local tpTargetName = TeleportBox.Text
+    if tpTargetName == "" then
+        TeleportTitle.Text = "⚡ Error: Nama target kosong!"
+        task.wait(1.5)
+        TeleportTitle.Text = "⚡ Teleport to Player: READY"
+        return
+    end
+
+    local found = false
+    pcall(function()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and (string.find(string.lower(p.Name), string.lower(tpTargetName)) or string.find(string.lower(p.DisplayName), string.lower(tpTargetName))) then
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local myChar = LocalPlayer.Character
+                    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                    if myHrp then
+                        myHrp.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0)
+                        found = true
+                        TeleportTitle.Text = "⚡ Berhasil Teleport ke: " .. p.DisplayName
+                        task.wait(2)
+                        TeleportTitle.Text = "⚡ Teleport to Player: READY"
+                    end
+                end
+            end
+        end
+    end)
+
+    if not found then
+        TeleportTitle.Text = "⚡ Target tidak ditemukan!"
+        task.wait(1.5)
+        TeleportTitle.Text = "⚡ Teleport to Player: READY"
+    end
+end)
+
+-- TAB 7: VOICE PAGE
 local VoicePage = CreateTab("Voice")
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
@@ -1310,7 +1371,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 7: THEMES PAGE
+-- TAB 8: THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -1448,4 +1509,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.4 Restored & Fun Tab Updated with Spectate & Infinity Camera.")
+print("[SYSTEM] Kay Hub V9.4 Restored & Teleport Tab Added Successfully.")
