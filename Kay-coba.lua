@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER & TELEPORT TAB ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER & TELEPORT TAB + ANTI-TP MAP ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -864,6 +864,46 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
+-- FITUR TAMBAHAN: ANTI-TP MAP / ANTI-VOID
+local antiTpMapActive = false
+local lastValidCFrame = nil
+
+CreateToggle(FunPage, "Anti-TP Map / Anti-Void", function(state)
+    antiTpMapActive = state
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if antiTpMapActive and hrp then
+        lastValidCFrame = hrp.CFrame
+        task.spawn(function()
+            while antiTpMapActive and ScriptRunning do
+                task.wait(0.5)
+                local currentCFrame = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.CFrame
+                if currentCFrame and (currentCFrame.Position - lastValidCFrame.Position).Magnitude < 150 then
+                    lastValidCFrame = currentCFrame
+                end
+            end
+        end)
+    else
+        lastValidCFrame = nil
+    end
+end)
+
+RS.Heartbeat:Connect(function()
+    if not ScriptRunning or not antiTpMapActive then return end
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if hrp and lastValidCFrame then
+        local distance = (hrp.Position - lastValidCFrame.Position).Magnitude
+        if distance > 200 then
+            hrp.CFrame = lastValidCFrame
+            hrp.Velocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
+    end
+end)
+
 -- FITUR TAMBAHAN: INFINITY CAMERA (UNZOOM TANPA BATAS)
 CreateToggle(FunPage, "Infinity Camera", function(state)
     pcall(function()
@@ -1295,7 +1335,7 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 6: TELEPORT PAGE (BARU DIBAWAH SERVER)
+-- TAB 6: TELEPORT PAGE
 local TeleportPage = CreateTab("Teleport")
 
 local TeleportFrame = Instance.new("Frame", TeleportPage)
@@ -1509,4 +1549,4 @@ pcall(function()
     end
 end)
 
-print("[SYSTEM] Kay Hub V9.4 Restored & Teleport Tab Added Successfully.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Teleport Tab & Anti-TP Map Integrated.")
