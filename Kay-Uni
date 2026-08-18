@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + COMBAT AUTO ATTACK TAB + ADVANCED SERVER FILTER & TELEPORT TAB ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & INFINITY CAMERA (ZOOM BYPASS) ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -644,89 +644,7 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
--- TAB 2: COMBAT / AUTO ATTACK PAGE
-local CombatPage = CreateTab("Combat")
-
-local autoAttackEnabled = false
-local attackRange = 15
-local lastAttackTick = 0
-local attackCooldown = 0.25
-
-task.spawn(function()
-    RS.Heartbeat:Connect(function()
-        if not autoAttackEnabled or not ScriptRunning then return end
-        
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        
-        local tool = char:FindFirstChildOfClass("Tool")
-        if not tool then return end
-        
-        local closestTarget = nil
-        local shortestDist = attackRange
-        
-        -- Deteksi target pemain lain / monster di workspace
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local tHrp = p.Character:FindFirstChild("HumanoidRootPart")
-                local tHumanoid = p.Character:FindFirstChildOfClass("Humanoid")
-                
-                if tHrp and tHumanoid and tHumanoid.Health > 0 then
-                    local dist = (hrp.Position - tHrp.Position).Magnitude
-                    if dist <= shortestDist then
-                        shortestDist = dist
-                        closestTarget = p.Character
-                    end
-                end
-            end
-        end
-        
-        if closestTarget and (tick() - lastAttackTick >= attackCooldown) then
-            lastAttackTick = tick()
-            pcall(function()
-                tool:Activate()
-            end)
-        end
-    end)
-end)
-
-CreateToggle(CombatPage, "Auto Attack (Pegang Senjata)", function(state)
-    autoAttackEnabled = state
-end)
-
-local RangeLabel = Instance.new("TextLabel", CombatPage)
-RangeLabel.Size, RangeLabel.BackgroundTransparency = UDim2.new(1, -10, 0, 20), 1
-RangeLabel.Text = "Atur Jarak Serangan (Range):"
-RangeLabel.Font = Enum.Font.GothamBold
-RangeLabel.TextSize = 12
-RangeLabel.TextXAlignment = Enum.TextXAlignment.Left
-table.insert(AllUIElements, {Obj = RangeLabel, Prop = "TextColor3", Key = "TextColor"})
-
-local RangeInput = Instance.new("TextBox", CombatPage)
-RangeInput.Size = UDim2.new(1, -10, 0, 32)
-RangeInput.PlaceholderText = "Masukkan angka jarak (Contoh: 15)"
-RangeInput.Text = tostring(attackRange)
-RangeInput.Font = Enum.Font.Gotham
-RangeInput.TextSize = 12
-Instance.new("UICorner", RangeInput).CornerRadius = UDim.new(0, 6)
-
-local RangeStroke = Instance.new("UIStroke", RangeInput)
-table.insert(AllUIElements, {Obj = RangeInput, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = RangeInput, Prop = "TextColor3", Key = "TextColor"})
-table.insert(AllUIElements, {Obj = RangeStroke, Prop = "Color", Key = "StrokeColor"})
-
-RangeInput.FocusLost:Connect(function(enterPressed)
-    local num = tonumber(RangeInput.Text)
-    if num then
-        attackRange = math.clamp(num, 1, 200)
-        RangeInput.Text = tostring(attackRange)
-    else
-        RangeInput.Text = tostring(attackRange)
-    end
-end)
-
--- TAB 3: ANIMATIONS PAGE
+-- TAB 2: ANIMATIONS PAGE
 local AnimPage = CreateTab("Animations")
 local animMode = "NONE"
 local kayAnimTrack = nil
@@ -788,7 +706,7 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- TAB 4: FUN / UTILITIES PAGE
+-- TAB 3: FUN / UTILITIES PAGE
 local FunPage = CreateTab("Fun")
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
@@ -875,6 +793,51 @@ CreateToggle(FunPage, "Fly Engine V8", function(state)
     end
 end)
 
+-- FITUR GOD MODE (DARAH KEBAL / ANTI MATI)
+local godModeActive = false
+local godConnection = nil
+
+CreateToggle(FunPage, "God Mode (Darah Kebal)", function(state)
+    godModeActive = state
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if godModeActive and hum then
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+        
+        godConnection = hum.HealthChanged:Connect(function(health)
+            if godModeActive and hum then
+                if hum.Health < hum.MaxHealth then
+                    hum.Health = hum.MaxHealth
+                end
+            end
+        end)
+    else
+        if godConnection then godConnection:Disconnect() end
+        if hum then
+            hum.MaxHealth = 100
+            hum.Health = 100
+        end
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if godModeActive then
+        task.wait(0.5)
+        local hum = char:WaitForChild("Humanoid", 5)
+        if hum then
+            hum.MaxHealth = math.huge
+            hum.Health = math.huge
+            godConnection = hum.HealthChanged:Connect(function(health)
+                if godModeActive and hum and hum.Health < hum.MaxHealth then
+                    hum.Health = hum.MaxHealth
+                end
+            end)
+        end
+    end
+end)
+
 CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end)
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
@@ -949,7 +912,8 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
-CreateToggle(FunPage, "Infinity Camera", function(state)
+-- FITUR INFINITY CAMERA (BYPASS ZOOM)
+CreateToggle(FunPage, "Bypass Zoom (Infinity Camera)", function(state)
     pcall(function()
         if state then
             LocalPlayer.CameraMaxZoomDistance = 999999
@@ -1024,7 +988,7 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 5: ESP PAGE
+-- TAB 4: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -1049,7 +1013,7 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB 6: SERVER PAGE
+-- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
 
 local ServerInfoBox = Instance.new("Frame", ServerPage)
@@ -1378,7 +1342,7 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 7: TELEPORT PAGE
+-- TAB 6: TELEPORT PAGE
 local TeleportPage = CreateTab("Teleport")
 
 local TeleportFrame = Instance.new("Frame", TeleportPage)
@@ -1440,7 +1404,7 @@ TeleportBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 8: VOICE PAGE
+-- TAB 7: VOICE PAGE
 local VoicePage = CreateTab("Voice")
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
@@ -1454,7 +1418,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 9: THEMES PAGE
+-- TAB 8: THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -1490,10 +1454,15 @@ YesButton.MouseButton1Click:Connect(function()
     detach()
     if promptConnection then promptConnection:Disconnect() end
     if lightConnection then lightConnection:Disconnect() end
+    if godConnection then godConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = 16 end
+        if hum then 
+            hum.WalkSpeed = 16 
+            hum.MaxHealth = 100
+            hum.Health = 100
+        end
         if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
         LocalPlayer.CameraMaxZoomDistance = 400
         Lighting.Brightness = 1
@@ -1593,4 +1562,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Auto Attack Tab Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Removed, God Mode & Bypass Zoom Added.")
