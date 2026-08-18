@@ -1,291 +1,51 @@
 -- Services
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Hapus UI lama jika ada agar tidak duplikat
-if playerGui:FindFirstChild("RubyHubGui") then
-	playerGui.RubyHubGui:Destroy()
+-- Hapus UI lama
+if playerGui:FindFirstChild("SimpleRubyHub") then
+	playerGui.SimpleRubyHub:Destroy()
 end
 
--- ScreenGui Utama
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "RubyHubGui"
+screenGui.Name = "SimpleRubyHub"
 screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
 
--- Tombol Toggle Hub (Floating Icon)
-local toggleButton = Instance.new("TextButton")
-toggleButton.Name = "ToggleHubButton"
-toggleButton.Size = UDim2.new(0, 50, 0, 50)
-toggleButton.Position = UDim2.new(0, 20, 0.5, -25)
-toggleButton.BackgroundColor3 = Color3.fromRGB(150, 15, 35) -- Ruby Red
-toggleButton.Text = "💎"
-toggleButton.TextSize = 24
-toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleButton.AutoButtonColor = false
-toggleButton.Parent = screenGui
+-- Tombol Utama
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(0, 160, 0, 45)
+btn.Position = UDim2.new(0, 20, 0.2, 0)
+btn.BackgroundColor3 = Color3.fromRGB(150, 15, 35)
+btn.Text = "💎 RUBY HUB"
+btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+btn.TextSize = 14
+btn.Font = Enum.Font.GothamBold
+btn.Draggable = true
+btn.Active = true
+btn.Parent = screenGui
 
-local btnCorner = Instance.new("UICorner")
-btnCorner.CornerRadius = UDim.new(1, 0)
-btnCorner.Parent = toggleButton
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = btn
 
-local btnStroke = Instance.new("UIStroke")
-btnStroke.Color = Color3.fromRGB(220, 50, 80)
-btnStroke.Thickness = 2
-btnStroke.Parent = toggleButton
-
--- Main Frame (Ruby Premium Window)
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 520, 0, 360)
-mainFrame.Position = UDim2.new(0.5, -260, 0.5, -180)
-mainFrame.BackgroundColor3 = Color3.fromRGB(18, 12, 15) -- Dark Ruby Tint Background
-mainFrame.BorderSizePixel = 0
-mainFrame.Visible = false
-mainFrame.Active = true
-mainFrame.Draggable = true -- Bisa digeser-geser
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainFrame
-
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(210, 30, 60)
-mainStroke.Thickness = 2
-mainStroke.Parent = mainFrame
-
--- Top Bar / Header
-local topBar = Instance.new("Frame")
-topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 45)
-topBar.BackgroundColor3 = Color3.fromRGB(30, 15, 20)
-topBar.BorderSizePixel = 0
-topBar.Parent = mainFrame
-
-local topCorner = Instance.new("UICorner")
-topCorner.CornerRadius = UDim.new(0, 12)
-topCorner.Parent = topBar
-
--- Perbaiki sudut bawah topbar agar tetap kotak
-local fixCorner = Instance.new("Frame")
-fixCorner.Size = UDim2.new(1, 0, 0, 10)
-fixCorner.Position = UDim2.new(0, 0, 1, -10)
-fixCorner.BackgroundColor3 = Color3.fromRGB(30, 15, 20)
-fixCorner.BorderSizePixel = 0
-fixCorner.Parent = topBar
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -50, 1, 0)
-titleLabel.Position = UDim2.new(0, 15, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "💎 SEWAGE HUB <font color='#FF4D6D'>[RUBY EDITION]</font>"
-titleLabel.RichText = true
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 16
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = topBar
-
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 35, 0, 35)
-closeButton.Position = UDim2.new(1, -40, 0.5, -17.5)
-closeButton.BackgroundColor3 = Color3.fromRGB(180, 40, 60)
-closeButton.Text = "✕"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 14
-closeButton.Font = Enum.Font.GothamBold
-closeButton.Parent = topBar
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
-
--- Content Area (Tab System Sederhana)
-local contentFrame = Instance.new("ScrollingFrame")
-contentFrame.Size = UDim2.new(1, -20, 1, -65)
-contentFrame.Position = UDim2.new(0, 10, 0, 55)
-contentFrame.BackgroundTransparency = 1
-contentFrame.BorderSizePixel = 0
-contentFrame.CanvasSize = UDim2.new(0, 0, 0, 300)
-contentFrame.ScrollBarThickness = 4
-contentFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 30, 60)
-contentFrame.Parent = mainFrame
-
-local uiList = Instance.new("UIListLayout")
-uiList.SortOrder = Enum.SortOrder.LayoutOrder
-uiList.Padding = UDim.new(0, 10)
-uiList.Parent = contentFrame
-
--- Fungsi Pembuat Section / Kategori UI yang Elegan
-local function createSectionHeader(text)
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 0, 25)
-	label.BackgroundTransparency = 1
-	label.Text = "  " .. text
-	label.TextColor3 = Color3.fromRGB(240, 120, 140)
-	label.TextSize = 13
-	label.Font = Enum.Font.GothamBold
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	return label
-end
-
--- Fungsi Pembuat Tombol Toggle Fitur
-local function createToggle(name, callback)
-	local toggleBtn = Instance.new("TextButton")
-	toggleBtn.Size = UDim2.new(1, 0, 0, 40)
-	toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 18, 22)
-	toggleBtn.AutoButtonColor = false
-	toggleBtn.Text = ""
-	toggleBtn.Parent = contentFrame
-
-	local tCorner = Instance.new("UICorner")
-	tCorner.CornerRadius = UDim.new(0, 8)
-	tCorner.Parent = toggleBtn
-
-	local tStroke = Instance.new("UIStroke")
-	tStroke.Color = Color3.fromRGB(80, 30, 40)
-	tStroke.Thickness = 1
-	tStroke.Parent = toggleBtn
-
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -60, 1, 0)
-	nameLabel.Position = UDim2.new(0, 15, 0, 0)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Text = name
-	nameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-	nameLabel.TextSize = 14
-	nameLabel.Font = Enum.Font.GothamMedium
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.Parent = toggleBtn
-
-	local indicator = Instance.new("Frame")
-	indicator.Size = UDim2.new(0, 16, 0, 16)
-	indicator.Position = UDim2.new(1, -30, 0.5, -8)
-	indicator.BackgroundColor3 = Color3.fromRGB(60, 30, 35)
-	indicator.Parent = toggleBtn
-
-	local indCorner = Instance.new("UICorner")
-	indCorner.CornerRadius = UDim.new(1, 0)
-	indCorner.Parent = indicator
-
-	local active = false
-	toggleBtn.MouseButton1Click:Connect(function()
-		active = not active
-		if active then
-			TweenService:Create(indicator, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 40, 80)}):Play()
-			tStroke.Color = Color3.fromRGB(210, 30, 60)
-		else
-			TweenService:Create(indicator, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 30, 35)}):Play()
-			tStroke.Color = Color3.fromRGB(80, 30, 40)
-		end
-		callback(active)
-	end)
-end
-
--- Masukkan Komponen Menu Hub
-createSectionHeader("🛠️ AUTO FARMING - SELOKAN MATI")
-
-createToggle("Auto Collect Item Terdekat", function(state)
-	print("Auto Collect Status:", state)
-	-- Tempatkan logika auto-teleport atau auto-fire proximity prompt di sini
-	task.spawn(function()
-		while state do
-			task.wait(0.5)
-			local itemsFolder = workspace:FindFirstChild("ActiveFarmingItems")
-			if itemsFolder and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-				local hrp = player.Character.HumanoidRootPart
-				for _, item in ipairs(itemsFolder:GetChildren()) do
-					if item:IsA("BasePart") and (item.Position - hrp.Position).Magnitude < 25 then
-						-- Simulasi mengambil item (fire proximity prompt jika ada)
-						local prompt = item:FindFirstChildOfClass("ProximityPrompt")
-						if prompt then
-							fireproximityprompt(prompt)
-						end
-					end
-				end
-			end
-		end
-	end)
-end)
-
-createToggle("Auto Sell / Deposit Barang", function(state)
-	print("Auto Sell Status:", state)
-end)
-
-createSectionHeader("⚡ TELEPORT & UTILITY")
-
-createToggle("Fullbright (Hapus Kegelapan Selokan)", function(state)
-	if state then
+-- Indikator Status
+local status = false
+btn.MouseButton1Click:Connect(function()
+	status = not status
+	if status then
+		btn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+		btn.Text = "💎 [ aktif ]"
+		
+		-- Contoh Aksi: Fullbright otomatis
 		game.Lighting.Brightness = 3
 		game.Lighting.ClockTime = 14
-		game.Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
 	else
+		btn.BackgroundColor3 = Color3.fromRGB(150, 15, 35)
+		btn.Text = "💎 RUBY HUB"
+		
 		game.Lighting.Brightness = 1
-		game.Lighting.ClockTime = 0 -- Malam/Gelap kembali
-		game.Lighting.OutdoorAmbient = Color3.fromRGB(20, 20, 20)
+		game.Lighting.ClockTime = 0
 	end
-end)
-
-createToggle("ESP Item Farming (Highlight)", function(state)
-	print("ESP Status:", state)
-	local itemsFolder = workspace:FindFirstChild("ActiveFarmingItems")
-	if not itemsFolder then return end
-	
-	for _, item in ipairs(itemsFolder:GetChildren()) do
-		if state then
-			if not item:FindFirstChild("RubyHighlight") then
-				local hl = Instance.new("Highlight")
-				hl.Name = "RubyHighlight"
-				hl.FillColor = Color3.fromRGB(255, 30, 70)
-				hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-				hl.Parent = item
-			end
-		else
-			if item:FindFirstChild("RubyHighlight") then
-				item.RubyHighlight:Destroy()
-			end
-		end
-	end
-end)
-
--- Tombol Buka Tutup UI Animation
-local isOpen = false
-toggleButton.MouseButton1Click:Connect(function()
-	isOpen = not isOpen
-	if isOpen then
-		mainFrame.Visible = true
-		mainFrame.Size = UDim2.new(0, 0, 0, 0)
-		mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-		TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-			Size = UDim2.new(0, 520, 0, 360),
-			Position = UDim2.new(0.5, -260, 0.5, -180)
-		}):Play()
-	else
-		local tween = TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-			Size = UDim2.new(0, 0, 0, 0),
-			Position = UDim2.new(0.5, 0, 0.5, 0)
-		})
-		tween:Play()
-		tween.Completed:Connect(function()
-			if not isOpen then mainFrame.Visible = false end
-		end)
-	end
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-	isOpen = false
-	local tween = TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		Size = UDim2.new(0, 0, 0, 0),
-		Position = UDim2.new(0.5, 0, 0.5, 0)
-	})
-	tween:Play()
-	tween.Completed:Connect(function()
-		mainFrame.Visible = false
-	end)
 end)
