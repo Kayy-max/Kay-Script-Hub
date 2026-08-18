@@ -1,20 +1,33 @@
--- [[ RUBY SEWAGE HUB - FULL STRUCTURE MATCHED ]] --
+-- [[ KAY HUB PRO V9.4 - FULL STRUCTURE MATCHED ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
-local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- DAFTAR PRESET TEMA (SAMA SEPERTI TEMPLATE)
+-- LOGIKA AUTO TELEPORT & AUTO VERIFY SETELAH REJOIN
+task.spawn(function()
+    pcall(function()
+        if getgenv then
+            if getgenv().KayHub_AutoVerified then
+                getgenv().KayHub_Verified = true
+            end
+
+            if getgenv().KayHub_SavedPos then
+                local pos = getgenv().KayHub_SavedPos
+                local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local hrp = char:WaitForChild("HumanoidRootPart", 10)
+                if hrp and pos then
+                    task.wait(1.5)
+                    hrp.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+                    getgenv().KayHub_SavedPos = nil
+                end
+            end
+        end
+    end)
+end)
+
+-- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
-    ["Ruby Premium"] = {
-        BGColor = Color3.fromRGB(16, 10, 10),
-        SidebarColor = Color3.fromRGB(24, 14, 14),
-        FrameColor = Color3.fromRGB(32, 18, 18),
-        StrokeColor = Color3.fromRGB(65, 30, 30),
-        AccentColor = Color3.fromRGB(230, 30, 45),
-        TextColor = Color3.fromRGB(255, 240, 240),
-        MutedText = Color3.fromRGB(170, 130, 130)
-    },
     ["Sleek Dark"] = {
         BGColor = Color3.fromRGB(15, 15, 15),
         SidebarColor = Color3.fromRGB(22, 22, 22),
@@ -32,30 +45,48 @@ local Themes = {
         AccentColor = Color3.fromRGB(255, 0, 127),
         TextColor = Color3.fromRGB(250, 240, 255),
         MutedText = Color3.fromRGB(150, 130, 170)
+    },
+    ["Ruby Premium"] = {
+        BGColor = Color3.fromRGB(16, 10, 10),
+        SidebarColor = Color3.fromRGB(24, 14, 14),
+        FrameColor = Color3.fromRGB(32, 18, 18),
+        StrokeColor = Color3.fromRGB(65, 30, 30),
+        AccentColor = Color3.fromRGB(230, 30, 30),
+        TextColor = Color3.fromRGB(255, 240, 240),
+        MutedText = Color3.fromRGB(170, 130, 130)
+    },
+    ["Light Elegant"] = {
+        BGColor = Color3.fromRGB(240, 240, 245),
+        SidebarColor = Color3.fromRGB(225, 225, 230),
+        FrameColor = Color3.fromRGB(255, 255, 255),
+        StrokeColor = Color3.fromRGB(200, 200, 205),
+        AccentColor = Color3.fromRGB(0, 120, 255),
+        TextColor = Color3.fromRGB(30, 30, 30),
+        MutedText = Color3.fromRGB(120, 120, 130)
     }
 }
 
-local CurrentTheme = Themes["Ruby Premium"]
+local CurrentTheme = Themes["Sleek Dark"]
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} 
 local ScriptRunning = true 
 
-if game:GetService("CoreGui"):FindFirstChild("RubySewageHub") then
-    game:GetService("CoreGui").RubySewageHub:Destroy()
+if game:GetService("CoreGui"):FindFirstChild("KayHub_Main") then
+    game:GetService("CoreGui").KayHub_Main:Destroy()
 end
 
-local RubyHub = Instance.new("ScreenGui")
-RubyHub.Name = "RubySewageHub"
-RubyHub.ResetOnSpawn = false
+local KayHub = Instance.new("ScreenGui")
+KayHub.Name = "KayHub_Main"
+KayHub.ResetOnSpawn = false
 
 pcall(function() 
     if gethui then
-        RubyHub.Parent = gethui()
+        KayHub.Parent = gethui()
     else
-        RubyHub.Parent = game:GetService("CoreGui")
+        KayHub.Parent = game:GetService("CoreGui")
     end
 end)
-if not RubyHub.Parent then RubyHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+if not KayHub.Parent then KayHub.Parent = LocalPlayer:WaitForChild("PlayerGui") end
 
 local function MakeDraggable(guiFrame)
     guiFrame.Active = true
@@ -100,7 +131,7 @@ local function MakeDraggable(guiFrame)
 end
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, true, RubyHub
+MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
 MainFrame.Visible = false 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
@@ -111,13 +142,13 @@ table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColo
 
 MakeDraggable(MainFrame)
 
--- SYSTEM VERIFIKASI / PASSWORD (SAMA SEPERTI TEMPLATE)
+-- SYSTEM VERIFIKASI / PASSWORD
 local CorrectPassword = "kay602122"
 local WrongAttempts = 0
 local MaxAttempts = 3
 
 local AuthFrame = Instance.new("Frame")
-AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, RubyHub
+AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, KayHub
 AuthFrame.Visible = true
 Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
 local AuthStroke = Instance.new("UIStroke", AuthFrame)
@@ -128,7 +159,7 @@ table.insert(AllUIElements, {Obj = AuthStroke, Prop = "Color", Key = "StrokeColo
 MakeDraggable(AuthFrame)
 
 local AuthTitle = Instance.new("TextLabel", AuthFrame)
-AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "RUBY HUB - VERIFICATION", Enum.Font.GothamBold, 14
+AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
 table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
 
 local PasswordInput = Instance.new("TextBox", AuthFrame)
@@ -150,7 +181,7 @@ table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "
 
 local function UnlockHub()
     pcall(function()
-        if getgenv then getgenv().RubyHub_Verified = true end
+        if getgenv then getgenv().KayHub_Verified = true end
     end)
     if AuthFrame and AuthFrame.Parent then
         AuthFrame.Visible = false
@@ -174,7 +205,7 @@ VerifyBtn.MouseButton1Click:Connect(function()
         if WrongAttempts >= MaxAttempts then
             InfoLabel.Text = "Terlalu banyak kesalahan. Menutup..."
             task.wait(1.5)
-            RubyHub:Destroy()
+            KayHub:Destroy()
             ScriptRunning = false
         end
     end
@@ -186,7 +217,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "RUBY HUB", Enum.Font.GothamBold, 13, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB", Enum.Font.GothamBold, 13, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
@@ -233,7 +264,7 @@ ToggleButton.BorderSizePixel = 0
 ToggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.Active = true
 ToggleButton.Visible = false
-ToggleButton.Parent = RubyHub
+ToggleButton.Parent = KayHub
 MakeDraggable(ToggleButton)
 
 local isMinimized = false
@@ -248,7 +279,6 @@ end
 MinButton.MouseButton1Click:Connect(toggleMenu)
 ToggleButton.MouseButton1Click:Connect(toggleMenu)
 
--- KONFIRMASI KELUAR (SAMA SEPERTI TEMPLATE)
 local ConfirmOverlay = Instance.new("Frame")
 ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.BackgroundTransparency, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), 0.4, false, 10, MainFrame
 table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
@@ -279,7 +309,7 @@ CloseButton.MouseButton1Click:Connect(function()
     ConfirmOverlay.Visible = true
 end)
 YesButton.MouseButton1Click:Connect(function()
-    RubyHub:Destroy()
+    KayHub:Destroy()
     ScriptRunning = false
 end)
 NoButton.MouseButton1Click:Connect(function()
@@ -346,9 +376,13 @@ local function CreateToggle(parent, text, callback)
     table.insert(AllUIElements, {Obj = Switch, Prop = "BackgroundColor3", Key = "StrokeColor"})
     table.insert(AllUIElements, {Obj = Switch, Prop = "TextColor3", Key = "MutedText"})
 
+    local data = {Instance = Switch, IsEnabled = false}
+    table.insert(ActiveToggles, data)
+
     Switch.MouseButton1Click:Connect(function()
         if not ScriptRunning or ConfirmOverlay.Visible then return end
         Enabled = not Enabled
+        data.IsEnabled = Enabled
         Switch.Text = Enabled and "ON" or "OFF"
         
         local targetBG = Enabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
@@ -361,69 +395,73 @@ local function CreateToggle(parent, text, callback)
 end
 
 ----------------------------------------------------
--- TAB 1: HOME (TERMASUK FULLBRIGHT UNTUK MAP SELOKAN)
+-- TAB: HOME (CONTOH)
 ----------------------------------------------------
 local HomePage = CreateTab("Home")
-
-CreateToggle(HomePage, "Fullbright (Terangi Selokan Mati)", function(state)
+CreateToggle(HomePage, "Fullbright", function(state)
     if state then
-        Lighting.Brightness = 3
-        Lighting.ClockTime = 14
-        Lighting.OutdoorAmbient = Color3.fromRGB(180, 180, 180)
-        Lighting.GlobalShadows = false
+        game:GetService("Lighting").Brightness = 3
+        game:GetService("Lighting").ClockTime = 14
+        game:GetService("Lighting").GlobalShadows = false
     else
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 0
-        Lighting.OutdoorAmbient = Color3.fromRGB(30, 30, 30)
-        Lighting.GlobalShadows = true
+        game:GetService("Lighting").Brightness = 1
+        game:GetService("Lighting").GlobalShadows = true
     end
 end)
 
 ----------------------------------------------------
--- TAB 2: ESP (SESUAI PERMINTAAN)
+-- TAB: ESP (DARI TEMPLATE)
 ----------------------------------------------------
 local EspPage = CreateTab("ESP")
-local playerEspActive = false
+local playerEspActive, boxEspActive, targetEspActive = false, false, false
+local targetPlayerNameESP = ""
 
-CreateToggle(EspPage, "Player ESP (Name)", function(state)
-    playerEspActive = state
-end)
+CreateToggle(EspPage, "Player ESP (Name & Dist)", function(state) playerEspActive = state end)
 
 RS.RenderStepped:Connect(function()
-    if not playerEspActive then return end
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = p.Character.HumanoidRootPart
-            if not hrp:FindFirstChild("RubyEsp_Billboard") then
-                local bill = Instance.new("BillboardGui", hrp)
-                bill.Name = "RubyEsp_Billboard"
-                bill.Size = UDim2.new(0, 100, 0, 40)
-                bill.StudsOffset = Vector3.new(0, 3, 0)
-                bill.AlwaysOnTop = true
-                
-                local lbl = Instance.new("TextLabel", bill)
-                lbl.Size = UDim2.new(1, 0, 1, 0)
-                lbl.BackgroundTransparency = 1
-                lbl.TextColor3 = CurrentTheme.AccentColor
-                lbl.TextSize = 11
-                lbl.Font = Enum.Font.GothamBold
-                lbl.Text = p.Name
+            local tChar = p.Character
+            local tHrp = tChar.HumanoidRootPart
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            
+            if playerEspActive and myHrp then
+                local distance = math.floor((tHrp.Position - myHrp.Position).Magnitude)
+                local bill = tHrp:FindFirstChild("KayEsp_Bill")
+                if not bill then
+                    bill = Instance.new("BillboardGui", tHrp)
+                    bill.Name = "KayEsp_Bill"
+                    bill.Size = UDim2.new(0, 100, 0, 40)
+                    bill.StudsOffset = Vector3.new(0, 3, 0)
+                    bill.AlwaysOnTop = true
+                    
+                    local lbl = Instance.new("TextLabel", bill)
+                    lbl.Name = "Text"
+                    lbl.Size = UDim2.new(1, 0, 1, 0)
+                    lbl.BackgroundTransparency = 1
+                    lbl.TextSize = 11
+                    lbl.Font = Enum.Font.GothamBold
+                    lbl.Parent = bill
+                end
+                local label = bill:FindFirstChild("Text")
+                if label then
+                    label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
+                    label.TextColor3 = CurrentTheme.AccentColor
+                end
+            else
+                if tHrp:FindFirstChild("KayEsp_Bill") then tHrp.KayEsp_Bill:Destroy() end
             end
         end
     end
 end)
 
 ----------------------------------------------------
--- TAB 3: TELEPORT (SESUAI PERMINTAAN)
+-- TAB: TELEPORT (DARI TEMPLATE)
 ----------------------------------------------------
 local TeleportPage = CreateTab("Teleport")
-
 local function createTpButton(name, pos)
     local btn = Instance.new("TextButton", TeleportPage)
-    btn.Size = UDim2.new(1, -10, 0, 35)
-    btn.Text = "Teleport ke " .. name
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
+    btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, -10, 0, 35), "Teleport ke " .. name, Enum.Font.GothamBold, 12
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
     table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
@@ -440,10 +478,9 @@ end
 createTpButton("Spawn Utama (0, 5, 0)", CFrame.new(0, 5, 0))
 
 ----------------------------------------------------
--- TAB 4: FUN (SESUAI PERMINTAAN)
+-- TAB: FUN (DARI TEMPLATE)
 ----------------------------------------------------
 local FunPage = CreateTab("Fun")
-
 CreateToggle(FunPage, "Spin Character (Berputar)", function(state)
     task.spawn(function()
         while state and ScriptRunning do
@@ -456,5 +493,13 @@ CreateToggle(FunPage, "Spin Character (Berputar)", function(state)
     end)
 end)
 
--- Terapkan tema awal Ruby Premium
-ApplyTheme("Ruby Premium")
+-- Terapkan Tema Default
+ApplyTheme("Sleek Dark")
+
+pcall(function()
+    if getgenv and (getgenv().KayHub_Verified or getgenv().KayHub_AutoVerified) then
+        UnlockHub()
+    end
+end)
+
+print("[SYSTEM] Kay Hub Loaded Successfully!")
