@@ -9,6 +9,10 @@ local LocalPlayer = Players.LocalPlayer
 task.spawn(function()
     pcall(function()
         if getgenv then
+            if getgenv().KayHub_AutoVerified then
+                getgenv().KayHub_Verified = true
+            end
+
             if getgenv().KayHub_SavedPos then
                 local pos = getgenv().KayHub_SavedPos
                 local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -662,6 +666,7 @@ task.spawn(function()
         local closestTarget = nil
         local shortestDist = attackRange
         
+        -- Deteksi target pemain lain / monster di workspace
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character then
                 local tHrp = p.Character:FindFirstChild("HumanoidRootPart")
