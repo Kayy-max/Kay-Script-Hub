@@ -1,8 +1,30 @@
--- [[ KAY HUB PRO V9.4 - NO PASSWORD ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
+
+-- LOGIKA AUTO TELEPORT & AUTO VERIFY SETELAH REJOIN
+task.spawn(function()
+    pcall(function()
+        if getgenv then
+            if getgenv().KayHub_AutoVerified then
+                getgenv().KayHub_Verified = true
+            end
+
+            if getgenv().KayHub_SavedPos then
+                local pos = getgenv().KayHub_SavedPos
+                local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local hrp = char:WaitForChild("HumanoidRootPart", 10)
+                if hrp and pos then
+                    task.wait(1.5)
+                    hrp.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+                    getgenv().KayHub_SavedPos = nil
+                end
+            end
+        end
+    end)
+end)
 
 -- DAFTAR PRESET TEMA LENGKAP
 local Themes = {
@@ -108,10 +130,9 @@ local function MakeDraggable(guiFrame)
     end)
 end
 
--- LANGSUNG TAMPILKAN MAIN FRAME TANPA PASSWORD
 local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-MainFrame.Visible = true 
+MainFrame.Visible = false 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -121,13 +142,82 @@ table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColo
 
 MakeDraggable(MainFrame)
 
+-- SYSTEM VERIFIKASI / PASSWORD
+local CorrectPassword = "kay602122"
+local WrongAttempts = 0
+local MaxAttempts = 3
+
+local AuthFrame = Instance.new("Frame")
+AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, KayHub
+AuthFrame.Visible = true
+Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
+local AuthStroke = Instance.new("UIStroke", AuthFrame)
+AuthStroke.Thickness = 1
+
+table.insert(AllUIElements, {Obj = AuthFrame, Prop = "BackgroundColor3", Key = "BGColor"})
+table.insert(AllUIElements, {Obj = AuthStroke, Prop = "Color", Key = "StrokeColor"})
+MakeDraggable(AuthFrame)
+
+local AuthTitle = Instance.new("TextLabel", AuthFrame)
+AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "KAY HUB - VERIFICATION", Enum.Font.GothamBold, 14
+table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
+
+local PasswordInput = Instance.new("TextBox", AuthFrame)
+PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
+Instance.new("UICorner", PasswordInput).CornerRadius = UDim.new(0, 6)
+local PwdStroke = Instance.new("UIStroke", PasswordInput)
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = PwdStroke, Prop = "Color", Key = "StrokeColor"})
+
+local InfoLabel = Instance.new("TextLabel", AuthFrame)
+InfoLabel.Size, InfoLabel.Position, InfoLabel.BackgroundTransparency, InfoLabel.Text, InfoLabel.Font, InfoLabel.TextSize = UDim2.new(1, 0, 0, 20), UDim2.new(0, 0, 0, 95), 1, "Sisa percobaan: " .. (MaxAttempts - WrongAttempts), Enum.Font.Gotham, 11
+table.insert(AllUIElements, {Obj = InfoLabel, Prop = "TextColor3", Key = "MutedText"})
+
+local VerifyBtn = Instance.new("TextButton", AuthFrame)
+VerifyBtn.Size, VerifyBtn.Position, VerifyBtn.Text, VerifyBtn.Font, VerifyBtn.TextSize, VerifyBtn.TextColor3 = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 125), "VERIFIKASI", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+
+local function UnlockHub()
+    pcall(function()
+        if getgenv then getgenv().KayHub_Verified = true end
+    end)
+    if AuthFrame and AuthFrame.Parent then
+        AuthFrame.Visible = false
+        AuthFrame:Destroy()
+    end
+    MainFrame.Visible = true
+end
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    if PasswordInput.Text == CorrectPassword then
+        InfoLabel.Text = "Akses Diterima! Memuat script..."
+        InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
+        task.wait(0.3)
+        UnlockHub()
+    else
+        WrongAttempts = WrongAttempts + 1
+        InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
+        InfoLabel.TextColor3 = Color3.fromRGB(240, 50, 50)
+        PasswordInput.Text = ""
+        
+        if WrongAttempts >= MaxAttempts then
+            InfoLabel.Text = "Terlalu banyak kesalahan. Menutup..."
+            task.wait(1.5)
+            KayHub:Destroy()
+            ScriptRunning = false
+        end
+    end
+end)
+
 local Sidebar = Instance.new("Frame")
 Sidebar.Size, Sidebar.Parent = UDim2.new(0, 120, 1, 0), MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB", Enum.Font.GothamBold, 13, Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "KAY HUB V9.4", Enum.Font.GothamBold, 13, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
@@ -215,17 +305,6 @@ Instance.new("UICorner", NoButton).CornerRadius = UDim.new(0, 6)
 table.insert(AllUIElements, {Obj = NoButton, Prop = "BackgroundColor3", Key = "FrameColor"})
 table.insert(AllUIElements, {Obj = NoButton, Prop = "TextColor3", Key = "MutedText"})
 
-CloseButton.MouseButton1Click:Connect(function()
-    ConfirmOverlay.Visible = true
-end)
-YesButton.MouseButton1Click:Connect(function()
-    KayHub:Destroy()
-    ScriptRunning = false
-end)
-NoButton.MouseButton1Click:Connect(function()
-    ConfirmOverlay.Visible = false
-end)
-
 local function ApplyTheme(themeName)
     CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
@@ -304,105 +383,902 @@ local function CreateToggle(parent, text, callback)
     return Frame
 end
 
-----------------------------------------------------
--- TAB: HOME
-----------------------------------------------------
-local HomePage = CreateTab("Home")
-CreateToggle(HomePage, "Fullbright", function(state)
-    if state then
-        game:GetService("Lighting").Brightness = 3
-        game:GetService("Lighting").ClockTime = 14
-        game:GetService("Lighting").GlobalShadows = false
-    else
-        game:GetService("Lighting").Brightness = 1
-        game:GetService("Lighting").GlobalShadows = true
+-- VOICE CHAT SYSTEM CORE
+local VoiceChatService = cloneref and cloneref(game:GetService("VoiceChatService")) or game:GetService("VoiceChatService")
+local VoiceChatInternal = cloneref and cloneref(game:GetService("VoiceChatInternal")) or game:GetService("VoiceChatInternal")
+
+local function initVoiceBypass()
+    pcall(function()
+        VoiceChatService:leaveVoice()
+        task.wait(1.5)
+        local conn = getconnections(VoiceChatInternal.StateChanged)
+        local vcConnectionCount = #conn
+        if vcConnectionCount > 0 and conn[vcConnectionCount] then
+            conn[vcConnectionCount]:Disable()
+        end
+        task.wait(2.5)
+        VoiceChatService:joinVoice()
+    end)
+end
+
+-- FLOATING MIC CONTROLLER OVERLAY
+local PopUpFrame = Instance.new("Frame")
+PopUpFrame.Name = "KayHub_MicIcon"
+PopUpFrame.Size = UDim2.new(0, 46, 0, 46)
+PopUpFrame.Position = UDim2.new(0.85, 0, 0.2, 0) 
+PopUpFrame.Active = true
+PopUpFrame.Selectable = true
+PopUpFrame.Visible = false
+PopUpFrame.ZIndex = 5        
+PopUpFrame.Parent = KayHub
+
+local PopUpCorner = Instance.new("UICorner", PopUpFrame)
+PopUpCorner.CornerRadius = UDim.new(1, 0)
+local PopUpStroke = Instance.new("UIStroke", PopUpFrame)
+PopUpStroke.Thickness = 2
+
+table.insert(AllUIElements, {Obj = PopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = PopUpStroke, Prop = "Color", Key = "StrokeColor"})
+
+MakeDraggable(PopUpFrame)
+
+local PopUpBtn = Instance.new("TextButton", PopUpFrame)
+PopUpBtn.Size = UDim2.new(1, 0, 1, 0)
+PopUpBtn.BackgroundTransparency = 1
+PopUpBtn.Text = "🎙️"
+PopUpBtn.TextSize = 18
+PopUpBtn.Font = Enum.Font.GothamBold
+PopUpBtn.ZIndex = 6                 
+PopUpBtn.Active = false             
+
+local voiceMutedState = false
+local clickStartPos = Vector3.new()
+
+PopUpFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        clickStartPos = input.Position
     end
 end)
 
-----------------------------------------------------
--- TAB: ESP
-----------------------------------------------------
-local EspPage = CreateTab("ESP")
-local playerEspActive = false
+PopUpFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local deltaMove = (input.Position - clickStartPos).Magnitude
+        if deltaMove < 5 then 
+            if not ScriptRunning then return end
+            voiceMutedState = not voiceMutedState
+            pcall(function() VoiceChatInternal:PublishPause(voiceMutedState) end)
+            
+            if voiceMutedState then
+                PopUpBtn.Text = "🔇"
+                TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
+            else
+                PopUpBtn.Text = "🎙️"
+                TS:Create(PopUpStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+            end
+        end
+    end
+end)
 
-CreateToggle(EspPage, "Player ESP (Name & Dist)", function(state) playerEspActive = state end)
+-- TAB 1: HOME PAGE
+local HomePage = CreateTab("Home")
+local targetPlayerName = nil 
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
+local isAttached, autoEmoteEnabled = false, true
+local attachmentConnection, currentEmoteTrack
+local targetCharAddedConnection = nil
+
+local function removeWelds()
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("Weld") or part:IsA("WeldConstraint") or part:IsA("AlignPosition") then pcall(function() part:Destroy() end) end
+        end
+    end
+end
+
+local function startLoop(targetChar)
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
+    
+    if myHRP and targetHRP and myHumanoid then
+        myHumanoid.PlatformStand = true
+        
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        
+        attachmentConnection = RS.Heartbeat:Connect(function()
+            if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
+                if attachmentConnection then attachmentConnection:Disconnect() end
+                return
+            end
+            
+            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
+                sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
+            end)
+            
+            myHRP.CFrame = offset
+            myHRP.Velocity = Vector3.new()
+            myHRP.AssemblyLinearVelocity = Vector3.new()
+            myHRP.AssemblyAngularVelocity = Vector3.new()
+            myHRP.RotVelocity = Vector3.new()
+        end)
+    end
+end
+
+local function checkAndAttach()
+    if not isAttached or not targetPlayerName then return end
+    
+    local targetPlayer = Players:FindFirstChild(targetPlayerName)
+    if targetPlayer and targetPlayer.Character and LocalPlayer.Character then
+        removeWelds()
+        startLoop(targetPlayer.Character)
+        
+        if autoEmoteEnabled then
+            local char = LocalPlayer.Character
+            if currentEmoteTrack then currentEmoteTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://107480602323379"
+            pcall(function()
+                currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
+                currentEmoteTrack:Play()
+            end)
+        end
+    end
+end
+
+local function runAttachLogic()
+    local selectedPlayer = Players:FindFirstChild(targetPlayerName or "")
+    if not selectedPlayer or ConfirmOverlay.Visible then return end
+    
+    isAttached = true
+    if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+    
+    targetCharAddedConnection = selectedPlayer.CharacterAdded:Connect(function()
+        if isAttached then task.wait(0.5) checkAndAttach() end
+    end)
+    
+    checkAndAttach()
+end
+
+local function detach()
+    isAttached = false
+    targetPlayerName = nil
+    if attachmentConnection then attachmentConnection:Disconnect() end
+    if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+    
+    local myChar = LocalPlayer.Character
+    if myChar then
+        local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
+        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        if myHumanoid then myHumanoid.PlatformStand = false end
+        if myHRP then 
+            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", nil) end)
+            myHRP.Velocity = Vector3.new(0, 0, 0) 
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        end
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
+        end
+    end
+    if currentEmoteTrack then currentEmoteTrack:Stop() end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if isAttached and targetPlayerName and player.Name == targetPlayerName then
+        task.wait(1) 
+        if targetCharAddedConnection then targetCharAddedConnection:Disconnect() end
+        targetCharAddedConnection = player.CharacterAdded:Connect(function()
+            if isAttached then task.wait(0.5) checkAndAttach() end
+        end)
+        checkAndAttach()
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if isAttached and targetPlayerName then task.wait(0.5) checkAndAttach() end
+end)
+
+local function forceUpdatePosition()
+    if isAttached and targetPlayerName then
+        local targetPlayer = Players:FindFirstChild(targetPlayerName)
+        if targetPlayer and targetPlayer.Character then
+            local myChar = LocalPlayer.Character
+            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if myHRP and targetHRP then
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            end
+        end
+    end
+end
+
+-- Instant Interact
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local isInstantActive = false
+local promptConnection = nil
+
+CreateToggle(HomePage, "Instant Interact", function(state)
+    isInstantActive = state
+    if isInstantActive then
+        for _, prompt in pairs(workspace:GetDescendants()) do if prompt:IsA("ProximityPrompt") then prompt:SetAttribute("OriginalHold", prompt.HoldDuration) prompt.HoldDuration = 0 end end
+        promptConnection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt) if isInstantActive then prompt.HoldDuration = 0 end end)
+    else
+        if promptConnection then promptConnection:Disconnect() end
+        for _, prompt in pairs(workspace:GetDescendants()) do if prompt:IsA("ProximityPrompt") then local orig = prompt:GetAttribute("OriginalHold") if orig then prompt.HoldDuration = orig end end end
+    end
+end)
+
+local Line = Instance.new("Frame", HomePage)
+Line.Size, Line.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = Line, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+-- DROPDOWN MENU TARGET PLAYER
+local SearchBox = Instance.new("TextBox", HomePage)
+SearchBox.Size, SearchBox.PlaceholderText, SearchBox.Font, SearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Cari nama player...", Enum.Font.Gotham, 12
+Instance.new("UICorner", SearchBox).CornerRadius = UDim.new(0, 6)
+local SBS = Instance.new("UIStroke", SearchBox)
+table.insert(AllUIElements, {Obj = SearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = SBS, Prop = "Color", Key = "StrokeColor"})
+
+local DropdownBtn = Instance.new("TextButton", HomePage)
+DropdownBtn.Size, DropdownBtn.Text, DropdownBtn.Font, DropdownBtn.TextSize = UDim2.new(1, -10, 0, 32), "▼ Pilih Player Target ▼", Enum.Font.GothamBold, 12
+Instance.new("UICorner", DropdownBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = DropdownBtn, Prop = "MutedText", Key = "MutedText"})
+
+local PlayerListFrame = Instance.new("ScrollingFrame", HomePage)
+PlayerListFrame.Size, PlayerListFrame.Visible, PlayerListFrame.ScrollBarThickness, PlayerListFrame.BorderSizePixel = UDim2.new(1, -10, 0, 80), false, 2, 0
+Instance.new("UICorner", PlayerListFrame).CornerRadius = UDim.new(0, 6)
+local ListLayout = Instance.new("UIListLayout", PlayerListFrame)
+table.insert(AllUIElements, {Obj = PlayerListFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
+
+DropdownBtn.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end PlayerListFrame.Visible = not PlayerListFrame.Visible end)
+
+local function refreshPlayerList(filter)
+    for _, child in pairs(PlayerListFrame:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if not filter or filter == "" or string.find(string.lower(player.DisplayName), string.lower(filter)) or string.find(string.lower(player.Name), string.lower(filter)) then
+                local btn = Instance.new("TextButton", PlayerListFrame)
+                btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, 0, 0, 26), player.DisplayName, Enum.Font.Gotham, 11
+                btn.BorderSizePixel = 0
+                table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
+                table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
+                btn.MouseButton1Click:Connect(function()
+                    if ConfirmOverlay.Visible then return end
+                    targetPlayerName = player.Name
+                    DropdownBtn.Text = "Selected: " .. player.DisplayName
+                    PlayerListFrame.Visible = false
+                end)
+            end
+        end
+    end
+end
+SearchBox:GetPropertyChangedSignal("Text"):Connect(function() refreshPlayerList(SearchBox.Text) PlayerListFrame.Visible = true end)
+refreshPlayerList()
+
+local ActionFrame = Instance.new("Frame", HomePage)
+ActionFrame.Size, ActionFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 32), 1
+local ActionLayout = Instance.new("UIListLayout", ActionFrame)
+ActionLayout.FillDirection, ActionLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 6)
+
+local function createActionBtn(txt, color, cb)
+    local b = Instance.new("TextButton", ActionFrame)
+    b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(0.49, 0, 1, 0), color, txt, Color3.fromRGB(255,255,255), Enum.Font.GothamBold, 11
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end cb() end)
+end
+createActionBtn("TEMPEL", Color3.fromRGB(20, 140, 80), runAttachLogic)
+createActionBtn("LEPAS", Color3.fromRGB(160, 40, 40), detach)
+
+local NavFrame = Instance.new("Frame", HomePage)
+NavFrame.Size, NavFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 65), 1
+local NavGrid = Instance.new("UIGridLayout", NavFrame)
+NavGrid.CellSize, NavGrid.CellPadding = UDim2.new(0.235, 0, 0, 26), UDim2.new(0, 4, 0, 4)
+
+local function createNav(txt, cb)
+    local b = Instance.new("TextButton", NavFrame)
+    b.Text, b.Font, b.TextSize = txt, Enum.Font.GothamBold, 9
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "FrameColor"})
+    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end cb() forceUpdatePosition() end)
+end
+createNav("NAIK", function() posY = posY + 0.2 end)
+createNav("TURUN", function() posY = posY - 0.2 end)
+createNav("DEPAN", function() posZ = posZ - 0.2 end)
+createNav("BELAKANG", function() posZ = posZ + 0.2 end)
+createNav("KIRI", function() posX = posX - 0.2 end)
+createNav("KANAN", function() posX = posX + 0.2 end)
+createNav("PUTAR", function() rotY = (rotY + 90) % 360 end)
+
+-- TAB 2: ANIMATION PAGE
+local AnimPage = CreateTab("Animasi")
+local kayAnimTrack = nil
+local isKayAnimActive = false
+
+local function createAnimInput(placeholder, defaultVal, callback)
+    local f = Instance.new("Frame", AnimPage)
+    f.Size = UDim2.new(1, -10, 0, 32)
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
+    table.insert(AllUIElements, {Obj = f, Prop = "BackgroundColor3", Key = "FrameColor"})
+    
+    local l = Instance.new("TextLabel", f)
+    l.Size, l.BackgroundTransparency, l.Text, l.Font, l.TextSize, l.TextXAlignment = UDim2.new(0.4, 0, 1, 0), UDim2.new(0, 8, 0, 0), placeholder, Enum.Font.Gotham, 11, Enum.TextXAlignment.Left
+    table.insert(AllUIElements, {Obj = l, Prop = "TextColor3", Key = "TextColor"})
+    
+    local inBox = Instance.new("TextBox", f)
+    inBox.Size, inBox.Position, inBox.BackgroundTransparency, inBox.Text, inBox.Font, inBox.TextSize = UDim2.new(0.55, 0, 1, 0), UDim2.new(0.42, 0, 0, 0), 1, tostring(defaultVal), Enum.Font.GothamBold, 11
+    table.insert(AllUIElements, {Obj = inBox, Prop = "TextColor3", Key = "AccentColor"})
+    
+    inBox.FocusLost:Connect(function()
+        local num = tonumber(inBox.Text)
+        if num then callback(num) else inBox.Text = tostring(defaultVal) end
+    end)
+end
+
+local inWalk = createAnimInput("Animasi Jalan", 5077759451, function(val) end)
+local inJump = createAnimInput("Animasi Lompat", 5077765103, function(val) end)
+local inFall = createAnimInput("Animasi Jatuh", 5077767714, function(val) end)
+local inIdle = createAnimInput("Animasi Diam", 5077702397, function(val) end)
+
+local btnToggleAnim = Instance.new("TextButton", AnimPage)
+btnToggleAnim.Size, btnToggleAnim.Text, btnToggleAnim.BackgroundColor3, btnToggleAnim.TextColor3, btnToggleAnim.Font, btnToggleAnim.TextSize = UDim2.new(1, -10, 0, 35), "STATUS: OFF", Color3.fromRGB(160, 40, 40), Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 12
+Instance.new("UICorner", btnToggleAnim).CornerRadius = UDim.new(0, 6)
+
+local function playKayAnim(id)
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if char and hum and hum.Health > 0 then
+        if char:FindFirstChild("Animate") then char.Animate.Disabled = true end
+        if not kayAnimTrack or kayAnimTrack.Animation.AnimationId ~= "rbxassetid://" .. id then
+            if kayAnimTrack then kayAnimTrack:Stop() end
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://" .. id
+            pcall(function()
+                kayAnimTrack = hum:LoadAnimation(anim)
+                kayAnimTrack:Play()
+            end)
+        elseif kayAnimTrack and not kayAnimTrack.IsPlaying then
+            kayAnimTrack:Play()
+        end
+    end
+end
+
+btnToggleAnim.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isKayAnimActive = not isKayAnimActive
+    btnToggleAnim.Text = isKayAnimActive and "STATUS: ON" or "STATUS: OFF"
+    btnToggleAnim.BackgroundColor3 = isKayAnimActive and Color3.fromRGB(20, 140, 80) or Color3.fromRGB(160, 40, 40)
+    if not isKayAnimActive then
+        if kayAnimTrack then kayAnimTrack:Stop() end
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Animate") then char.Animate.Disabled = false end
+    end
+end)
+
+RS.Heartbeat:Connect(function()
+    if isKayAnimActive and ScriptRunning then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local walkInput = AnimPage:GetChildren()[2] -- Mengambil input animasi jalan
+            -- Disesuaikan dengan struktur pembacaan animasi aktif
+        end
+    end
+end)
+
+-- TAB 3: FUN PAGE
+local FunPage = CreateTab("Fun")
+local Camera = workspace.CurrentCamera
+local isSpectating = false
+local spectateTargetName = ""
+
+local function createSecHeader(text)
+    local l = Instance.new("TextLabel", FunPage)
+    l.Size, l.BackgroundTransparency, l.Text, l.Font, l.TextSize, l.TextXAlignment = UDim2.new(1, -10, 0, 24), 1, text, Enum.Font.GothamBold, 11, Enum.TextXAlignment.Left
+    table.insert(AllUIElements, {Obj = l, Prop = "TextColor3", Key = "AccentColor"})
+end
+
+createSecHeader("SPECTATE SYSTEM")
+local SpectateSearchBox = Instance.new("TextBox", FunPage)
+SpectateSearchBox.Size, SpectateSearchBox.PlaceholderText, SpectateSearchBox.Font, SpectateSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Ketik nama target spectate...", Enum.Font.Gotham, 12
+Instance.new("UICorner", SpectateSearchBox).CornerRadius = UDim.new(0, 6)
+local SSBStroke = Instance.new("UIStroke", SpectateSearchBox)
+table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SpectateSearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = SSBStroke, Prop = "Color", Key = "StrokeColor"})
+
+local SpectateBtn = Instance.new("TextButton", FunPage)
+SpectateBtn.Size, SpectateBtn.Text, SpectateBtn.Font, SpectateBtn.TextSize = UDim2.new(1, -10, 0, 32), "TOGGLE SPECTATE", Enum.Font.GothamBold, 12
+Instance.new("UICorner", SpectateBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = SpectateBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = SpectateBtn, Prop = "TextColor3", Key = "TextColor"})
+
+SpectateSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+    spectateTargetName = SpectateSearchBox.Text
+end)
+
+SpectateBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isSpectating = not isSpectating
+    if isSpectating then
+        SpectateBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+        SpectateBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        SpectateBtn.Text = "STOP SPECTATE"
+    else
+        SpectateBtn.BackgroundColor3 = CurrentTheme.AccentColor
+        SpectateBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+        SpectateBtn.Text = "TOGGLE SPECTATE"
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                Camera.CameraSubject = LocalPlayer.Character.Humanoid
+            end
+        end)
+    end
+end)
 
 RS.RenderStepped:Connect(function()
+    if isSpectating and spectateTargetName and spectateTargetName ~= "" then
+        pcall(function()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and (string.find(string.lower(p.Name), string.lower(spectateTargetName)) or string.find(string.lower(p.DisplayName), string.lower(spectateTargetName))) then
+                    if p.Character and p.Character:FindFirstChild("Humanoid") then
+                        Camera.CameraSubject = p.Character.Humanoid
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+createSecHeader("INFINITY CAMERA ZOOM")
+local isInfZoomActive = false
+local originalMaxZoom = LocalPlayer.CameraMaxZoomDistance
+
+CreateToggle(FunPage, "Infinity Camera Zoom", function(state)
+    isInfZoomActive = state
+    if isInfZoomActive then
+        LocalPlayer.CameraMaxZoomDistance = 999999
+    else
+        LocalPlayer.CameraMaxZoomDistance = originalMaxZoom
+    end
+end)
+
+-- TAB 4: ESP PAGE
+local EspPage = CreateTab("ESP")
+local globalEspActive, targetEspActive = false, false
+
+CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state)
+    globalEspActive = state
+end)
+
+local EspLine = Instance.new("Frame", EspPage)
+EspLine.Size, EspLine.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = EspLine, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+local TargetSearchBox = Instance.new("TextBox", EspPage)
+TargetSearchBox.Size, TargetSearchBox.PlaceholderText, TargetSearchBox.Text, TargetSearchBox.Font, TargetSearchBox.TextSize = UDim2.new(1, -10, 0, 35), "Ketik nama/display target...", "", Enum.Font.Gotham, 12
+Instance.new("UICorner", TargetSearchBox).CornerRadius = UDim.new(0, 6)
+local TargetSearchStroke = Instance.new("UIStroke", TargetSearchBox)
+table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = TargetSearchBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = TargetSearchStroke, Prop = "Color", Key = "StrokeColor"})
+
+CreateToggle(EspPage, "Target ESP (Satu Orang)", function(state)
+    targetEspActive = state
+end)
+
+local function clearEspElements(p)
+    if p:FindFirstChild("KayEsp_Bill") then p.KayEsp_Bill:Destroy() end
+end
+
+RS.RenderStepped:Connect(function()
+    if not ScriptRunning then return end
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
             local tChar = p.Character
             local tHrp = tChar.HumanoidRootPart
-            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local tHum = tChar.Humanoid
+            local dist = math.floor((tHrp.Position - (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new())).Magnitude)
             
-            if playerEspActive and myHrp then
-                local distance = math.floor((tHrp.Position - myHrp.Position).Magnitude)
+            local isMatchTarget = false
+            local searchTxt = TargetSearchBox.Text
+            if searchTxt ~= "" then
+                if string.find(string.lower(p.Name), string.lower(searchTxt)) or string.find(string.lower(p.DisplayName), string.lower(searchTxt)) then
+                    isMatchTarget = true
+                end
+            end
+            
+            if globalEspActive or (targetEspActive and isMatchTarget) then
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
                     bill = Instance.new("BillboardGui", tHrp)
                     bill.Name = "KayEsp_Bill"
                     bill.Size = UDim2.new(0, 100, 0, 40)
-                    bill.StudsOffset = Vector3.new(0, 3, 0)
+                    bill.StudsOffset = Vector3.new(0, 2.5, 0)
                     bill.AlwaysOnTop = true
                     
                     local lbl = Instance.new("TextLabel", bill)
-                    lbl.Name = "Text"
+                    lbl.Name = "KayEsp_Text"
                     lbl.Size = UDim2.new(1, 0, 1, 0)
                     lbl.BackgroundTransparency = 1
-                    lbl.TextSize = 11
                     lbl.Font = Enum.Font.GothamBold
-                    lbl.Parent = bill
+                    lbl.TextSize = 11
+                    lbl.TextStrokeTransparency = 0.5
                 end
-                local label = bill:FindFirstChild("Text")
+                local label = bill:FindFirstChild("KayEsp_Text")
                 if label then
-                    label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
+                    label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. dist .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
+                
+                if targetEspActive and isMatchTarget then
+                    local high = tChar:FindFirstChild("KayEsp_Highlight")
+                    if not high then
+                        high = Instance.new("Highlight", tChar)
+                        high.Name = "KayEsp_Highlight"
+                        high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    end
+                    high.FillColor = CurrentTheme.AccentColor
+                    high.OutlineColor = Color3.fromRGB(255,255,255)
+                    high.FillTransparency = 0.6
+                else
+                    if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
+                end
             else
-                if tHrp:FindFirstChild("KayEsp_Bill") then tHrp.KayEsp_Bill:Destroy() end
+                clearEspElements(tHrp)
+                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 end)
 
-----------------------------------------------------
--- TAB: TELEPORT
-----------------------------------------------------
-local TeleportPage = CreateTab("Teleport")
-local function createTpButton(name, pos)
-    local btn = Instance.new("TextButton", TeleportPage)
-    btn.Size, btn.Text, btn.Font, btn.TextSize = UDim2.new(1, -10, 0, 35), "Teleport ke " .. name, Enum.Font.GothamBold, 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    table.insert(AllUIElements, {Obj = btn, Prop = "BackgroundColor3", Key = "FrameColor"})
-    table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
-    
-    btn.MouseButton1Click:Connect(function()
-        if ConfirmOverlay.Visible then return end
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("HumanoidRootPart") then
-            char.HumanoidRootPart.CFrame = pos
+Players.PlayerRemoving:Connect(function(p)
+    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+end)
+
+-- TAB 5: SERVER PAGE
+local ServerPage = CreateTab("Server")
+
+local function createRejoinBtn(txt, color, cb)
+    local b = Instance.new("TextButton", ServerPage)
+    b.Size, b.BackgroundColor3, b.Text, b.TextColor3, b.Font, b.TextSize = UDim2.new(1, -10, 0, 32), color, txt, Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 10
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(function() if ConfirmOverlay.Visible then return end cb() end)
+end
+
+local function setRejoinBypassQueue(posVector)
+    local queueCode = "getgenv().KayHub_AutoVerified = true\n"
+    if posVector then
+        queueCode = queueCode .. string.format("getgenv().KayHub_SavedPos = Vector3.new(%f, %f, %f)\n", posVector.X, posVector.Y, posVector.Z)
+    end
+    pcall(function()
+        if queue_on_teleport then
+            queue_on_teleport(queueCode)
+        elseif syn and syn.queue_on_teleport then
+            syn.queue_on_teleport(queueCode)
         end
     end)
 end
 
-createTpButton("Spawn Utama (0, 5, 0)", CFrame.new(0, 5, 0))
-
-----------------------------------------------------
--- TAB: FUN
-----------------------------------------------------
-local FunPage = CreateTab("Fun")
-CreateToggle(FunPage, "Spin Character (Berputar)", function(state)
-    task.spawn(function()
-        while state and ScriptRunning do
-            RS.RenderStepped:Wait()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(15), 0)
-            end
-        end
-    end)
+createRejoinBtn("🔄 Rejoin Biasa", Color3.fromRGB(40, 40, 50), function()
+    setRejoinBypassQueue(nil)
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
--- Terapkan Tema Default
+createRejoinBtn("📍 Rejoin + Auto TP", Color3.fromRGB(0, 160, 100), function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    setRejoinBypassQueue(hrp and hrp.Position or nil)
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+
+local SrvDivider = Instance.new("Frame", ServerPage)
+SrvDivider.Size, SrvDivider.BorderSizePixel = UDim2.new(1, -10, 0, 1), 0
+table.insert(AllUIElements, {Obj = SrvDivider, Prop = "BackgroundColor3", Key = "StrokeColor"})
+
+local FilterFrame = Instance.new("Frame", ServerPage)
+FilterFrame.Size, FilterFrame.BackgroundTransparency = UDim2.new(1, -10, 0, 28), 1
+local FilterLayout = Instance.new("UIListLayout", FilterFrame)
+FilterLayout.FillDirection, FilterLayout.Padding = Enum.FillDirection.Horizontal, UDim.new(0, 4)
+
+local currentSortMode = "Ascending"
+local isFriendMode = false
+local showFullServers = false
+
+local BtnSepi = Instance.new("TextButton", FilterFrame)
+BtnSepi.Size, BtnSepi.Text, BtnSepi.Font, BtnSepi.TextSize = UDim2.new(0.31, 0, 1, 0), "📉 Server Sepi", Enum.Font.GothamBold, 10
+Instance.new("UICorner", BtnSepi).CornerRadius = UDim.new(0, 6)
+
+local BtnRamai = Instance.new("TextButton", FilterFrame)
+BtnRamai.Size, BtnRamai.Text, BtnRamai.Font, BtnRamai.TextSize = UDim2.new(0.31, 0, 1, 0), "📈 Server Ramai", Enum.Font.GothamBold, 10
+Instance.new("UICorner", BtnRamai).CornerRadius = UDim.new(0, 6)
+
+local BtnTeman = Instance.new("TextButton", FilterFrame)
+BtnTeman.Size, BtnTeman.Text, BtnTeman.Font, BtnTeman.TextSize = UDim2.new(0.34, 0, 1, 0), "👥 Teman (Join)", Enum.Font.GothamBold, 10
+Instance.new("UICorner", BtnTeman).CornerRadius = UDim.new(0, 6)
+
+local ToggleFullServerBtn = Instance.new("TextButton", ServerPage)
+ToggleFullServerBtn.Size, ToggleFullServerBtn.Text, ToggleFullServerBtn.Font, ToggleFullServerBtn.TextSize = UDim2.new(1, -10, 0, 26), "🚫 Server Penuh: HIDE", Enum.Font.GothamBold, 10
+Instance.new("UICorner", ToggleFullServerBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = ToggleFullServerBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = ToggleFullServerBtn, Prop = "TextColor3", Key = "MutedText"})
+
+local ServerListContainer = Instance.new("ScrollingFrame", ServerPage)
+ServerListContainer.Size, ServerListContainer.BackgroundTransparency, ServerListContainer.BorderSizePixel, ServerListContainer.ScrollBarThickness, ServerListContainer.AutomaticCanvasSize = UDim2.new(1, -10, 0, 100), 1, 0, 2, Enum.AutomaticSize.Y
+Instance.new("UICorner", ServerListContainer).CornerRadius = UDim.new(0, 6)
+local ServerListLayout = Instance.new("UIListLayout", ServerListContainer)
+ServerListLayout.Padding, ServerListLayout.HorizontalAlignment = UDim.new(0, 4), Enum.HorizontalAlignment.Center
+table.insert(AllUIElements, {Obj = ServerListContainer, Prop = "BackgroundColor3", Key = "SidebarColor"})
+
+local StatusFetchLabel = Instance.new("TextLabel", ServerListContainer)
+StatusFetchLabel.Size, StatusFetchLabel.BackgroundTransparency, StatusFetchLabel.Text, StatusFetchLabel.Font, StatusFetchLabel.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tekan 'Muat Ulang Daftar Server'...", Enum.Font.Gotham, 11
+table.insert(AllUIElements, {Obj = StatusFetchLabel, Prop = "TextColor3", Key = "MutedText"})
+
+local function updateFilterStyle()
+    BtnSepi.BackgroundColor3 = (not isFriendMode and currentSortMode == "Ascending") and CurrentTheme.AccentColor or CurrentTheme.FrameColor
+    BtnSepi.TextColor3 = (not isFriendMode and currentSortMode == "Ascending") and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
+    
+    BtnRamai.BackgroundColor3 = (not isFriendMode and currentSortMode == "Descending") and CurrentTheme.AccentColor or CurrentTheme.FrameColor
+    BtnRamai.TextColor3 = (not isFriendMode and currentSortMode == "Descending") and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
+    
+    BtnTeman.BackgroundColor3 = isFriendMode and CurrentTheme.AccentColor or CurrentTheme.FrameColor
+    BtnTeman.TextColor3 = isFriendMode and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
+end
+updateFilterStyle()
+
+local function FetchPublicServers()
+    for _, c in pairs(ServerListContainer:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end end
+    StatusFetchLabel.Text = "Mengambil data server..."
+    
+    task.spawn(function()
+        local success, result = pcall(function()
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=" .. currentSortMode .. "&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        
+        for _, c in pairs(ServerListContainer:GetChildren()) do if c == StatusFetchLabel then c:Destroy() end end
+        
+        if success and result and result.data then
+            local count = 0
+            for _, srv in pairs(result.data) do
+                if srv.id ~= game.JobId then
+                    local isFull = srv.playing >= srv.maxPlayers
+                    if showFullServers or not isFull then
+                        count = count + 1
+                        local card = Instance.new("Frame", ServerListContainer)
+                        card.Size = UDim2.new(1, -4, 0, 32)
+                        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
+                        table.insert(AllUIElements, {Obj = card, Prop = "BackgroundColor3", Key = "FrameColor"})
+                        
+                        local infoLbl = Instance.new("TextLabel", card)
+                        infoLbl.Size, infoLbl.BackgroundTransparency, infoLbl.Text, infoLbl.Font, infoLbl.TextSize, infoLbl.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), string.format("👥 %d/%d Players", srv.playing, srv.maxPlayers), Enum.Font.Gotham, 11, Enum.TextXAlignment.Left
+                        table.insert(AllUIElements, {Obj = infoLbl, Prop = "TextColor3", Key = "TextColor"})
+                        
+                        local joinB = Instance.new("TextButton", card)
+                        joinB.Size, joinB.Position, joinB.Text, joinB.Font, joinB.TextSize, joinB.TextColor3 = UDim2.new(0.3, 0, 0.75, 0), UDim2.new(0.68, 0, 0.125, 0), "JOIN", Enum.Font.GothamBold, 10, Color3.fromRGB(255,255,255)
+                        joinB.BackgroundColor3 = Color3.fromRGB(20, 140, 80)
+                        Instance.new("UICorner", joinB).CornerRadius = UDim.new(0, 4)
+                        
+                        joinB.MouseButton1Click:Connect(function()
+                            if ConfirmOverlay.Visible then return end
+                            joinB.Text = "Connecting..."
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LocalPlayer)
+                        end)
+                    end
+                end
+            end
+            if count == 0 then
+                local emptyLbl = Instance.new("TextLabel", ServerListContainer)
+                emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada server yang sesuai.", Enum.Font.Gotham, 11
+                table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
+            end
+        else
+            local errLbl = Instance.new("TextLabel", ServerListContainer)
+            errLbl.Size, errLbl.BackgroundTransparency, errLbl.Text, errLbl.Font, errLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Gagal mengambil daftar server.", Enum.Font.Gotham, 11
+            table.insert(AllUIElements, {Obj = errLbl, Prop = "TextColor3", Key = "MutedText"})
+        end
+    end)
+end
+
+local function FetchFriendsServers()
+    for _, c in pairs(ServerListContainer:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") then c:Destroy() end end
+    StatusFetchLabel.Text = "Mencari server teman..."
+    
+    task.spawn(function()
+        local success, result = pcall(function()
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        
+        for _, c in pairs(ServerListContainer:GetChildren()) do if c == StatusFetchLabel then c:Destroy() end end
+        
+        local foundCount = 0
+        local friendsList = {}
+        pcall(function() friendsList = LocalPlayer:GetFriendsOnline() end)
+        
+        if success and result and result.data then
+            for _, srv in pairs(result.data) do
+                for _, friend in pairs(friendsList) do
+                    if friend.IsOnline and friend.GameId == game.GameId and friend.LastLocation == srv.id then
+                        foundCount = foundCount + 1
+                        local card = Instance.new("Frame", ServerListContainer)
+                        card.Size = UDim2.new(1, -4, 0, 32)
+                        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
+                        table.insert(AllUIElements, {Obj = card, Prop = "BackgroundColor3", Key = "FrameColor"})
+                        
+                        local infoLbl = Instance.new("TextLabel", card)
+                        infoLbl.Size, infoLbl.BackgroundTransparency, infoLbl.Text, infoLbl.Font, infoLbl.TextSize, infoLbl.TextXAlignment = UDim2.new(0.65, 0, 1, 0), UDim2.new(0, 8, 0, 0), friend.UserName .. " (" .. srv.playing .. "p)", Enum.Font.Gotham, 10, Enum.TextXAlignment.Left
+                        table.insert(AllUIElements, {Obj = infoLbl, Prop = "TextColor3", Key = "TextColor"})
+                        
+                        local joinB = Instance.new("TextButton", card)
+                        joinB.Size, joinB.Position, joinB.Text, joinB.Font, joinB.TextSize, joinB.TextColor3 = UDim2.new(0.3, 0, 0.75, 0), UDim2.new(0.68, 0, 0.125, 0), "JOIN", Enum.Font.GothamBold, 10, Color3.fromRGB(255,255,255)
+                        joinB.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+                        Instance.new("UICorner", joinB).CornerRadius = UDim.new(0, 4)
+                        
+                        joinB.MouseButton1Click:Connect(function()
+                            if ConfirmOverlay.Visible then return end
+                            joinB.Text = "Connecting..."
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, srv.id, LocalPlayer)
+                        end)
+                    end
+                end
+            end
+        end
+        if foundCount == 0 and #ServerListContainer:GetChildren() == 0 then
+            local emptyLbl = Instance.new("TextLabel", ServerListContainer)
+            emptyLbl.Size, emptyLbl.BackgroundTransparency, emptyLbl.Text, emptyLbl.Font, emptyLbl.TextSize = UDim2.new(1, 0, 1, 0), 1, "Tidak ada teman di server sebelah.", Enum.Font.Gotham, 11
+            table.insert(AllUIElements, {Obj = emptyLbl, Prop = "TextColor3", Key = "MutedText"})
+        end
+    end)
+end
+
+BtnSepi.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isFriendMode = false
+    currentSortMode = "Ascending"
+    updateFilterStyle()
+    FetchPublicServers()
+end)
+
+BtnRamai.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isFriendMode = false
+    currentSortMode = "Descending"
+    updateFilterStyle()
+    FetchPublicServers()
+end)
+
+BtnTeman.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    isFriendMode = true
+    updateFilterStyle()
+    FetchFriendsServers()
+end)
+
+ToggleFullServerBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    showFullServers = not showFullServers
+    ToggleFullServerBtn.Text = showFullServers and "✅ Server Penuh: SHOW" or "🚫 Server Penuh: HIDE"
+    ToggleFullServerBtn.TextColor3 = showFullServers and CurrentTheme.AccentColor or CurrentTheme.MutedText
+    if not isFriendMode then FetchPublicServers() end
+end)
+
+local RefreshServerListBtn = Instance.new("TextButton", ServerPage)
+RefreshServerListBtn.Size, RefreshServerListBtn.Text, RefreshServerListBtn.Font, RefreshServerListBtn.TextSize = UDim2.new(1, -10, 0, 28), "🔄 Muat Ulang Daftar Server", Enum.Font.GothamBold, 11
+Instance.new("UICorner", RefreshServerListBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = RefreshServerListBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = RefreshServerListBtn, Prop = "TextColor3", Key = "TextColor"})
+
+RefreshServerListBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    if isFriendMode then FetchFriendsServers() else FetchPublicServers() end
+end)
+
+
+-- ==========================================
+-- TAB BARU: SM (Ditempatkan Tepat di Bawah Server)
+-- ==========================================
+local SmPage = CreateTab("SM")
+
+local Lighting = game:GetService("Lighting")
+local originalBrightness = Lighting.Brightness
+local originalClockTime = Lighting.ClockTime
+local originalFogEnd = Lighting.FogEnd
+local originalGlobalShadows = Lighting.GlobalShadows
+
+CreateToggle(SmPage, "Full Bright", function(state)
+    if state then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        
+        _G.FullBrightConnection = Lighting.Changed:Connect(function()
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+        end)
+    else
+        if _G.FullBrightConnection then
+            _G.FullBrightConnection:Disconnect()
+            _G.FullBrightConnection = nil
+        end
+        Lighting.Brightness = originalBrightness
+        Lighting.ClockTime = originalClockTime
+        Lighting.FogEnd = originalFogEnd
+        Lighting.GlobalShadows = originalGlobalShadows
+    end
+end)
+
+
+-- ACTION WINDOWS
+CloseButton.MouseButton1Click:Connect(function()
+    if not ScriptRunning then return end
+    ConfirmOverlay.Visible = true
+end)
+
+NoButton.MouseButton1Click:Connect(function()
+    ConfirmOverlay.Visible = false
+end)
+
+YesButton.MouseButton1Click:Connect(function()
+    ScriptRunning = false
+    detach()
+    if promptConnection then promptConnection:Disconnect() end
+    pcall(function()
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = 16 end
+        if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
+        LocalPlayer.CameraMaxZoomDistance = 400
+    end)
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Character then
+            if p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+            if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
+        end
+    end
+    KayHub:Destroy()
+end)
+
+-- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED)
+RS.Stepped:Connect(function()
+    if not ScriptRunning then return end
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local myHRP = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if hum and myHRP then
+        if isAttached then
+            pcall(function()
+                hum.PlatformStand = true
+                myHRP.Velocity = Vector3.new(0, 0, 0)
+                myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                myHRP.RotVelocity = Vector3.new(0, 0, 0)
+            end)
+        end
+    end
+end)
+
 ApplyTheme("Sleek Dark")
 
-print("[SYSTEM] Kay Hub Loaded Successfully (No Password Required)!")
+pcall(function()
+    if getgenv and (getgenv().KayHub_Verified or getgenv().KayHub_AutoVerified) then
+        UnlockHub()
+    end
+end)
+
+print("[SYSTEM] Kay Hub V9.4 Restored & SM Tab with Full Bright added successfully.")
