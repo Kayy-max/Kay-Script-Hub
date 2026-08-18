@@ -1,9 +1,41 @@
--- [[ RUBY PREMIUM SEWAGE HUB - FULL FIXED ]] --
+-- [[ RUBY SEWAGE HUB - FULL STRUCTURE MATCHED ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
+-- DAFTAR PRESET TEMA (SAMA SEPERTI TEMPLATE)
+local Themes = {
+    ["Ruby Premium"] = {
+        BGColor = Color3.fromRGB(16, 10, 10),
+        SidebarColor = Color3.fromRGB(24, 14, 14),
+        FrameColor = Color3.fromRGB(32, 18, 18),
+        StrokeColor = Color3.fromRGB(65, 30, 30),
+        AccentColor = Color3.fromRGB(230, 30, 45),
+        TextColor = Color3.fromRGB(255, 240, 240),
+        MutedText = Color3.fromRGB(170, 130, 130)
+    },
+    ["Sleek Dark"] = {
+        BGColor = Color3.fromRGB(15, 15, 15),
+        SidebarColor = Color3.fromRGB(22, 22, 22),
+        FrameColor = Color3.fromRGB(25, 25, 25),
+        StrokeColor = Color3.fromRGB(40, 40, 40),
+        AccentColor = Color3.fromRGB(0, 230, 130),
+        TextColor = Color3.fromRGB(240, 240, 240),
+        MutedText = Color3.fromRGB(140, 140, 140)
+    },
+    ["Cyber Neon"] = {
+        BGColor = Color3.fromRGB(10, 8, 15),
+        SidebarColor = Color3.fromRGB(16, 12, 24),
+        FrameColor = Color3.fromRGB(22, 18, 32),
+        StrokeColor = Color3.fromRGB(55, 30, 80),
+        AccentColor = Color3.fromRGB(255, 0, 127),
+        TextColor = Color3.fromRGB(250, 240, 255),
+        MutedText = Color3.fromRGB(150, 130, 170)
+    }
+}
+
+local CurrentTheme = Themes["Ruby Premium"]
 local ActiveToggles, Tabs = {}, {}
 local AllUIElements = {} 
 local ScriptRunning = true 
@@ -67,152 +99,231 @@ local function MakeDraggable(guiFrame)
     end)
 end
 
--- TEMA RUBY PREMIUM
-local RubyTheme = {
-    BGColor = Color3.fromRGB(16, 10, 10),
-    SidebarColor = Color3.fromRGB(24, 14, 14),
-    FrameColor = Color3.fromRGB(32, 18, 18),
-    StrokeColor = Color3.fromRGB(65, 30, 30),
-    AccentColor = Color3.fromRGB(230, 30, 45),
-    TextColor = Color3.fromRGB(255, 240, 240),
-    MutedText = Color3.fromRGB(170, 130, 130)
-}
-
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 340)
-MainFrame.Position = UDim2.new(0.3, 0, 0.25, 0)
-MainFrame.Active = true
-MainFrame.Selectable = true
-MainFrame.ClipsDescendants = true
-MainFrame.Visible = true
-MainFrame.Parent = RubyHub
-
+MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, true, RubyHub
+MainFrame.Visible = false 
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Thickness = 1.5
+MainStroke.Thickness = 1
 
 table.insert(AllUIElements, {Obj = MainFrame, Prop = "BackgroundColor3", Key = "BGColor"})
-table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "AccentColor"})
+table.insert(AllUIElements, {Obj = MainStroke, Prop = "Color", Key = "StrokeColor"})
 
 MakeDraggable(MainFrame)
 
+-- SYSTEM VERIFIKASI / PASSWORD (SAMA SEPERTI TEMPLATE)
+local CorrectPassword = "kay602122"
+local WrongAttempts = 0
+local MaxAttempts = 3
+
+local AuthFrame = Instance.new("Frame")
+AuthFrame.Size, AuthFrame.Position, AuthFrame.Active, AuthFrame.Selectable, AuthFrame.Parent = UDim2.new(0, 320, 0, 180), UDim2.new(0.4, 0, 0.35, 0), true, true, RubyHub
+AuthFrame.Visible = true
+Instance.new("UICorner", AuthFrame).CornerRadius = UDim.new(0, 12)
+local AuthStroke = Instance.new("UIStroke", AuthFrame)
+AuthStroke.Thickness = 1
+
+table.insert(AllUIElements, {Obj = AuthFrame, Prop = "BackgroundColor3", Key = "BGColor"})
+table.insert(AllUIElements, {Obj = AuthStroke, Prop = "Color", Key = "StrokeColor"})
+MakeDraggable(AuthFrame)
+
+local AuthTitle = Instance.new("TextLabel", AuthFrame)
+AuthTitle.Size, AuthTitle.BackgroundTransparency, AuthTitle.Text, AuthTitle.Font, AuthTitle.TextSize = UDim2.new(1, 0, 0, 45), 1, "RUBY HUB - VERIFICATION", Enum.Font.GothamBold, 14
+table.insert(AllUIElements, {Obj = AuthTitle, Prop = "TextColor3", Key = "AccentColor"})
+
+local PasswordInput = Instance.new("TextBox", AuthFrame)
+PasswordInput.Size, PasswordInput.Position, PasswordInput.PlaceholderText, PasswordInput.Text, PasswordInput.Font, PasswordInput.TextSize, PasswordInput.ClearTextOnFocus = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 55), "Masukkan Password...", "", Enum.Font.Gotham, 12, false
+Instance.new("UICorner", PasswordInput).CornerRadius = UDim.new(0, 6)
+local PwdStroke = Instance.new("UIStroke", PasswordInput)
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = PasswordInput, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = PwdStroke, Prop = "Color", Key = "StrokeColor"})
+
+local InfoLabel = Instance.new("TextLabel", AuthFrame)
+InfoLabel.Size, InfoLabel.Position, InfoLabel.BackgroundTransparency, InfoLabel.Text, InfoLabel.Font, InfoLabel.TextSize = UDim2.new(1, 0, 0, 20), UDim2.new(0, 0, 0, 95), 1, "Sisa percobaan: " .. (MaxAttempts - WrongAttempts), Enum.Font.Gotham, 11
+table.insert(AllUIElements, {Obj = InfoLabel, Prop = "TextColor3", Key = "MutedText"})
+
+local VerifyBtn = Instance.new("TextButton", AuthFrame)
+VerifyBtn.Size, VerifyBtn.Position, VerifyBtn.Text, VerifyBtn.Font, VerifyBtn.TextSize, VerifyBtn.TextColor3 = UDim2.new(0.85, 0, 0, 35), UDim2.new(0.075, 0, 0, 125), "VERIFIKASI", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", VerifyBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = VerifyBtn, Prop = "BackgroundColor3", Key = "AccentColor"})
+
+local function UnlockHub()
+    pcall(function()
+        if getgenv then getgenv().RubyHub_Verified = true end
+    end)
+    if AuthFrame and AuthFrame.Parent then
+        AuthFrame.Visible = false
+        AuthFrame:Destroy()
+    end
+    MainFrame.Visible = true
+end
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    if PasswordInput.Text == CorrectPassword then
+        InfoLabel.Text = "Akses Diterima! Memuat script..."
+        InfoLabel.TextColor3 = Color3.fromRGB(0, 230, 130)
+        task.wait(0.3)
+        UnlockHub()
+    else
+        WrongAttempts = WrongAttempts + 1
+        InfoLabel.Text = "Password Salah! Sisa percobaan: " .. (MaxAttempts - WrongAttempts)
+        InfoLabel.TextColor3 = Color3.fromRGB(240, 50, 50)
+        PasswordInput.Text = ""
+        
+        if WrongAttempts >= MaxAttempts then
+            InfoLabel.Text = "Terlalu banyak kesalahan. Menutup..."
+            task.wait(1.5)
+            RubyHub:Destroy()
+            ScriptRunning = false
+        end
+    end
+end)
+
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 130, 1, 0)
-Sidebar.Parent = MainFrame
+Sidebar.Size, Sidebar.Parent = UDim2.new(0, 120, 1, 0), MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 12)
 table.insert(AllUIElements, {Obj = Sidebar, Prop = "BackgroundColor3", Key = "SidebarColor"})
 
 local LogoLabel = Instance.new("TextLabel")
-LogoLabel.Size = UDim2.new(1, 0, 0, 45)
-LogoLabel.BackgroundTransparency = 1
-LogoLabel.Text = "💎 RUBY SEWAGE"
-LogoLabel.Font = Enum.Font.GothamBold
-LogoLabel.TextSize = 12
-LogoLabel.Parent = Sidebar
+LogoLabel.Size, LogoLabel.BackgroundTransparency, LogoLabel.Text, LogoLabel.Font, LogoLabel.TextSize, LogoLabel.Parent = UDim2.new(1, 0, 0, 40), 1, "RUBY HUB", Enum.Font.GothamBold, 13, Sidebar
 table.insert(AllUIElements, {Obj = LogoLabel, Prop = "TextColor3", Key = "AccentColor"})
 
 local SidebarContainer = Instance.new("ScrollingFrame", Sidebar)
-SidebarContainer.Size = UDim2.new(1, 0, 1, -45)
-SidebarContainer.Position = UDim2.new(0, 0, 0, 45)
-SidebarContainer.BackgroundTransparency = 1
-SidebarContainer.BorderSizePixel = 0
-SidebarContainer.ScrollBarThickness = 0
-SidebarContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
+SidebarContainer.Size, SidebarContainer.Position, SidebarContainer.BackgroundTransparency, SidebarContainer.BorderSizePixel, SidebarContainer.ScrollBarThickness, SidebarContainer.AutomaticCanvasSize = UDim2.new(1, 0, 1, -40), UDim2.new(0, 0, 0, 40), 1, 0, 0, Enum.AutomaticSize.Y
 local SidebarList = Instance.new("UIListLayout", SidebarContainer)
-SidebarList.SortOrder = Enum.SortOrder.LayoutOrder
-SidebarList.Padding = UDim.new(0, 6)
-SidebarList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+SidebarList.SortOrder, SidebarList.Padding, SidebarList.HorizontalAlignment = Enum.SortOrder.LayoutOrder, UDim.new(0, 4), Enum.HorizontalAlignment.Center
 
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Size = UDim2.new(1, -145, 1, -55)
-ContentContainer.Position = UDim2.new(0, 135, 0, 50)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Parent = MainFrame
+ContentContainer.Size, ContentContainer.Position, ContentContainer.BackgroundTransparency, ContentContainer.Parent = UDim2.new(1, -135, 1, -55), UDim2.new(0, 125, 0, 45), 1, MainFrame
 
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, -130, 0, 45)
-TopBar.Position = UDim2.new(0, 130, 0, 0)
-TopBar.BackgroundTransparency = 1
-TopBar.Parent = MainFrame
+TopBar.Size, TopBar.Position, TopBar.BackgroundTransparency, TopBar.Parent = UDim2.new(1, -120, 0, 45), UDim2.new(0, 120, 0, 0), 1, MainFrame
 
 local CurrentTabTitle = Instance.new("TextLabel")
-CurrentTabTitle.Size = UDim2.new(0.6, 0, 1, 0)
-CurrentTabTitle.Position = UDim2.new(0, 10, 0, 0)
-CurrentTabTitle.BackgroundTransparency = 1
-CurrentTabTitle.Text = "Home"
-CurrentTabTitle.Font = Enum.Font.GothamBold
-CurrentTabTitle.TextSize = 15
-CurrentTabTitle.TextXAlignment = Enum.TextXAlignment.Left
-CurrentTabTitle.Parent = TopBar
+CurrentTabTitle.Size, CurrentTabTitle.Position, CurrentTabTitle.BackgroundTransparency, CurrentTabTitle.Text, CurrentTabTitle.Font, CurrentTabTitle.TextSize, CurrentTabTitle.TextXAlignment, CurrentTabTitle.Parent = UDim2.new(0.35, 0, 1, 0), UDim2.new(0, 5, 0, 0), 1, "Home", Enum.Font.GothamBold, 15, Enum.TextXAlignment.Left, TopBar
 table.insert(AllUIElements, {Obj = CurrentTabTitle, Prop = "TextColor3", Key = "TextColor"})
 
+local PlayerCountTopBar = Instance.new("TextLabel")
+PlayerCountTopBar.Size, PlayerCountTopBar.Position, PlayerCountTopBar.BackgroundTransparency, PlayerCountTopBar.Text, PlayerCountTopBar.Font, PlayerCountTopBar.TextSize, PlayerCountTopBar.TextXAlignment, PlayerCountTopBar.Parent = UDim2.new(0.4, 0, 1, 0), UDim2.new(0.32, 0, 0, 0), 1, "👥 0/0", Enum.Font.Gotham, 11, Enum.TextXAlignment.Right, TopBar
+table.insert(AllUIElements, {Obj = PlayerCountTopBar, Prop = "TextColor3", Key = "MutedText"})
+
+local function updatePlayerCount()
+    local currentPlayers = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
+    PlayerCountTopBar.Text = string.format("👥 %d/%d Players", currentPlayers, maxPlayers)
+end
+Players.PlayerAdded:Connect(updatePlayerCount)
+Players.PlayerRemoving:Connect(updatePlayerCount)
+updatePlayerCount()
+
+local MinButton = Instance.new("TextButton")
+MinButton.Size, MinButton.Position, MinButton.BackgroundTransparency, MinButton.Text, MinButton.Font, MinButton.TextSize, MinButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -65, 0, 7), 1, "—", Enum.Font.GothamBold, 12, TopBar
+table.insert(AllUIElements, {Obj = MinButton, Prop = "TextColor3", Key = "MutedText"})
+
 local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -35, 0, 7)
-CloseButton.BackgroundTransparency = 1
-CloseButton.Text = "✕"
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
-CloseButton.TextColor3 = Color3.fromRGB(240, 50, 50)
-CloseButton.Parent = TopBar
+CloseButton.Size, CloseButton.Position, CloseButton.BackgroundTransparency, CloseButton.Text, CloseButton.Font, CloseButton.TextSize, CloseButton.TextColor3, CloseButton.Parent = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 7), 1, "✕", Enum.Font.GothamBold, 14, Color3.fromRGB(240, 50, 50), TopBar
+
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Position = UDim2.new(0, 15, 0, 120)
+ToggleButton.Image = "rbxassetid://102532136962074"
+ToggleButton.BackgroundTransparency = 1
+ToggleButton.BorderSizePixel = 0
+ToggleButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Active = true
+ToggleButton.Visible = false
+ToggleButton.Parent = RubyHub
+MakeDraggable(ToggleButton)
+
+local isMinimized = false
+local function toggleMenu()
+    if not ScriptRunning then return end
+    isMinimized = not isMinimized
+    TS:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMinimized and UDim2.new(0, 450, 0, 0) or UDim2.new(0, 450, 0, 320)}):Play()
+    if isMinimized then task.wait(0.2) end
+    MainFrame.Visible = not isMinimized
+    ToggleButton.Visible = isMinimized
+end
+MinButton.MouseButton1Click:Connect(toggleMenu)
+ToggleButton.MouseButton1Click:Connect(toggleMenu)
+
+-- KONFIRMASI KELUAR (SAMA SEPERTI TEMPLATE)
+local ConfirmOverlay = Instance.new("Frame")
+ConfirmOverlay.Size, ConfirmOverlay.Position, ConfirmOverlay.BackgroundTransparency, ConfirmOverlay.Visible, ConfirmOverlay.ZIndex, ConfirmOverlay.Parent = UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), 0.4, false, 10, MainFrame
+table.insert(AllUIElements, {Obj = ConfirmOverlay, Prop = "BackgroundColor3", Key = "BGColor"})
+
+local ConfirmBox = Instance.new("Frame", ConfirmOverlay)
+ConfirmBox.Size, ConfirmBox.Position, ConfirmBox.ZIndex = UDim2.new(0, 260, 0, 130), UDim2.new(0.5, -130, 0.5, -65), 11
+Instance.new("UICorner", ConfirmBox).CornerRadius = UDim.new(0, 10)
+local ConfirmStroke = Instance.new("UIStroke", ConfirmBox)
+table.insert(AllUIElements, {Obj = ConfirmBox, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = ConfirmStroke, Prop = "Color", Key = "StrokeColor"})
+
+local ConfirmTitle = Instance.new("TextLabel", ConfirmBox)
+ConfirmTitle.Size, ConfirmTitle.Position, ConfirmTitle.BackgroundTransparency, ConfirmTitle.Text, ConfirmTitle.Font, ConfirmTitle.TextSize, ConfirmTitle.ZIndex = UDim2.new(1, 0, 0, 55), UDim2.new(0, 0, 0, 5), 1, "Apakah kamu yakin ingin\nmenutup script ini?", Enum.Font.GothamBold, 12, 12
+table.insert(AllUIElements, {Obj = ConfirmTitle, Prop = "TextColor3", Key = "TextColor"})
+
+local YesButton = Instance.new("TextButton", ConfirmBox)
+YesButton.Size, YesButton.Position, YesButton.Text, YesButton.Font, YesButton.TextSize, YesButton.TextColor3, YesButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(0, 18, 0, 75), "YA", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
+YesButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+Instance.new("UICorner", YesButton).CornerRadius = UDim.new(0, 6)
+
+local NoButton = Instance.new("TextButton", ConfirmBox)
+NoButton.Size, NoButton.Position, NoButton.Text, NoButton.Font, NoButton.TextSize, NoButton.TextColor3, NoButton.ZIndex = UDim2.new(0, 105, 0, 32), UDim2.new(1, -123, 0, 75), "TIDAK", Enum.Font.GothamBold, 12, Color3.fromRGB(255, 255, 255), 12
+Instance.new("UICorner", NoButton).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = NoButton, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = NoButton, Prop = "TextColor3", Key = "MutedText"})
 
 CloseButton.MouseButton1Click:Connect(function()
+    ConfirmOverlay.Visible = true
+end)
+YesButton.MouseButton1Click:Connect(function()
     RubyHub:Destroy()
     ScriptRunning = false
 end)
+NoButton.MouseButton1Click:Connect(function()
+    ConfirmOverlay.Visible = false
+end)
 
--- SISTEM TEMA OTOMATIS RUBY
-local function ApplyRubyTheme()
+local function ApplyTheme(themeName)
+    CurrentTheme = Themes[themeName]
     for _, item in pairs(AllUIElements) do
-        local targetColor = RubyTheme[item.Key]
+        local targetColor = CurrentTheme[item.Key]
         if item.Obj and item.Obj.Parent then
             pcall(function()
-                TS:Create(item.Obj, TweenInfo.new(0.25), {[item.Prop] = targetColor}):Play()
+                TS:Create(item.Obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {[item.Prop] = targetColor}):Play()
             end)
         end
+    end
+    for _, tab in pairs(Tabs) do
+        tab.Btn.TextColor3 = tab.Page.Visible and CurrentTheme.AccentColor or CurrentTheme.MutedText
     end
 end
 
 local FirstTab = true
 local function CreateTab(tabName)
     local Page = Instance.new("ScrollingFrame")
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
-    Page.BorderSizePixel = 0
-    Page.ScrollBarThickness = 2
-    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    Page.Visible = false
-    Page.Parent = ContentContainer
-    
+    Page.Size, Page.BackgroundTransparency, Page.BorderSizePixel, Page.ScrollBarThickness, Page.AutomaticCanvasSize, Page.Visible, Page.Parent = UDim2.new(1, 0, 1, 0), 1, 0, 2, Enum.AutomaticSize.Y, false, ContentContainer
     local PageList = Instance.new("UIListLayout", Page)
-    PageList.Padding = UDim.new(0, 6)
-    PageList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    PageList.Padding, PageList.HorizontalAlignment = UDim.new(0, 6), Enum.HorizontalAlignment.Center
     
     local TabButton = Instance.new("TextButton", SidebarContainer)
-    TabButton.Size = UDim2.new(0.9, 0, 0, 32)
-    TabButton.BackgroundTransparency = 1
-    TabButton.Text = tabName
-    TabButton.Font = Enum.Font.GothamBold
-    TabButton.TextSize = 12
+    TabButton.Size, TabButton.BackgroundTransparency, TabButton.Text, TabButton.Font, TabButton.TextSize = UDim2.new(0.9, 0, 0, 28), 1, tabName, Enum.Font.GothamBold, 11
     
     table.insert(AllUIElements, {Obj = TabButton, Prop = "TextColor3", Key = FirstTab and "AccentColor" or "MutedText"})
-    if FirstTab then 
-        Page.Visible = true 
-        CurrentTabTitle.Text = tabName 
-        FirstTab = false 
-    end
+    if FirstTab then Page.Visible, CurrentTabTitle.Text, FirstTab = true, tabName, false end
     
     TabButton.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
         for _, t in pairs(Tabs) do 
             t.Page.Visible = false 
-            t.Btn.TextColor3 = RubyTheme.MutedText
+            t.Btn.TextColor3 = CurrentTheme.MutedText
         end
         Page.Visible = true
-        TabButton.TextColor3 = RubyTheme.AccentColor
+        TabButton.TextColor3 = CurrentTheme.AccentColor
         CurrentTabTitle.Text = tabName
     end)
-    
     table.insert(Tabs, {Page = Page, Btn = TabButton, Name = tabName})
     return Page
 end
@@ -220,38 +331,28 @@ end
 local function CreateToggle(parent, text, callback)
     local Enabled = false
     local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1, -10, 0, 38)
+    Frame.Size = UDim2.new(1, -10, 0, 35)
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
     table.insert(AllUIElements, {Obj = Frame, Prop = "BackgroundColor3", Key = "FrameColor"})
     
     local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.Font = Enum.Font.Gotham
-    Label.TextSize = 12
-    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Size, Label.Position, Label.BackgroundTransparency, Label.Text, Label.Font, Label.TextSize, Label.TextXAlignment = UDim2.new(0.7, 0, 1, 0), UDim2.new(0, 10, 0, 0), 1, text, Enum.Font.Gotham, 13, Enum.TextXAlignment.Left
     table.insert(AllUIElements, {Obj = Label, Prop = "TextColor3", Key = "TextColor"})
     
     local Switch = Instance.new("TextButton", Frame)
-    Switch.Size = UDim2.new(0, 50, 0, 22)
-    Switch.Position = UDim2.new(1, -60, 0, 8)
-    Switch.Text = "OFF"
-    Switch.Font = Enum.Font.GothamBold
-    Switch.TextSize = 10
+    Switch.Size, Switch.Position, Switch.Text, Switch.Font, Switch.TextSize = UDim2.new(0, 45, 0, 20), UDim2.new(1, -55, 0, 7.5), "OFF", Enum.Font.GothamBold, 10
     Instance.new("UICorner", Switch).CornerRadius = UDim.new(0, 10)
 
     table.insert(AllUIElements, {Obj = Switch, Prop = "BackgroundColor3", Key = "StrokeColor"})
     table.insert(AllUIElements, {Obj = Switch, Prop = "TextColor3", Key = "MutedText"})
 
     Switch.MouseButton1Click:Connect(function()
-        if not ScriptRunning then return end
+        if not ScriptRunning or ConfirmOverlay.Visible then return end
         Enabled = not Enabled
         Switch.Text = Enabled and "ON" or "OFF"
         
-        local targetBG = Enabled and RubyTheme.AccentColor or RubyTheme.StrokeColor
-        local targetText = Enabled and Color3.fromRGB(255,255,255) or RubyTheme.MutedText
+        local targetBG = Enabled and CurrentTheme.AccentColor or CurrentTheme.StrokeColor
+        local targetText = Enabled and Color3.fromRGB(15,15,15) or CurrentTheme.MutedText
         TS:Create(Switch, TweenInfo.new(0.2), {BackgroundColor3 = targetBG, TextColor3 = targetText}):Play()
         
         callback(Enabled)
@@ -260,7 +361,7 @@ local function CreateToggle(parent, text, callback)
 end
 
 ----------------------------------------------------
--- 1. TAB HOME (TERMASUK FULLBRIGHT UNTUK MAP SELOKAN)
+-- TAB 1: HOME (TERMASUK FULLBRIGHT UNTUK MAP SELOKAN)
 ----------------------------------------------------
 local HomePage = CreateTab("Home")
 
@@ -279,12 +380,12 @@ CreateToggle(HomePage, "Fullbright (Terangi Selokan Mati)", function(state)
 end)
 
 ----------------------------------------------------
--- 2. TAB ESP (SESUAI PERMINTAAN)
+-- TAB 2: ESP (SESUAI PERMINTAAN)
 ----------------------------------------------------
 local EspPage = CreateTab("ESP")
 local playerEspActive = false
 
-CreateToggle(EspPage, "Player ESP (Name & Box)", function(state)
+CreateToggle(EspPage, "Player ESP (Name)", function(state)
     playerEspActive = state
 end)
 
@@ -303,7 +404,7 @@ RS.RenderStepped:Connect(function()
                 local lbl = Instance.new("TextLabel", bill)
                 lbl.Size = UDim2.new(1, 0, 1, 0)
                 lbl.BackgroundTransparency = 1
-                lbl.TextColor3 = RubyTheme.AccentColor
+                lbl.TextColor3 = CurrentTheme.AccentColor
                 lbl.TextSize = 11
                 lbl.Font = Enum.Font.GothamBold
                 lbl.Text = p.Name
@@ -313,7 +414,7 @@ RS.RenderStepped:Connect(function()
 end)
 
 ----------------------------------------------------
--- 3. TAB TELEPORT (SESUAI PERMINTAAN)
+-- TAB 3: TELEPORT (SESUAI PERMINTAAN)
 ----------------------------------------------------
 local TeleportPage = CreateTab("Teleport")
 
@@ -328,6 +429,7 @@ local function createTpButton(name, pos)
     table.insert(AllUIElements, {Obj = btn, Prop = "TextColor3", Key = "TextColor"})
     
     btn.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
         local char = LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             char.HumanoidRootPart.CFrame = pos
@@ -338,11 +440,11 @@ end
 createTpButton("Spawn Utama (0, 5, 0)", CFrame.new(0, 5, 0))
 
 ----------------------------------------------------
--- 4. TAB FUN (SESUAI PERMINTAAN)
+-- TAB 4: FUN (SESUAI PERMINTAAN)
 ----------------------------------------------------
 local FunPage = CreateTab("Fun")
 
-CreateToggle(FunPage, "Spin Character (Berputar-putar)", function(state)
+CreateToggle(FunPage, "Spin Character (Berputar)", function(state)
     task.spawn(function()
         while state and ScriptRunning do
             RS.RenderStepped:Wait()
@@ -354,5 +456,5 @@ CreateToggle(FunPage, "Spin Character (Berputar-putar)", function(state)
     end)
 end)
 
--- Terapkan tema warna awal
-ApplyRubyTheme()
+-- Terapkan tema awal Ruby Premium
+ApplyTheme("Ruby Premium")
