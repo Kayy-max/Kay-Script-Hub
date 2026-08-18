@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + ADVANCED SERVER FILTER & TELEPORT TAB + ANTI-TP MAP ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + BRING ITEM / PART TAB ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -130,7 +130,7 @@ end
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size, MainFrame.Position, MainFrame.Active, MainFrame.Selectable, MainFrame.ClipsDescendants, MainFrame.Parent = UDim2.new(0, 450, 0, 320), UDim2.new(0.3, 0, 0.25, 0), true, true, true, KayHub
-MainFrame.Visible = true -- Langsung ditampilkan karena password dihapus
+MainFrame.Visible = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Thickness = 1
@@ -793,7 +793,7 @@ CreateToggle(FunPage, "Noclip Matrix", function(state) NoclipEnabled = state end
 CreateToggle(FunPage, "Infinite Jump", function(state) InfiniteJumpEnabled = state end)
 UIS.JumpRequest:Connect(function() if InfiniteJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping") end end)
 
--- FITUR TAMBAHAN: FULLBRIGHT PADA TAB FUN
+-- FITUR FULLBRIGHT PADA TAB FUN
 local fullbrightActive = false
 local lightConnection = nil
 
@@ -825,7 +825,7 @@ CreateToggle(FunPage, "Fullbright", function(state)
     end
 end)
 
--- FITUR TAMBAHAN: ANTI-TP MAP / ANTI-VOID
+-- FITUR ANTI-TP MAP / ANTI-VOID
 local antiTpMapActive = false
 local lastValidCFrame = nil
 
@@ -865,7 +865,6 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- FITUR TAMBAHAN: INFINITY CAMERA (UNZOOM TANPA BATAS)
 CreateToggle(FunPage, "Infinity Camera", function(state)
     pcall(function()
         if state then
@@ -876,7 +875,6 @@ CreateToggle(FunPage, "Infinity Camera", function(state)
     end)
 end)
 
--- FITUR TAMBAHAN: SPECTATE SYSTEM (PILIH & TONTON PLAYER)
 local spectateTargetName = nil
 local isSpectating = false
 local Camera = workspace.CurrentCamera
@@ -942,7 +940,76 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 4: ESP PAGE
+-- TAB 4: BRING ITEM (TAB BARU SESUAI PERMINTAAN)
+local BringPage = CreateTab("Bring Item")
+
+local BringInfoLabel = Instance.new("TextLabel", BringPage)
+BringInfoLabel.Size, BringInfoLabel.BackgroundTransparency, BringInfoLabel.Text, BringInfoLabel.Font, BringInfoLabel.TextSize = UDim2.new(1, -10, 0, 32), 1, "Tarik item/part farming otomatis ke depan avatarmu:", Enum.Font.Gotham, 11
+BringInfoLabel.TextWrapped = true
+table.insert(AllUIElements, {Obj = BringInfoLabel, Prop = "TextColor3", Key = "TextColor"})
+
+local BringNameBox = Instance.new("TextBox", BringPage)
+BringNameBox.Size, BringNameBox.PlaceholderText, BringNameBox.Font, BringNameBox.TextSize = UDim2.new(1, -10, 0, 32), "Ketik nama item/part (cth: Coin, Gem, Box)", "", Enum.Font.Gotham, 11
+Instance.new("UICorner", BringNameBox).CornerRadius = UDim.new(0, 6)
+local BNBStroke = Instance.new("UIStroke", BringNameBox)
+table.insert(AllUIElements, {Obj = BringNameBox, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = BringNameBox, Prop = "TextColor3", Key = "TextColor"})
+table.insert(AllUIElements, {Obj = BNBStroke, Prop = "Color", Key = "StrokeColor"})
+
+local bringItemActive = false
+CreateToggle(BringPage, "Auto Bring Item (Farming)", function(state)
+    bringItemActive = state
+end)
+
+local BringAllOnceBtn = Instance.new("TextButton", BringPage)
+BringAllOnceBtn.Size, BringAllOnceBtn.Text, BringAllOnceBtn.Font, BringAllOnceBtn.TextSize = UDim2.new(1, -10, 0, 32), "TARIQ SEKALI (BRING ALL MATCHING)", Enum.Font.GothamBold, 11
+Instance.new("UICorner", BringAllOnceBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = BringAllOnceBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = BringAllOnceBtn, Prop = "TextColor3", Key = "TextColor"})
+
+local function executeBringParts()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local keyword = string.lower(BringNameBox.Text)
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name ~= "HumanoidRootPart" and not obj:IsDescendantOf(char) then
+            local shouldBring = false
+            if keyword == "" then
+                shouldBring = true -- Kalau kotak kosong, tarik semua part/item di sekitar
+            else
+                if string.find(string.lower(obj.Name), keyword) then
+                    shouldBring = true
+                end
+            end
+            
+            if shouldBring then
+                pcall(function()
+                    obj.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    obj.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                    obj.CFrame = hrp.CFrame * CFrame.new(0, 0, -3) -- Muncul tepat di depan avatar
+                end)
+            end
+        end
+    end
+end
+
+BringAllOnceBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    executeBringParts()
+end)
+
+-- Loop otomatis untuk Auto Bring Item
+RS.Heartbeat:Connect(function()
+    if not ScriptRunning or not bringItemActive then return end
+    pcall(function()
+        executeBringParts()
+    end)
+end)
+
+-- TAB 5: ESP PAGE
 local EspPage = CreateTab("ESP")
 local globalEspActive, targetEspActive = false, false
 
@@ -967,7 +1034,7 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB 5: SERVER PAGE
+-- TAB 6: SERVER PAGE
 local ServerPage = CreateTab("Server")
 
 local ServerInfoBox = Instance.new("Frame", ServerPage)
@@ -1296,7 +1363,7 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 6: TELEPORT PAGE
+-- TAB 7: TELEPORT PAGE
 local TeleportPage = CreateTab("Teleport")
 
 local TeleportFrame = Instance.new("Frame", TeleportPage)
@@ -1358,7 +1425,7 @@ TeleportBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 7: VOICE PAGE
+-- TAB 8: VOICE PAGE
 local VoicePage = CreateTab("Voice")
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
@@ -1372,7 +1439,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 8: THEMES PAGE
+-- TAB 9: THEMES PAGE
 local ThemesPage = CreateTab("Themes")
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
@@ -1511,4 +1578,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Fullbright Added, Password Removed, Default Theme Set to Ruby Premium.")
+print("[SYSTEM] Kay Hub V9.4 Complete: Bring Item Tab Added, Fullbright Added, Password Removed, Default Theme Set to Ruby Premium.")
