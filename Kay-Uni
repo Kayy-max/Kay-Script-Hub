@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & INFINITY CAMERA (ZOOM BYPASS) ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -912,20 +912,43 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- FITUR INFINITY CAMERA (BYPASS ZOOM)
-CreateToggle(FunPage, "Bypass Zoom (Infinity Camera)", function(state)
-    pcall(function()
-        if state then
+-- FITUR 1: INFINITY CAMERA (Bebas Memperluas Zoom Manual)
+local infinityCamConnection
+CreateToggle(FunPage, "Infinity Camera", function(state)
+    if state then
+        infinityCamConnection = RS.RenderStepped:Connect(function()
             LocalPlayer.CameraMaxZoomDistance = 999999
-        else
-            LocalPlayer.CameraMaxZoomDistance = 400 
-        end
-    end)
+            LocalPlayer.CameraMinZoomDistance = 0.5
+        end)
+    else
+        if infinityCamConnection then infinityCamConnection:Disconnect() end
+        LocalPlayer.CameraMaxZoomDistance = 400
+        LocalPlayer.CameraMinZoomDistance = 0.5
+    end
+end)
+
+-- FITUR 2: BYPASS MAP ZOOM (Menangkal Zoom Paksa/Kunci Kamera dari Map)
+local bypassZoomConnection
+local Camera = workspace.CurrentCamera
+CreateToggle(FunPage, "Bypass Map Zoom", function(state)
+    if state then
+        bypassZoomConnection = RS.Heartbeat:Connect(function()
+            pcall(function()
+                if Camera.CameraType == Enum.CameraType.Scriptable then
+                    Camera.CameraType = Enum.CameraType.Custom
+                end
+                if LocalPlayer.CameraMaxZoomDistance < 1000 then
+                    LocalPlayer.CameraMaxZoomDistance = 999999
+                end
+            end)
+        end)
+    else
+        if bypassZoomConnection then bypassZoomConnection:Disconnect() end
+    end
 end)
 
 local spectateTargetName = nil
 local isSpectating = false
-local Camera = workspace.CurrentCamera
 
 local SpectateFrame = Instance.new("Frame", FunPage)
 SpectateFrame.Size = UDim2.new(1, -10, 0, 75)
@@ -1455,6 +1478,8 @@ YesButton.MouseButton1Click:Connect(function()
     if promptConnection then promptConnection:Disconnect() end
     if lightConnection then lightConnection:Disconnect() end
     if godConnection then godConnection:Disconnect() end
+    if infinityCamConnection then infinityCamConnection:Disconnect() end
+    if bypassZoomConnection then bypassZoomConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -1465,6 +1490,7 @@ YesButton.MouseButton1Click:Connect(function()
         end
         if char and char:FindFirstChild("Animate") then char.Animate.Enabled = true end
         LocalPlayer.CameraMaxZoomDistance = 400
+        LocalPlayer.CameraMinZoomDistance = 0.5
         Lighting.Brightness = 1
         Lighting.ClockTime = 12
         Lighting.FogEnd = 10000
@@ -1562,4 +1588,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Removed, God Mode & Bypass Zoom Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Removed, God Mode & Separated Camera Bypass Added.")
