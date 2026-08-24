@@ -1,9 +1,10 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE, CAMERA BYPASS & AIMBOT AUTO-LOCK ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- LOGIKA AUTO TELEPORT & AUTO VERIFY SETELAH REJOIN
 task.spawn(function()
@@ -392,8 +393,66 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
+-- FLOATING AIMBOT POP-UP BULAT (Bisa digeser & ada fitur ON/OFF)
+local AimbotPopUp = Instance.new("Frame")
+AimbotPopUp.Name = "KayHub_AimbotPopUp"
+AimbotPopUp.Size = UDim2.new(0, 55, 0, 55)
+AimbotPopUp.Position = UDim2.new(0.75, 0, 0.2, 0)
+AimbotPopUp.Active = true
+AimbotPopUp.Selectable = true
+AimbotPopUp.Visible = false
+AimbotPopUp.ZIndex = 5
+AimbotPopUp.Parent = KayHub
+
+local AimCorner = Instance.new("UICorner", AimbotPopUp)
+AimCorner.CornerRadius = UDim.new(1, 0)
+local AimStroke = Instance.new("UIStroke", AimbotPopUp)
+AimStroke.Thickness = 2
+
+table.insert(AllUIElements, {Obj = AimbotPopUp, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = AimStroke, Prop = "Color", Key = "StrokeColor"})
+MakeDraggable(AimbotPopUp)
+
+local AimPopBtn = Instance.new("TextButton", AimbotPopUp)
+AimPopBtn.Size = UDim2.new(1, 0, 1, 0)
+AimPopBtn.BackgroundTransparency = 1
+AimPopBtn.Text = "AIM: OFF"
+AimPopBtn.TextSize = 9
+AimPopBtn.Font = Enum.Font.GothamBold
+AimPopBtn.ZIndex = 6
+AimPopBtn.TextColor3 = Color3.fromRGB(240, 50, 50)
+AimPopBtn.Active = false
+
+local aimPopStartPos = Vector3.new()
+local globalAimbotActive = false
+
+AimbotPopUp.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        aimPopStartPos = input.Position
+    end
+end)
+
+AimbotPopUp.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local deltaMove = (input.Position - aimPopStartPos).Magnitude
+        if deltaMove < 5 then
+            if not ScriptRunning then return end
+            globalAimbotActive = not globalAimbotActive
+            if globalAimbotActive then
+                AimPopBtn.Text = "AIM: ON"
+                AimPopBtn.TextColor3 = Color3.fromRGB(50, 240, 130)
+                TS:Create(AimStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(50, 240, 130)}):Play()
+            else
+                AimPopBtn.Text = "AIM: OFF"
+                AimPopBtn.TextColor3 = Color3.fromRGB(240, 50, 50)
+                TS:Create(AimStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(240, 50, 50)}):Play()
+            end
+        end
+    end
+end)
+
 -- TAB 1: HOME PAGE
-local HomePage = CreateTab("Home")
+local HomePage = CreateTab("Home")[cite: 2]
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
@@ -644,8 +703,21 @@ ToggleEmoteBtn.MouseButton1Click:Connect(function()
     ToggleEmoteBtn.Text = autoEmoteEnabled and "EMOTE: ON" or "EMOTE: OFF"
 end)
 
--- TAB 2: ANIMATIONS PAGE
-local AnimPage = CreateTab("Animations")
+-- TAB 2: AIMBOT PAGE (BARU)
+local AimbotPage = CreateTab("Aimbot")
+local aimbotAutoLockActive = false
+
+CreateToggle(AimbotPage, "Aimbot Auto-Lock ke Player", function(state)
+    aimbotAutoLockActive = state
+end)
+
+local AimInfoLabel = Instance.new("TextLabel", AimbotPage)
+AimInfoLabel.Size, AimInfoLabel.BackgroundTransparency, AimInfoLabel.Text, AimInfoLabel.Font, AimInfoLabel.TextSize = UDim2.new(1, -10, 0, 45), 1, "💡 Tips:\n• Gunakan menu pop-up bulat di layar untuk ON/OFF cepat.\n• Otomatis mengunci kamera ke arah player terdekat.", Enum.Font.Gotham, 11
+AimInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(AllUIElements, {Obj = AimInfoLabel, Prop = "TextColor3", Key = "MutedText"})
+
+-- TAB 3: ANIMATIONS PAGE
+local AnimPage = CreateTab("Animations")[cite: 2]
 local animMode = "NONE"
 local kayAnimTrack = nil
 
@@ -706,8 +778,8 @@ btnToggleAnim.MouseButton1Click:Connect(function()
     if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
 end)
 
--- TAB 3: FUN / UTILITIES PAGE
-local FunPage = CreateTab("Fun")
+-- TAB 4: FUN / UTILITIES PAGE
+local FunPage = CreateTab("Fun")[cite: 2]
 local SpeedValue, SpeedEnabled, InfiniteJumpEnabled, Flying, FlySpeed, NoclipEnabled = 16, false, false, false, 60, false
 
 local SpeedFrame = Instance.new("Frame", FunPage)
@@ -793,7 +865,6 @@ CreateToggle(FunPage, "Fly Engine V8", function(state)
     end
 end)
 
--- FITUR GOD MODE (DARAH KEBAL / ANTI MATI)
 local godModeActive = false
 local godConnection = nil
 
@@ -912,7 +983,6 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- FITUR 1: INFINITY CAMERA (Bebas Memperluas Zoom Manual)
 local infinityCamConnection
 CreateToggle(FunPage, "Infinity Camera", function(state)
     if state then
@@ -927,9 +997,7 @@ CreateToggle(FunPage, "Infinity Camera", function(state)
     end
 end)
 
--- FITUR 2: BYPASS MAP ZOOM (Menangkal Zoom Paksa/Kunci Kamera dari Map)
 local bypassZoomConnection
-local Camera = workspace.CurrentCamera
 CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     if state then
         bypassZoomConnection = RS.Heartbeat:Connect(function()
@@ -1011,8 +1079,8 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 4: ESP PAGE
-local EspPage = CreateTab("ESP")
+-- TAB 5: ESP PAGE
+local EspPage = CreateTab("ESP")[cite: 2]
 local globalEspActive, targetEspActive = false, false
 
 CreateToggle(EspPage, "Global ESP (Semua Orang)", function(state) globalEspActive = state end)
@@ -1036,8 +1104,8 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB 5: SERVER PAGE
-local ServerPage = CreateTab("Server")
+-- TAB 6: SERVER PAGE
+local ServerPage = CreateTab("Server")[cite: 2]
 
 local ServerInfoBox = Instance.new("Frame", ServerPage)
 ServerInfoBox.Size = UDim2.new(1, -10, 0, 45)
@@ -1365,8 +1433,8 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 6: TELEPORT PAGE
-local TeleportPage = CreateTab("Teleport")
+-- TAB 7: TELEPORT PAGE
+local TeleportPage = CreateTab("Teleport")[cite: 2]
 
 local TeleportFrame = Instance.new("Frame", TeleportPage)
 TeleportFrame.Size = UDim2.new(1, -10, 0, 75)
@@ -1427,8 +1495,8 @@ TeleportBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 7: VOICE PAGE
-local VoicePage = CreateTab("Voice")
+-- TAB 8: VOICE PAGE
+local VoicePage = CreateTab("Voice")[cite: 2]
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
     if state then
@@ -1441,8 +1509,8 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 8: THEMES PAGE
-local ThemesPage = CreateTab("Themes")
+-- TAB 9: THEMES PAGE
+local ThemesPage = CreateTab("Themes")[cite: 2]
 
 local InfoThemeLabel = Instance.new("TextLabel", ThemesPage)
 InfoThemeLabel.Size, InfoThemeLabel.BackgroundTransparency, InfoThemeLabel.Text, InfoThemeLabel.Font, InfoThemeLabel.TextSize = UDim2.new(1, -10, 0, 25), 1, "Pilih warna & suasana tema Kay Hub favoritmu:", Enum.Font.Gotham, 12
@@ -1518,6 +1586,25 @@ RS.Stepped:Connect(function()
         for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
     end
     
+    -- LOGIKA AIMBOT AUTO-LOCK KE PLAYER TERDEKAT
+    if (aimbotAutoLockActive or globalAimbotActive) and myHrp then
+        local closestTarget = nil
+        local shortestDist = math.huge
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChildOfClass("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local head = p.Character.Head
+                local dist = (head.Position - myHrp.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestTarget = head
+                end
+            end
+        end
+        if closestTarget then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestTarget.Position)
+        end
+    end
+
     if hum then
         if animMode == "PRESET" then
             playKayAnim(hum.MoveDirection.Magnitude > 0 and "130072963359721" or "96961377796798")
@@ -1588,4 +1675,7 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Removed, God Mode & Separated Camera Bypass Added.")
+-- AKTIFKAN POP-UP AIMBOT BULAT SECARA OTOMATIS
+AimbotPopUp.Visible = true
+
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Aimbot Tab & Draggable Round Pop-up Added.")
