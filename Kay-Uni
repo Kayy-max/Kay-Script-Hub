@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AIMBOT CIRCLE ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -393,69 +393,105 @@ PopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- ====================================================
--- TAMBAHAN: FITUR AIMBOT DENGAN POP UP BULAT (FOV)
--- ====================================================
-local aimbotActive = false
-local aimbotRadius = 120 -- Ukuran awal radius lingkaran pop-up bulat
+-- ==========================================
+-- FLOATING POP-UP AUTO-AIM (BULAT ON/OFF)
+-- ==========================================
+local AutoAimPopUpFrame = Instance.new("Frame")
+AutoAimPopUpFrame.Name = "KayHub_AutoAimIcon"
+AutoAimPopUpFrame.Size = UDim2.new(0, 46, 0, 46)
+AutoAimPopUpFrame.Position = UDim2.new(0.85, 0, 0.32, 0) 
+AutoAimPopUpFrame.Active = true
+AutoAimPopUpFrame.Selectable = true
+AutoAimPopUpFrame.Visible = false -- Muncul nanti saat diaktifkan lewat menu Combat/Fun
+AutoAimPopUpFrame.ZIndex = 5        
+AutoAimPopUpFrame.Parent = KayHub
 
-local AimbotCirclePopUp = Instance.new("Frame")
-AimbotCirclePopUp.Name = "KayHub_AimbotFOV"
-AimbotCirclePopUp.Size = UDim2.new(0, aimbotRadius * 2, 0, aimbotRadius * 2)
-AimbotCirclePopUp.AnchorPoint = Vector2.new(0.5, 0.5)
-AimbotCirclePopUp.Position = UDim2.new(0.5, 0, 0.5, 0)
-AimbotCirclePopUp.BackgroundTransparency = 1
-AimbotCirclePopUp.Visible = false
-AimbotCirclePopUp.Active = true
-AimbotCirclePopUp.Selectable = true
-AimbotCirclePopUp.ZIndex = 4
-AimbotCirclePopUp.Parent = KayHub
+local AutoAimCorner = Instance.new("UICorner", AutoAimPopUpFrame)
+AutoAimCorner.CornerRadius = UDim.new(1, 0)
+local AutoAimStroke = Instance.new("UIStroke", AutoAimPopUpFrame)
+AutoAimStroke.Thickness = 2
 
-local CircleCorner = Instance.new("UICorner", AimbotCirclePopUp)
-CircleCorner.CornerRadius = UDim.new(1, 0)
+table.insert(AllUIElements, {Obj = AutoAimPopUpFrame, Prop = "BackgroundColor3", Key = "SidebarColor"})
+table.insert(AllUIElements, {Obj = AutoAimStroke, Prop = "Color", Key = "StrokeColor"})
 
-local CircleStroke = Instance.new("UIStroke", AimbotCirclePopUp)
-CircleStroke.Thickness = 2
-table.insert(AllUIElements, {Obj = CircleStroke, Prop = "Color", Key = "AccentColor"})
+MakeDraggable(AutoAimPopUpFrame)
 
-MakeDraggable(AimbotCirclePopUp)
+local AutoAimBtn = Instance.new("TextButton", AutoAimPopUpFrame)
+AutoAimBtn.Size = UDim2.new(1, 0, 1, 0)
+AutoAimBtn.BackgroundTransparency = 1
+AutoAimBtn.Text = "🎯"
+AutoAimBtn.TextSize = 18
+AutoAimBtn.Font = Enum.Font.GothamBold
+AutoAimBtn.ZIndex = 6                 
+AutoAimBtn.Active = false             
 
--- Fungsi mencari target terdekat di dalam radius pop-up bulat
-local function getClosestPlayerInFOV()
-    local closestTarget = nil
-    local shortestDistance = aimbotRadius
-    local mousePos = UIS:GetMouseLocation()
+local autoAimState = false
+local aimClickStartPos = Vector3.new()
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            local head = player.Character:FindFirstChild("Head")
-            if humanoid and humanoid.Health > 0 and head then
-                local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
-                if onScreen then
-                    local screenVector = Vector2.new(screenPoint.X, screenPoint.Y)
-                    local centerFramePos = Vector2.new(AimbotCirclePopUp.AbsolutePosition.X + (AimbotCirclePopUp.AbsoluteSize.X / 2), AimbotCirclePopUp.AbsolutePosition.Y + (AimbotCirclePopUp.AbsoluteSize.Y / 2))
-                    local distance = (screenVector - centerFramePos).Magnitude
-                    if distance < shortestDistance then
-                        shortestDistance = distance
-                        closestTarget = head
-                    end
+AutoAimPopUpFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        aimClickStartPos = input.Position
+    end
+end)
+
+AutoAimPopUpFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local deltaMove = (input.Position - aimClickStartPos).Magnitude
+        if deltaMove < 5 then 
+            if not ScriptRunning then return end
+            autoAimState = not autoAimState
+            
+            if autoAimState then
+                AutoAimBtn.Text = "🔒"
+                TS:Create(AutoAimStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(50, 240, 100)}):Play()
+            else
+                AutoAimBtn.Text = "🎯"
+                TS:Create(AutoAimStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+            end
+        end
+    end
+end)
+
+-- Fungsi mencari player/musuh terdekat
+local function GetNearestPlayer()
+    local nearestTarget = nil
+    local shortestDistance = math.huge
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+    if not myHrp then return nil end
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local tChar = p.Character
+            local tHum = tChar:FindFirstChildOfClass("Humanoid")
+            local tHrp = tChar:FindFirstChild("HumanoidRootPart")
+
+            if tHum and tHum.Health > 0 and tHrp then
+                local distance = (myHrp.Position - tHrp.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestTarget = tChar
                 end
             end
         end
     end
-    return closestTarget
+    return nearestTarget
 end
 
--- Eksekusi Aimbot setiap frame
+-- RenderStepped untuk auto lock camera ke badan (UpperTorso / Torso)
 RS.RenderStepped:Connect(function()
-    if not ScriptRunning or not aimbotActive then return end
-    local targetHead = getClosestPlayerInFOV()
-    if targetHead then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
+    if ScriptRunning and autoAimState then
+        local targetChar = GetNearestPlayer()
+        if targetChar then
+            local targetPart = targetChar:FindFirstChild("UpperTorso") or targetChar:FindFirstChild("Torso") or targetChar:FindFirstChild("HumanoidRootPart")
+            if targetPart then
+                local cam = workspace.CurrentCamera
+                cam.CFrame = CFrame.new(cam.CFrame.Position, targetPart.Position)
+            end
+        end
     end
 end)
-
 
 -- TAB 1: HOME PAGE
 local HomePage = CreateTab("Home")
@@ -1100,43 +1136,7 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- ====================================================
--- TAMBAHAN TAB 5: COMBAT / AIMBOT MENU
--- ====================================================
-local CombatPage = CreateTab("Combat")
-
-CreateToggle(CombatPage, "Aimbot Target Head", function(state)
-    aimbotActive = state
-    AimbotCirclePopUp.Visible = state
-end)
-
-local AimbotSizeFrame = Instance.new("Frame", CombatPage)
-AimbotSizeFrame.Size = UDim2.new(1, -10, 0, 40)
-Instance.new("UICorner", AimbotSizeFrame).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = AimbotSizeFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-local AimbotSizeLabel = Instance.new("TextLabel", AimbotSizeFrame)
-AimbotSizeLabel.Size, AimbotSizeLabel.Position, AimbotSizeLabel.BackgroundTransparency, AimbotSizeLabel.Text, AimbotSizeLabel.Font, AimbotSizeLabel.TextSize = UDim2.new(0, 160, 1, 0), UDim2.new(0, 10, 0, 0), 1, "Radius Bulat: [ " .. aimbotRadius .. " ]", Enum.Font.Gotham, 11
-table.insert(AllUIElements, {Obj = AimbotSizeLabel, Prop = "TextColor3", Key = "TextColor"})
-
-local function createChangeAimbotSize(txt, x, offset)
-    local b = Instance.new("TextButton", AimbotSizeFrame)
-    b.Size, b.Position, b.Text, b.Font, b.TextSize = UDim2.new(0, 24, 0, 24), UDim2.new(1, x, 0, 8), txt, Enum.Font.GothamBold, 12
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
-    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function()
-        if ConfirmOverlay.Visible then return end
-        aimbotRadius = math.clamp(aimbotRadius + offset, 40, 300)
-        AimbotCirclePopUp.Size = UDim2.new(0, aimbotRadius * 2, 0, aimbotRadius * 2)
-        AimbotSizeLabel.Text = "Radius Bulat: [ " .. aimbotRadius .. " ]"
-    end)
-end
-createChangeAimbotSize("-", -60, -20)
-createChangeAimbotSize("+", -32, 20)
-
-
--- TAB 6: SERVER PAGE
+-- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
 
 local ServerInfoBox = Instance.new("Frame", ServerPage)
@@ -1465,7 +1465,7 @@ RefreshServerListBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 7: TELEPORT PAGE
+-- TAB 6: TELEPORT PAGE
 local TeleportPage = CreateTab("Teleport")
 
 local TeleportFrame = Instance.new("Frame", TeleportPage)
@@ -1527,7 +1527,7 @@ TeleportBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- TAB 8: VOICE PAGE
+-- TAB 7: VOICE PAGE
 local VoicePage = CreateTab("Voice")
 
 CreateToggle(VoicePage, "Kay voice antiban", function(state)
@@ -1538,6 +1538,20 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     else
         PopUpFrame.Visible = false
         pcall(function() VoiceChatInternal:PublishPause(false) end)
+    end
+end)
+
+-- TAB 8: COMBAT / AIMBOT PAGE (Tombol Pop-up Auto Aim)
+local CombatPage = CreateTab("Combat")
+
+CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
+    if state then
+        AutoAimPopUpFrame.Visible = true
+        TS:Create(AutoAimStroke, TweenInfo.new(0.2), {Color = CurrentTheme.AccentColor}):Play()
+    else
+        AutoAimPopUpFrame.Visible = false
+        autoAimState = false
+        AutoAimBtn.Text = "🎯"
     end
 end)
 
@@ -1564,6 +1578,7 @@ for themeName, data in pairs(Themes) do
         ApplyTheme(themeName)
         if animMode ~= "PRESET" then btnPreset.TextColor3 = CurrentTheme.TextColor end
         if PopUpFrame.Visible and not voiceMutedState then PopUpStroke.Color = CurrentTheme.AccentColor end
+        if AutoAimPopUpFrame.Visible and not autoAimState then AutoAimStroke.Color = CurrentTheme.AccentColor end
         updateFilterStyle()
     end)
 end
@@ -1638,7 +1653,7 @@ RS.Stepped:Connect(function()
             local isMatchTarget = (queryTarget ~= "" and (string.find(string.lower(p.Name), queryTarget) or string.find(string.lower(p.DisplayName), queryTarget)))
 
             if (globalEspActive) or (targetEspActive and isMatchTarget) then
-                local distance = myHrp and math.round((myHrp.Position - tHrip.Position).Magnitude) or 0
+                local distance = myHrp and math.round((myHrp.Position - tHrp.Position).Magnitude) or 0
                 local bill = tHrp:FindFirstChild("KayEsp_Bill")
                 if not bill then
                     bill = Instance.new("BillboardGui", tHrp)
@@ -1688,4 +1703,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Aimbot with Circle Pop-up Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Aimbot Pop-up Added.")
