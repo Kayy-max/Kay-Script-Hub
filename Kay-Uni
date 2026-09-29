@@ -402,7 +402,7 @@ AutoAimPopUpFrame.Size = UDim2.new(0, 46, 0, 46)
 AutoAimPopUpFrame.Position = UDim2.new(0.85, 0, 0.32, 0) 
 AutoAimPopUpFrame.Active = true
 AutoAimPopUpFrame.Selectable = true
-AutoAimPopUpFrame.Visible = false -- Muncul nanti saat diaktifkan lewat menu Combat/Fun
+AutoAimPopUpFrame.Visible = false 
 AutoAimPopUpFrame.ZIndex = 5        
 AutoAimPopUpFrame.Parent = KayHub
 
@@ -452,37 +452,62 @@ AutoAimPopUpFrame.InputEnded:Connect(function(input)
     end
 end)
 
--- Fungsi mencari player/musuh terdekat
-local function GetNearestPlayer()
-    local nearestTarget = nil
-    local shortestDistance = math.huge
+-- PENGATURAN MODE & TEAM CHECK AUTO-AIM
+local autoAimMode = "Terdekat" -- Pilihan: "Terdekat" atau "Semua"
+local autoAimTeamCheck = true   -- Aktif/Nonaktif Team Check
+
+local function IsValidEnemy(player)
+    if player == LocalPlayer then return false end
+    if not player.Character then return false end
+    local hum = player.Character:FindFirstChildOfClass("Humanoid")
+    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+    if not hum or hum.Health <= 0 or not hrp then return false end
+    
+    -- Cek Team Check jika diaktifkan
+    if autoAimTeamCheck then
+        if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
+            return false
+        end
+    end
+    
+    return true
+end
+
+-- Fungsi mencari target berdasarkan mode pilihan
+local function GetAutoAimTarget()
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
     if not myHrp then return nil end
 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            local tChar = p.Character
-            local tHum = tChar:FindFirstChildOfClass("Humanoid")
-            local tHrp = tChar:FindFirstChild("HumanoidRootPart")
-
-            if tHum and tHum.Health > 0 and tHrp then
+    if autoAimMode == "Terdekat" then
+        local nearestTarget = nil
+        local shortestDistance = math.huge
+        for _, p in pairs(Players:GetPlayers()) do
+            if IsValidEnemy(p) then
+                local tHrp = p.Character:FindFirstChild("HumanoidRootPart")
                 local distance = (myHrp.Position - tHrp.Position).Magnitude
                 if distance < shortestDistance then
                     shortestDistance = distance
-                    nearestTarget = tChar
+                    nearestTarget = p.Character
                 end
             end
         end
+        return nearestTarget
+    else
+        -- Mode: Pemain/Musuh bebas secara umum yang lolos team check
+        for _, p in pairs(Players:GetPlayers()) do
+            if IsValidEnemy(p) then
+                return p.Character
+            end
+        end
     end
-    return nearestTarget
+    return nil
 end
 
--- RenderStepped untuk auto lock camera ke badan (UpperTorso / Torso)
+-- RenderStepped untuk auto lock camera ke badan musuh (UpperTorso / Torso)
 RS.RenderStepped:Connect(function()
     if ScriptRunning and autoAimState then
-        local targetChar = GetNearestPlayer()
+        local targetChar = GetAutoAimTarget()
         if targetChar then
             local targetPart = targetChar:FindFirstChild("UpperTorso") or targetChar:FindFirstChild("Torso") or targetChar:FindFirstChild("HumanoidRootPart")
             if targetPart then
@@ -1541,7 +1566,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 8: COMBAT / AIMBOT PAGE (Tombol Pop-up Auto Aim)
+-- TAB 8: COMBAT / AIMBOT PAGE (Tombol Pop-up Auto Aim + 2 Pilihan & Team Check)
 local CombatPage = CreateTab("Combat")
 
 CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
@@ -1553,6 +1578,29 @@ CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
         autoAimState = false
         AutoAimBtn.Text = "🎯"
     end
+end)
+
+-- Tombol Pilihan Mode Auto-Aim (Terdekat vs Semua)
+local ModeAimBtn = Instance.new("TextButton", CombatPage)
+ModeAimBtn.Size, ModeAimBtn.Text, ModeAimBtn.Font, ModeAimBtn.TextSize = UDim2.new(1, -10, 0, 32), "Mode Aim: Terdekat", Enum.Font.GothamBold, 11
+Instance.new("UICorner", ModeAimBtn).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = ModeAimBtn, Prop = "BackgroundColor3", Key = "FrameColor"})
+table.insert(AllUIElements, {Obj = ModeAimBtn, Prop = "TextColor3", Key = "TextColor"})
+
+ModeAimBtn.MouseButton1Click:Connect(function()
+    if ConfirmOverlay.Visible then return end
+    if autoAimMode == "Terdekat" then
+        autoAimMode = "Semua"
+        ModeAimBtn.Text = "Mode Aim: Semua Musuh"
+    else
+        autoAimMode = "Terdekat"
+        ModeAimBtn.Text = "Mode Aim: Terdekat"
+    end
+end)
+
+-- Toggle Team Check
+CreateToggle(CombatPage, "Team Check (Abaikan Teman)", function(state)
+    autoAimTeamCheck = state
 end)
 
 -- TAB 9: THEMES PAGE
@@ -1675,7 +1723,7 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-                if targetEspActive and isMatchTarget then
+                if targetEsp_active and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
                         high = Instance.new("Highlight", tChar)
@@ -1703,4 +1751,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Aimbot Pop-up Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Aimbot Options & Team Check Added.")
