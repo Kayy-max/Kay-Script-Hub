@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM + MONSTER/NPC DETECTOR ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -1161,6 +1161,104 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
+-- TAB BARU: MONSTER/NPC DETECTOR PAGE
+local MonsterPage = CreateTab("Monster/NPC")
+local monsterDetectorActive = false
+local monsterDetectRange = 1000 -- Jangkauan default skala meter
+
+local MonsterFrame = Instance.new("Frame", MonsterPage)
+MonsterFrame.Size = UDim2.new(1, -10, 0, 45)
+Instance.new("UICorner", MonsterFrame).CornerRadius = UDim.new(0, 6)
+table.insert(AllUIElements, {Obj = MonsterFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
+
+local MonsterRangeLabel = Instance.new("TextLabel", MonsterFrame)
+MonsterRangeLabel.Size, MonsterRangeLabel.Position, MonsterRangeLabel.BackgroundTransparency, MonsterRangeLabel.Font, MonsterRangeLabel.TextSize = UDim2.new(0, 160, 1, 0), UDim2.new(0, 10, 0, 0), 1, Enum.Font.Gotham, 11
+MonsterRangeLabel.Text = "Jangkauan: [ " .. monsterDetectRange .. "m ]"
+MonsterRangeLabel.TextXAlignment = Enum.TextXAlignment.Left
+table.insert(AllUIElements, {Obj = MonsterRangeLabel, Prop = "TextColor3", Key = "TextColor"})
+
+local function createChangeMonsterRange(txt, x, offset)
+    local b = Instance.new("TextButton", MonsterFrame)
+    b.Size, b.Position, b.Text, b.Font, b.TextSize = UDim2.new(0, 26, 0, 26), UDim2.new(1, x, 0, 9), txt, Enum.Font.GothamBold, 12
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
+    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
+    b.MouseButton1Click:Connect(function()
+        if ConfirmOverlay.Visible then return end
+        monsterDetectRange = math.clamp(monsterDetectRange + offset, 100, 10000)
+        MonsterRangeLabel.Text = "Jangkauan: [ " .. monsterDetectRange .. "m ]"
+    end)
+end
+createChangeMonsterRange("-", -65, -250)
+createChangeMonsterRange("+", -35, 250)
+
+CreateToggle(MonsterPage, "Auto Detect Monster/NPC", function(state)
+    monsterDetectorActive = state
+end)
+
+local function clearMonsterElements(char)
+    if char:FindFirstChild("KayMonster_Bill") then char.KayMonster_Bill:Destroy() end
+    if char:FindFirstChild("KayMonster_Highlight") then char.KayMonster_Highlight:Destroy() end
+end
+
+-- Looping logika deteksi Monster/NPC di dalam workspace
+RS.RenderStepped:Connect(function()
+    if not ScriptRunning or not monsterDetectorActive then return end
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return end
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj ~= myChar then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+            
+            -- Pastikan objek memiliki Humanoid & bagian tubuh, serta bukan bagian dari Player aktif
+            if hum and hrp and not Players:GetPlayerFromCharacter(obj) then
+                local dist = (myHrp.Position - hrp.Position).Magnitude
+                if dist <= monsterDetectRange then
+                    -- Buat indikator visual Billboard (Nama + Jarak)
+                    local bill = hrp:FindFirstChild("KayMonster_Bill")
+                    if not bill then
+                        bill = Instance.new("BillboardGui", hrp)
+                        bill.Name = "KayMonster_Bill"
+                        bill.Size = UDim2.new(0, 220, 0, 50)
+                        bill.AlwaysOnTop = true
+                        bill.ExtentsOffset = Vector3.new(0, 2.5, 0)
+
+                        local txt = Instance.new("TextLabel", bill)
+                        txt.Name = "MonsterLabel"
+                        txt.Size = UDim2.new(1, 0, 1, 0)
+                        txt.BackgroundTransparency = 1
+                        txt.Font = Enum.Font.GothamBold
+                        txt.TextSize = 11
+                        txt.TextStrokeTransparency = 0.4
+                        txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+                    end
+
+                    local label = bill:FindFirstChild("MonsterLabel")
+                    if label then
+                        label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
+                    end
+
+                    -- Buat indikator visual Highlight
+                    local high = obj:FindFirstChild("KayMonster_Highlight")
+                    if not high then
+                        high = Instance.new("Highlight", obj)
+                        high.Name = "KayMonster_Highlight"
+                        high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        high.FillColor = Color3.fromRGB(255, 50, 50)
+                        high.OutlineColor = Color3.fromRGB(255, 255, 255)
+                        high.FillTransparency = 0.5
+                    end
+                else
+                    clearMonsterElements(obj)
+                end
+            end
+        end
+    end
+end)
+
 -- TAB 5: SERVER PAGE
 local ServerPage = CreateTab("Server")
 
@@ -1666,6 +1764,12 @@ YesButton.MouseButton1Click:Connect(function()
             if p.Character:FindFirstChild("KayEsp_Highlight") then p.Character.KayEsp_Highlight:Destroy() end
         end
     end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") then
+            if obj:FindFirstChild("Head") and obj.Head:FindFirstChild("KayMonster_Bill") then obj.Head.KayMonster_Bill:Destroy() end
+            if obj:FindFirstChild("KayMonster_Highlight") then obj.KayMonster_Highlight:Destroy() end
+        end
+    end
     KayHub:Destroy()
 end)
 
@@ -1723,7 +1827,7 @@ RS.Stepped:Connect(function()
                     label.Text = p.DisplayName .. " (@" .. p.Name .. ")\n[" .. distance .. "m]"
                     label.TextColor3 = CurrentTheme.AccentColor
                 end
-                if targetEsp_active and isMatchTarget then
+                if targetEspActive and isMatchTarget then
                     local high = tChar:FindFirstChild("KayEsp_Highlight")
                     if not high then
                         high = Instance.new("Highlight", tChar)
@@ -1751,4 +1855,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Combat Aimbot Options & Team Check Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC Detector Added.")
