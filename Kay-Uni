@@ -1072,6 +1072,33 @@ CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     end
 end)
 
+-- ==========================================
+-- FITUR BARU: 3RD PERSON CAMERA TOGGLE
+-- ==========================================
+local thirdPersonActive = false
+local thirdPersonConnection = nil
+
+CreateToggle(FunPage, "3rd Person Camera", function(state)
+    thirdPersonActive = state
+    if thirdPersonActive then
+        thirdPersonConnection = RS.RenderStepped:Connect(function()
+            pcall(function()
+                if LocalPlayer.CameraMinZoomDistance < 10 then
+                    LocalPlayer.CameraMinZoomDistance = 10
+                end
+                if LocalPlayer.CameraMaxZoomDistance < 15 then
+                    LocalPlayer.CameraMaxZoomDistance = 20
+                end
+            end)
+        end)
+    else
+        if thirdPersonConnection then thirdPersonConnection:Disconnect() end
+        pcall(function()
+            LocalPlayer.CameraMinZoomDistance = 0.5
+        end)
+    end
+end)
+
 local spectateTargetName = nil
 local isSpectating = false
 
@@ -1165,6 +1192,7 @@ end
 local MonsterPage = CreateTab("Monster/NPC")
 local monsterDetectorActive = false
 local monsterDetectRange = 1000 -- Jangkauan default skala meter
+local hideMonsterNameActive = false -- Status Hide Name Monster
 
 local MonsterFrame = Instance.new("Frame", MonsterPage)
 MonsterFrame.Size = UDim2.new(1, -10, 0, 45)
@@ -1196,6 +1224,11 @@ CreateToggle(MonsterPage, "Auto Detect Monster/NPC", function(state)
     monsterDetectorActive = state
 end)
 
+-- Toggle Hide/Show Nama Monster
+CreateToggle(MonsterPage, "Hide Name Monster", function(state)
+    hideMonsterNameActive = state
+end)
+
 local function clearMonsterElements(char)
     if char:FindFirstChild("KayMonster_Bill") then char.KayMonster_Bill:Destroy() end
     if char:FindFirstChild("KayMonster_Highlight") then char.KayMonster_Highlight:Destroy() end
@@ -1217,28 +1250,32 @@ RS.RenderStepped:Connect(function()
             if hum and hrp and not Players:GetPlayerFromCharacter(obj) then
                 local dist = (myHrp.Position - hrp.Position).Magnitude
                 if dist <= monsterDetectRange then
-                    -- Buat indikator visual Billboard (Nama + Jarak)
+                    -- Buat indikator visual Billboard (Nama + Jarak) jika Hide Name Monster tidak aktif
                     local bill = hrp:FindFirstChild("KayMonster_Bill")
-                    if not bill then
-                        bill = Instance.new("BillboardGui", hrp)
-                        bill.Name = "KayMonster_Bill"
-                        bill.Size = UDim2.new(0, 220, 0, 50)
-                        bill.AlwaysOnTop = true
-                        bill.ExtentsOffset = Vector3.new(0, 2.5, 0)
+                    if not hideMonsterNameActive then
+                        if not bill then
+                            bill = Instance.new("BillboardGui", hrp)
+                            bill.Name = "KayMonster_Bill"
+                            bill.Size = UDim2.new(0, 220, 0, 50)
+                            bill.AlwaysOnTop = true
+                            bill.ExtentsOffset = Vector3.new(0, 2.5, 0)
 
-                        local txt = Instance.new("TextLabel", bill)
-                        txt.Name = "MonsterLabel"
-                        txt.Size = UDim2.new(1, 0, 1, 0)
-                        txt.BackgroundTransparency = 1
-                        txt.Font = Enum.Font.GothamBold
-                        txt.TextSize = 11
-                        txt.TextStrokeTransparency = 0.4
-                        txt.TextColor3 = Color3.fromRGB(255, 80, 80)
-                    end
+                            local txt = Instance.new("TextLabel", bill)
+                            txt.Name = "MonsterLabel"
+                            txt.Size = UDim2.new(1, 0, 1, 0)
+                            txt.BackgroundTransparency = 1
+                            txt.Font = Enum.Font.GothamBold
+                            txt.TextSize = 11
+                            txt.TextStrokeTransparency = 0.4
+                            txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+                        end
 
-                    local label = bill:FindFirstChild("MonsterLabel")
-                    if label then
-                        label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
+                        local label = bill:FindFirstChild("MonsterLabel")
+                        if label then
+                            label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
+                        end
+                    else
+                        if bill then bill:Destroy() end
                     end
 
                     -- Buat indikator visual Highlight
@@ -1741,6 +1778,7 @@ YesButton.MouseButton1Click:Connect(function()
     if godConnection then godConnection:Disconnect() end
     if infinityCamConnection then infinityCamConnection:Disconnect() end
     if bypassZoomConnection then bypassZoomConnection:Disconnect() end
+    if thirdPersonConnection then thirdPersonConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
