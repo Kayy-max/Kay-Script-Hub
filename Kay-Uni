@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM + MONSTER/NPC DETECTOR + ITEM DETECTOR ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM + MONSTER/NPC DETECTOR ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -1072,33 +1072,6 @@ CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     end
 end)
 
--- ==========================================
--- FITUR BARU: 3RD PERSON CAMERA TOGGLE
--- ==========================================
-local thirdPersonActive = false
-local thirdPersonConnection = nil
-
-CreateToggle(FunPage, "3rd Person Camera", function(state)
-    thirdPersonActive = state
-    if thirdPersonActive then
-        thirdPersonConnection = RS.RenderStepped:Connect(function()
-            pcall(function()
-                if LocalPlayer.CameraMinZoomDistance < 10 then
-                    LocalPlayer.CameraMinZoomDistance = 10
-                end
-                if LocalPlayer.CameraMaxZoomDistance < 15 then
-                    LocalPlayer.CameraMaxZoomDistance = 20
-                end
-            end)
-        end)
-    else
-        if thirdPersonConnection then thirdPersonConnection:Disconnect() end
-        pcall(function()
-            LocalPlayer.CameraMinZoomDistance = 0.5
-        end)
-    end
-end)
-
 local spectateTargetName = nil
 local isSpectating = false
 
@@ -1188,11 +1161,10 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB MONSTER/NPC PAGE
+-- TAB BARU: MONSTER/NPC DETECTOR PAGE
 local MonsterPage = CreateTab("Monster/NPC")
 local monsterDetectorActive = false
 local monsterDetectRange = 1000 -- Jangkauan default skala meter
-local hideMonsterNameActive = false -- Status Hide Name Monster
 
 local MonsterFrame = Instance.new("Frame", MonsterPage)
 MonsterFrame.Size = UDim2.new(1, -10, 0, 45)
@@ -1224,11 +1196,6 @@ CreateToggle(MonsterPage, "Auto Detect Monster/NPC", function(state)
     monsterDetectorActive = state
 end)
 
--- Toggle Hide/Show Nama Monster
-CreateToggle(MonsterPage, "Hide Name Monster", function(state)
-    hideMonsterNameActive = state
-end)
-
 local function clearMonsterElements(char)
     if char:FindFirstChild("KayMonster_Bill") then char.KayMonster_Bill:Destroy() end
     if char:FindFirstChild("KayMonster_Highlight") then char.KayMonster_Highlight:Destroy() end
@@ -1246,36 +1213,35 @@ RS.RenderStepped:Connect(function()
             local hum = obj:FindFirstChildOfClass("Humanoid")
             local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
             
+            -- Pastikan objek memiliki Humanoid & bagian tubuh, serta bukan bagian dari Player aktif
             if hum and hrp and not Players:GetPlayerFromCharacter(obj) then
                 local dist = (myHrp.Position - hrp.Position).Magnitude
                 if dist <= monsterDetectRange then
+                    -- Buat indikator visual Billboard (Nama + Jarak)
                     local bill = hrp:FindFirstChild("KayMonster_Bill")
-                    if not hideMonsterNameActive then
-                        if not bill then
-                            bill = Instance.new("BillboardGui", hrp)
-                            bill.Name = "KayMonster_Bill"
-                            bill.Size = UDim2.new(0, 220, 0, 50)
-                            bill.AlwaysOnTop = true
-                            bill.ExtentsOffset = Vector3.new(0, 2.5, 0)
+                    if not bill then
+                        bill = Instance.new("BillboardGui", hrp)
+                        bill.Name = "KayMonster_Bill"
+                        bill.Size = UDim2.new(0, 220, 0, 50)
+                        bill.AlwaysOnTop = true
+                        bill.ExtentsOffset = Vector3.new(0, 2.5, 0)
 
-                            local txt = Instance.new("TextLabel", bill)
-                            txt.Name = "MonsterLabel"
-                            txt.Size = UDim2.new(1, 0, 1, 0)
-                            txt.BackgroundTransparency = 1
-                            txt.Font = Enum.Font.GothamBold
-                            txt.TextSize = 11
-                            txt.TextStrokeTransparency = 0.4
-                            txt.TextColor3 = Color3.fromRGB(255, 80, 80)
-                        end
-
-                        local label = bill:FindFirstChild("MonsterLabel")
-                        if label then
-                            label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
-                        end
-                    else
-                        if bill then bill:Destroy() end
+                        local txt = Instance.new("TextLabel", bill)
+                        txt.Name = "MonsterLabel"
+                        txt.Size = UDim2.new(1, 0, 1, 0)
+                        txt.BackgroundTransparency = 1
+                        txt.Font = Enum.Font.GothamBold
+                        txt.TextSize = 11
+                        txt.TextStrokeTransparency = 0.4
+                        txt.TextColor3 = Color3.fromRGB(255, 80, 80)
                     end
 
+                    local label = bill:FindFirstChild("MonsterLabel")
+                    if label then
+                        label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
+                    end
+
+                    -- Buat indikator visual Highlight
                     local high = obj:FindFirstChild("KayMonster_Highlight")
                     if not high then
                         high = Instance.new("Highlight", obj)
@@ -1288,134 +1254,6 @@ RS.RenderStepped:Connect(function()
                 else
                     clearMonsterElements(obj)
                 end
-            end
-        end
-    end
-end)
-
--- ==========================================
--- TAB BARU: ITEM DETECTOR PAGE (FITUR TAMBAHAN)
--- ==========================================
-local ItemPage = CreateTab("Item Detector")
-local itemDetectorActive = false
-local itemDetectRange = 1000
-local targetItemName = "" -- Kosong berarti mendeteksi semua Part/Model item atau TouchInterest di map
-
-local ItemFrame = Instance.new("Frame", ItemPage)
-ItemFrame.Size = UDim2.new(1, -10, 0, 45)
-Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 6)
-table.insert(AllUIElements, {Obj = ItemFrame, Prop = "BackgroundColor3", Key = "FrameColor"})
-
-local ItemRangeLabel = Instance.new("TextLabel", ItemFrame)
-ItemRangeLabel.Size, ItemRangeLabel.Position, ItemRangeLabel.BackgroundTransparency, ItemRangeLabel.Font, ItemRangeLabel.TextSize = UDim2.new(0, 160, 1, 0), UDim2.new(0, 10, 0, 0), 1, Enum.Font.Gotham, 11
-ItemRangeLabel.Text = "Jangkauan: [ " .. itemDetectRange .. "m ]"
-ItemRangeLabel.TextXAlignment = Enum.TextXAlignment.Left
-table.insert(AllUIElements, {Obj = ItemRangeLabel, Prop = "TextColor3", Key = "TextColor"})
-
-local function createChangeItemRange(txt, x, offset)
-    local b = Instance.new("TextButton", ItemFrame)
-    b.Size, b.Position, b.Text, b.Font, b.TextSize = UDim2.new(0, 26, 0, 26), UDim2.new(1, x, 0, 9), txt, Enum.Font.GothamBold, 12
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
-    table.insert(AllUIElements, {Obj = b, Prop = "BackgroundColor3", Key = "SidebarColor"})
-    table.insert(AllUIElements, {Obj = b, Prop = "TextColor3", Key = "TextColor"})
-    b.MouseButton1Click:Connect(function()
-        if ConfirmOverlay.Visible then return end
-        itemDetectRange = math.clamp(itemDetectRange + offset, 50, 10000)
-        ItemRangeLabel.Text = "Jangkauan: [ " .. itemDetectRange .. "m ]"
-    end)
-end
-createChangeItemRange("-", -65, -250)
-createChangeItemRange("+", -35, 250)
-
--- Kolom Pencarian Item Spesifik
-local ItemSearchBox = Instance.new("TextBox", ItemPage)
-ItemSearchBox.Size, ItemSearchBox.PlaceholderText, ItemSearchBox.Font, ItemSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Ketik nama item/barang (kosongkan = semua)...", "", Enum.Font.Gotham, 11
-Instance.new("UICorner", ItemSearchBox).CornerRadius = UDim.new(0, 6)
-local ISBStroke = Instance.new("UIStroke", ItemSearchBox)
-table.insert(AllUIElements, {Obj = ItemSearchBox, Prop = "BackgroundColor3", Key = "FrameColor"})
-table.insert(AllUIElements, {Obj = ItemSearchBox, Prop = "TextColor3", Key = "TextColor"})
-table.insert(AllUIElements, {Obj = ISBStroke, Prop = "Color", Key = "StrokeColor"})
-
-ItemSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    targetItemName = string.lower(ItemSearchBox.Text)
-end)
-
-CreateToggle(ItemPage, "Auto Detect Item / Barang", function(state)
-    itemDetectorActive = state
-end)
-
-local function clearItemElements(part)
-    if part:FindFirstChild("KayItem_Bill") then part.KayItem_Bill:Destroy() end
-    if part:FindFirstChild("KayItem_Highlight") then part.KayItem_Highlight:Destroy() end
-end
-
--- Looping logika pendeteksi item/barang di dalam map
-RS.RenderStepped:Connect(function()
-    if not ScriptRunning or not itemDetectorActive then return end
-    local myChar = LocalPlayer.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myHrp then return end
-
-    for _, obj in pairs(workspace:GetDescendants()) do
-        local isTargetItem = false
-        local targetPart = nil
-
-        -- Cek apakah objek adalah Part / Model yang memenuhi kriteria item (memiliki TouchInterest atau anak dari folder Drop/Item/Collectible)
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local pPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
-            if pPart then
-                -- Filter pencarian berdasarkan nama jika diisi oleh user
-                local objNameLower = string.lower(obj.Name)
-                if targetItemName == "" or string.find(objNameLower, targetItemName) then
-                    -- Cek apakah memiliki ProximityPrompt atau TouchInterest (indikasi item bisa diambil) atau berada di folder umum game
-                    if obj:FindFirstChildOfClass("ProximityPrompt") or obj:FindFirstChildOfClass("TouchTransmitter") or obj:IsA("Tool") or string.find(objNameLower, "item") or string.find(objNameLower, "chest") or string.find(objNameLower, "coin") or string.find(objNameLower, "gem") or string.find(objNameLower, "drop") then
-                        isTargetItem = true
-                        targetPart = pPart
-                    end
-                end
-            end
-        end
-
-        if isTargetItem and targetPart then
-            local dist = (myHrp.Position - targetPart.Position).Magnitude
-            if dist <= itemDetectRange then
-                -- Billboard Indicator
-                local bill = targetPart:FindFirstChild("KayItem_Bill")
-                if not bill then
-                    bill = Instance.new("BillboardGui", targetPart)
-                    bill.Name = "KayItem_Bill"
-                    bill.Size = UDim2.new(0, 180, 0, 40)
-                    bill.AlwaysOnTop = true
-                    bill.ExtentsOffset = Vector3.new(0, 2, 0)
-
-                    local txt = Instance.new("TextLabel", bill)
-                    txt.Name = "ItemLabel"
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.BackgroundTransparency = 1
-                    txt.Font = Enum.Font.GothamBold
-                    txt.TextSize = 10
-                    txt.TextStrokeTransparency = 0.4
-                    txt.TextColor3 = Color3.fromRGB(50, 240, 200)
-                end
-
-                local label = bill:FindFirstChild("ItemLabel")
-                if label then
-                    label.Text = "💎 [Item] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
-                end
-
-                -- Highlight Indicator
-                local high = targetPart:FindFirstChild("KayItem_Highlight") or (obj:IsA("Model") and obj:FindFirstChild("KayItem_Highlight"))
-                if not high then
-                    high = Instance.new("Highlight", obj:IsA("Model") and obj or targetPart)
-                    high.Name = "KayItem_Highlight"
-                    high.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                    high.FillColor = Color3.fromRGB(0, 230, 200)
-                    high.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    high.FillTransparency = 0.5
-                end
-            else
-                clearItemElements(targetPart)
-                if obj:IsA("Model") then clearItemElements(obj) end
             end
         end
     end
@@ -1826,7 +1664,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 8: COMBAT / AIMBOT PAGE
+-- TAB 8: COMBAT / AIMBOT PAGE (Tombol Pop-up Auto Aim + 2 Pilihan & Team Check)
 local CombatPage = CreateTab("Combat")
 
 CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
@@ -1840,6 +1678,7 @@ CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
     end
 end)
 
+-- Tombol Pilihan Mode Auto-Aim (Terdekat vs Semua)
 local ModeAimBtn = Instance.new("TextButton", CombatPage)
 ModeAimBtn.Size, ModeAimBtn.Text, ModeAimBtn.Font, ModeAimBtn.TextSize = UDim2.new(1, -10, 0, 32), "Mode Aim: Terdekat", Enum.Font.GothamBold, 11
 Instance.new("UICorner", ModeAimBtn).CornerRadius = UDim.new(0, 6)
@@ -1857,6 +1696,7 @@ ModeAimBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Toggle Team Check
 CreateToggle(CombatPage, "Team Check (Abaikan Teman)", function(state)
     autoAimTeamCheck = state
 end)
@@ -1901,7 +1741,6 @@ YesButton.MouseButton1Click:Connect(function()
     if godConnection then godConnection:Disconnect() end
     if infinityCamConnection then infinityCamConnection:Disconnect() end
     if bypassZoomConnection then bypassZoomConnection:Disconnect() end
-    if thirdPersonConnection then thirdPersonConnection:Disconnect() end
     pcall(function()
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -2016,4 +1855,4 @@ end)
 -- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC & Item Detector Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC Detector Added.")
