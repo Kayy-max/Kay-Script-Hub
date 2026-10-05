@@ -1994,8 +1994,22 @@ RS.Stepped:Connect(function()
                     high.FillColor = CurrentTheme.AccentColor
                     high.OutlineColor = Color3.fromRGB(255,255,255)
                     high.FillTransparency = 0.6
+                else
+                    if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
+            else
+                clearEspElements(tHrp)
+                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
+end)
+
+-- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
+ApplyTheme("Ruby Premium")
+
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC & Item Detector Added.")
