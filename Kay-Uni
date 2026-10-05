@@ -453,8 +453,8 @@ AutoAimPopUpFrame.InputEnded:Connect(function(input)
 end)
 
 -- PENGATURAN MODE & TEAM CHECK AUTO-AIM
-local autoAimMode = "Terdekat"
-local autoAimTeamCheck = true
+local autoAimMode = "Terdekat" -- Pilihan: "Terdekat" atau "Semua"
+local autoAimTeamCheck = true   -- Aktif/Nonaktif Team Check
 
 local function IsValidEnemy(player)
     if player == LocalPlayer then return false end
@@ -514,7 +514,7 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 1: HOME PAGE (FIXED PIGGYBACK VISIBILITY + NEW OFFSET & EMOTE ID)
+-- TAB 1: HOME PAGE (FIXED PIGGYBACK VISIBILITY DENGAN PENERAPAN KODE ANTI-DELAY)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
@@ -550,11 +550,16 @@ local function startLoop(targetChar)
                 return
             end
             
-            local offset = targetRoot.CFrame * CFrame.new(0, 0, 1)
-
+            local offset = targetRoot.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            
+            pcall(function()
+                sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
+            end)
+            
             pcall(function()
                 sethiddenproperty(root, "PhysicsRepRootPart", targetRoot)
             end)
+            
             root.CFrame = offset
             root.Velocity = Vector3.new()
             root.AssemblyLinearVelocity = Vector3.new()
@@ -576,7 +581,7 @@ local function checkAndAttach()
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
             local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://88194589030661"
+            anim.AnimationId = "rbxassetid://107480602323379"
             pcall(function()
                 currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
                 currentEmoteTrack:Play()
@@ -608,14 +613,14 @@ local function detach()
     local myChar = LocalPlayer.Character
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
-        local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        local root = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
-        if myHRP then 
-            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", nil) end)
-            myHRP.Velocity = Vector3.new(0, 0, 0) 
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        if root then 
+            pcall(function() sethiddenproperty(root, "PhysicsRepRootPart", nil) end)
+            root.Velocity = Vector3.new() 
+            root.AssemblyLinearVelocity = Vector3.new()
+            root.AssemblyAngularVelocity = Vector3.new()
+            root.RotVelocity = Vector3.new()
         end
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = true end
@@ -644,10 +649,10 @@ local function forceUpdatePosition()
         local targetPlayer = Players:FindFirstChild(targetPlayerName)
         if targetPlayer and targetPlayer.Character then
             local myChar = LocalPlayer.Character
-            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myHRP and targetHRP then
-                myHRP.CFrame = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
+            local root = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root and targetRoot then
+                root.CFrame = targetRoot.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             end
         end
     end
@@ -1841,4 +1846,4 @@ end)
 
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Piggyback Visibility Fixed.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Piggyback Visibility Fixed & Anti-Delay Applied.")
