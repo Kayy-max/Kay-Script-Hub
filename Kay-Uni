@@ -453,8 +453,8 @@ AutoAimPopUpFrame.InputEnded:Connect(function(input)
 end)
 
 -- PENGATURAN MODE & TEAM CHECK AUTO-AIM
-local autoAimMode = "Terdekat" -- Pilihan: "Terdekat" atau "Semua"
-local autoAimTeamCheck = true   -- Aktif/Nonaktif Team Check
+local autoAimMode = "Terdekat"
+local autoAimTeamCheck = true
 
 local function IsValidEnemy(player)
     if player == LocalPlayer then return false end
@@ -514,7 +514,7 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 1: HOME PAGE (FIXED PIGGYBACK VISIBILITY)
+-- TAB 1: HOME PAGE (FIXED PIGGYBACK VISIBILITY + NEW OFFSET & EMOTE ID)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
@@ -533,12 +533,11 @@ end
 local function startLoop(targetChar)
     if attachmentConnection then attachmentConnection:Disconnect() end
     local myChar = LocalPlayer.Character
-    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local root = myChar and myChar:FindFirstChild("HumanoidRootPart")
     local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
+    local targetRoot = targetChar:WaitForChild("HumanoidRootPart", 5)
     
-    if myHRP and targetHRP and myHumanoid then
-        -- DIUBAH: PlatformStand dimatikan agar karakter tetap aktif dan terlihat di POV orang lain
+    if root and targetRoot and myHumanoid then
         myHumanoid.PlatformStand = false
         
         for _, part in pairs(myChar:GetChildren()) do
@@ -551,18 +550,16 @@ local function startLoop(targetChar)
                 return
             end
             
-            local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
-            
+            local offset = targetRoot.CFrame * CFrame.new(0, 0, 1)
+
             pcall(function()
-                -- Memastikan server tetap mereproduksi pergerakan karakter lokal
-                sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
+                sethiddenproperty(root, "PhysicsRepRootPart", targetRoot)
             end)
-            
-            myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            myHRP.RotVelocity = Vector3.new(0, 0, 0)
+            root.CFrame = offset
+            root.Velocity = Vector3.new()
+            root.AssemblyLinearVelocity = Vector3.new()
+            root.AssemblyAngularVelocity = Vector3.new()
+            root.RotVelocity = Vector3.new()
         end)
     end
 end
@@ -579,7 +576,7 @@ local function checkAndAttach()
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
             local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://107480602323379"
+            anim.AnimationId = "rbxassetid://88194589030661"
             pcall(function()
                 currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
                 currentEmoteTrack:Play()
