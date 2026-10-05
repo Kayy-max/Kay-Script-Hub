@@ -1,4 +1,4 @@
--- [[ KAY HUB PRO V9.4 - FULL FIXED + GOD MODE & SEPARATED CAMERA BYPASS + AUTO-AIM + MONSTER/NPC DETECTOR + ITEM DETECTOR ]] --
+-- [[ KAY HUB PRO V9.4 - FULL FIXED + PIGGYBACK & POSITION CONTROL + GOD MODE + SEPARATED CAMERA BYPASS + AUTO-AIM + MONSTER/NPC & ITEM DETECTOR ]] --
 local Players, TS, RS, UIS = game:GetService("Players"), game:GetService("TweenService"), game:GetService("RunService"), game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
@@ -453,8 +453,8 @@ AutoAimPopUpFrame.InputEnded:Connect(function(input)
 end)
 
 -- PENGATURAN MODE & TEAM CHECK AUTO-AIM
-local autoAimMode = "Terdekat" -- Pilihan: "Terdekat" atau "Semua"
-local autoAimTeamCheck = true   -- Aktif/Nonaktif Team Check
+local autoAimMode = "Terdekat"
+local autoAimTeamCheck = true
 
 local function IsValidEnemy(player)
     if player == LocalPlayer then return false end
@@ -463,7 +463,6 @@ local function IsValidEnemy(player)
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
     if not hum or hum.Health <= 0 or not hrp then return false end
     
-    -- Cek Team Check jika diaktifkan
     if autoAimTeamCheck then
         if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
             return false
@@ -473,7 +472,6 @@ local function IsValidEnemy(player)
     return true
 end
 
--- Fungsi mencari target berdasarkan mode pilihan
 local function GetAutoAimTarget()
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
@@ -494,7 +492,6 @@ local function GetAutoAimTarget()
         end
         return nearestTarget
     else
-        -- Mode: Pemain/Musuh bebas secara umum yang lolos team check
         for _, p in pairs(Players:GetPlayers()) do
             if IsValidEnemy(p) then
                 return p.Character
@@ -504,7 +501,6 @@ local function GetAutoAimTarget()
     return nil
 end
 
--- RenderStepped untuk auto lock camera ke badan musuh (UpperTorso / Torso)
 RS.RenderStepped:Connect(function()
     if ScriptRunning and autoAimState then
         local targetChar = GetAutoAimTarget()
@@ -518,7 +514,7 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 1: HOME PAGE (PIGGYBACK FIXED)
+-- TAB 1: HOME PAGE (PIGGYBACK & KONTROL POSISI)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
@@ -542,8 +538,7 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        -- PERBAIKAN: Jangan gunakan PlatformStand agar karakter tetap terlihat hidup & tersinkronisasi di POV orang lain
-        myHumanoid.PlatformStand = false
+        myHumanoid.PlatformStand = true
         
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = false end
@@ -557,10 +552,14 @@ local function startLoop(targetChar)
             
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
-            -- Setel CFrame secara langsung ke root part tanpa memblokir replikasi server
+            pcall(function()
+                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
+                sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
+            end)
+            
             myHRP.CFrame = offset
-            myHRP.Velocity = targetHRP.Velocity
-            myHRP.AssemblyLinearVelocity = targetHRP.AssemblyLinearVelocity
+            myHRP.Velocity = Vector3.new()
+            myHRP.AssemblyLinearVelocity = Vector3.new()
             myHRP.AssemblyAngularVelocity = Vector3.new()
             myHRP.RotVelocity = Vector3.new()
         end)
@@ -614,6 +613,7 @@ local function detach()
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
         if myHumanoid then myHumanoid.PlatformStand = false end
         if myHRP then 
+            pcall(function() sethiddenproperty(myHRP, "PhysicsRepRootPart", nil) end)
             myHRP.Velocity = Vector3.new(0, 0, 0) 
             myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -1034,7 +1034,7 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- FITUR 1: INFINITY CAMERA (Bebas Memperluas Zoom Manual)
+-- FITUR 1: INFINITY CAMERA
 local infinityCamConnection
 CreateToggle(FunPage, "Infinity Camera", function(state)
     if state then
@@ -1049,7 +1049,7 @@ CreateToggle(FunPage, "Infinity Camera", function(state)
     end
 end)
 
--- FITUR 2: BYPASS MAP ZOOM (Menangkal Zoom Paksa/Kunci Kamera dari Map)
+-- FITUR 2: BYPASS MAP ZOOM
 local bypassZoomConnection
 CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     if state then
@@ -1068,9 +1068,7 @@ CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     end
 end)
 
--- ==========================================
--- FITUR BARU: 3RD PERSON CAMERA TOGGLE
--- ==========================================
+-- FITUR 3RD PERSON CAMERA TOGGLE
 local thirdPersonActive = false
 local thirdPersonConnection = nil
 
@@ -1187,8 +1185,8 @@ end
 -- TAB MONSTER/NPC PAGE
 local MonsterPage = CreateTab("Monster/NPC")
 local monsterDetectorActive = false
-local monsterDetectRange = 1000 -- Jangkauan default skala meter
-local hideMonsterNameActive = false -- Status Hide Name Monster
+local monsterDetectRange = 1000
+local hideMonsterNameActive = false
 
 local MonsterFrame = Instance.new("Frame", MonsterPage)
 MonsterFrame.Size = UDim2.new(1, -10, 0, 45)
@@ -1220,7 +1218,6 @@ CreateToggle(MonsterPage, "Auto Detect Monster/NPC", function(state)
     monsterDetectorActive = state
 end)
 
--- Toggle Hide/Show Nama Monster
 CreateToggle(MonsterPage, "Hide Name Monster", function(state)
     hideMonsterNameActive = state
 end)
@@ -1230,7 +1227,6 @@ local function clearMonsterElements(char)
     if char:FindFirstChild("KayMonster_Highlight") then char.KayMonster_Highlight:Destroy() end
 end
 
--- Looping logika deteksi Monster/NPC di dalam workspace
 RS.RenderStepped:Connect(function()
     if not ScriptRunning or not monsterDetectorActive then return end
     local myChar = LocalPlayer.Character
@@ -1289,13 +1285,11 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- ==========================================
--- TAB BARU: ITEM DETECTOR PAGE (FITUR TAMBAHAN)
--- ==========================================
+-- TAB ITEM DETECTOR PAGE
 local ItemPage = CreateTab("Item Detector")
 local itemDetectorActive = false
 local itemDetectRange = 1000
-local targetItemName = "" -- Kosong berarti mendeteksi semua Part/Model item atau TouchInterest di map
+local targetItemName = ""
 
 local ItemFrame = Instance.new("Frame", ItemPage)
 ItemFrame.Size = UDim2.new(1, -10, 0, 45)
@@ -1323,7 +1317,6 @@ end
 createChangeItemRange("-", -65, -250)
 createChangeItemRange("+", -35, 250)
 
--- Kolom Pencarian Item Spesifik
 local ItemSearchBox = Instance.new("TextBox", ItemPage)
 ItemSearchBox.Size, ItemSearchBox.PlaceholderText, ItemSearchBox.Font, ItemSearchBox.TextSize = UDim2.new(1, -10, 0, 32), "Ketik nama item/barang (kosongkan = semua)...", "", Enum.Font.Gotham, 11
 Instance.new("UICorner", ItemSearchBox).CornerRadius = UDim.new(0, 6)
@@ -1345,7 +1338,6 @@ local function clearItemElements(part)
     if part:FindFirstChild("KayItem_Highlight") then part.KayItem_Highlight:Destroy() end
 end
 
--- Looping logika pendeteksi item/barang di dalam map
 RS.RenderStepped:Connect(function()
     if not ScriptRunning or not itemDetectorActive then return end
     local myChar = LocalPlayer.Character
@@ -1356,14 +1348,11 @@ RS.RenderStepped:Connect(function()
         local isTargetItem = false
         local targetPart = nil
 
-        -- Cek apakah objek adalah Part / Model yang memenuhi kriteria item (memiliki TouchInterest atau anak dari folder Drop/Item/Collectible)
         if obj:IsA("BasePart") or obj:IsA("Model") then
             local pPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
             if pPart then
-                -- Filter pencarian berdasarkan nama jika diisi oleh user
                 local objNameLower = string.lower(obj.Name)
                 if targetItemName == "" or string.find(objNameLower, targetItemName) then
-                    -- Cek apakah memiliki ProximityPrompt atau TouchInterest (indikasi item bisa diambil) atau berada di folder umum game
                     if obj:FindFirstChildOfClass("ProximityPrompt") or obj:FindFirstChildOfClass("TouchTransmitter") or obj:IsA("Tool") or string.find(objNameLower, "item") or string.find(objNameLower, "chest") or string.find(objNameLower, "coin") or string.find(objNameLower, "gem") or string.find(objNameLower, "drop") then
                         isTargetItem = true
                         targetPart = pPart
@@ -1375,7 +1364,6 @@ RS.RenderStepped:Connect(function()
         if isTargetItem and targetPart then
             local dist = (myHrp.Position - targetPart.Position).Magnitude
             if dist <= itemDetectRange then
-                -- Billboard Indicator
                 local bill = targetPart:FindFirstChild("KayItem_Bill")
                 if not bill then
                     bill = Instance.new("BillboardGui", targetPart)
@@ -1399,7 +1387,6 @@ RS.RenderStepped:Connect(function()
                     label.Text = "💎 [Item] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
                 end
 
-                -- Highlight Indicator
                 local high = targetPart:FindFirstChild("KayItem_Highlight") or (obj:IsA("Model") and obj:FindFirstChild("KayItem_Highlight"))
                 if not high then
                     high = Instance.new("Highlight", obj:IsA("Model") and obj or targetPart)
@@ -2009,7 +1996,6 @@ Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
--- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC & Item Detector Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Piggyback & Position Control Added.")
