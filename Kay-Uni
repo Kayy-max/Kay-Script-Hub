@@ -463,7 +463,6 @@ local function IsValidEnemy(player)
     local hrp = player.Character:FindFirstChild("HumanoidRootPart")
     if not hum or hum.Health <= 0 or not hrp then return false end
     
-    -- Cek Team Check jika diaktifkan
     if autoAimTeamCheck then
         if player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team then
             return false
@@ -473,7 +472,6 @@ local function IsValidEnemy(player)
     return true
 end
 
--- Fungsi mencari target berdasarkan mode pilihan
 local function GetAutoAimTarget()
     local myChar = LocalPlayer.Character
     local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
@@ -494,7 +492,6 @@ local function GetAutoAimTarget()
         end
         return nearestTarget
     else
-        -- Mode: Pemain/Musuh bebas secara umum yang lolos team check
         for _, p in pairs(Players:GetPlayers()) do
             if IsValidEnemy(p) then
                 return p.Character
@@ -504,7 +501,6 @@ local function GetAutoAimTarget()
     return nil
 end
 
--- RenderStepped untuk auto lock camera ke badan musuh (UpperTorso / Torso)
 RS.RenderStepped:Connect(function()
     if ScriptRunning and autoAimState then
         local targetChar = GetAutoAimTarget()
@@ -518,7 +514,7 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 1: HOME PAGE
+-- TAB 1: HOME PAGE (FIXED PIGGYBACK VISIBILITY)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
 local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
@@ -542,7 +538,8 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
-        myHumanoid.PlatformStand = true
+        -- DIUBAH: PlatformStand dimatikan agar karakter tetap aktif dan terlihat di POV orang lain
+        myHumanoid.PlatformStand = false
         
         for _, part in pairs(myChar:GetChildren()) do
             if part:IsA("BasePart") then part.CanCollide = false end
@@ -557,15 +554,15 @@ local function startLoop(targetChar)
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
             pcall(function()
-                sethiddenproperty(myHRP, "PhysicsRepRootPart", targetHRP)
+                -- Memastikan server tetap mereproduksi pergerakan karakter lokal
                 sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
             end)
             
             myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new()
-            myHRP.AssemblyLinearVelocity = Vector3.new()
-            myHRP.AssemblyAngularVelocity = Vector3.new()
-            myHRP.RotVelocity = Vector3.new()
+            myHRP.Velocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            myHRP.RotVelocity = Vector3.new(0, 0, 0)
         end)
     end
 end
@@ -1038,7 +1035,7 @@ RS.Heartbeat:Connect(function()
     end
 end)
 
--- FITUR 1: INFINITY CAMERA (Bebas Memperluas Zoom Manual)
+-- INFINITY CAMERA
 local infinityCamConnection
 CreateToggle(FunPage, "Infinity Camera", function(state)
     if state then
@@ -1053,7 +1050,7 @@ CreateToggle(FunPage, "Infinity Camera", function(state)
     end
 end)
 
--- FITUR 2: BYPASS MAP ZOOM (Menangkal Zoom Paksa/Kunci Kamera dari Map)
+-- BYPASS MAP ZOOM
 local bypassZoomConnection
 CreateToggle(FunPage, "Bypass Map Zoom", function(state)
     if state then
@@ -1161,10 +1158,10 @@ local function clearEspElements(p)
     if p:FindFirstChild("KayEsp_Highlight") then p.KayEsp_Highlight:Destroy() end
 end
 
--- TAB BARU: MONSTER/NPC DETECTOR PAGE
+-- MONSTER/NPC DETECTOR PAGE
 local MonsterPage = CreateTab("Monster/NPC")
 local monsterDetectorActive = false
-local monsterDetectRange = 1000 -- Jangkauan default skala meter
+local monsterDetectRange = 1000
 
 local MonsterFrame = Instance.new("Frame", MonsterPage)
 MonsterFrame.Size = UDim2.new(1, -10, 0, 45)
@@ -1201,7 +1198,6 @@ local function clearMonsterElements(char)
     if char:FindFirstChild("KayMonster_Highlight") then char.KayMonster_Highlight:Destroy() end
 end
 
--- Looping logika deteksi Monster/NPC di dalam workspace
 RS.RenderStepped:Connect(function()
     if not ScriptRunning or not monsterDetectorActive then return end
     local myChar = LocalPlayer.Character
@@ -1213,11 +1209,9 @@ RS.RenderStepped:Connect(function()
             local hum = obj:FindFirstChildOfClass("Humanoid")
             local hrp = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
             
-            -- Pastikan objek memiliki Humanoid & bagian tubuh, serta bukan bagian dari Player aktif
             if hum and hrp and not Players:GetPlayerFromCharacter(obj) then
                 local dist = (myHrp.Position - hrp.Position).Magnitude
                 if dist <= monsterDetectRange then
-                    -- Buat indikator visual Billboard (Nama + Jarak)
                     local bill = hrp:FindFirstChild("KayMonster_Bill")
                     if not bill then
                         bill = Instance.new("BillboardGui", hrp)
@@ -1241,7 +1235,6 @@ RS.RenderStepped:Connect(function()
                         label.Text = "👾 [NPC/Monster] " .. obj.Name .. "\n[" .. math.round(dist) .. "m]"
                     end
 
-                    -- Buat indikator visual Highlight
                     local high = obj:FindFirstChild("KayMonster_Highlight")
                     if not high then
                         high = Instance.new("Highlight", obj)
@@ -1664,7 +1657,7 @@ CreateToggle(VoicePage, "Kay voice antiban", function(state)
     end
 end)
 
--- TAB 8: COMBAT / AIMBOT PAGE (Tombol Pop-up Auto Aim + 2 Pilihan & Team Check)
+-- TAB 8: COMBAT / AIMBOT PAGE
 local CombatPage = CreateTab("Combat")
 
 CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
@@ -1678,7 +1671,6 @@ CreateToggle(CombatPage, "Auto-Aim Pop-up Icon", function(state)
     end
 end)
 
--- Tombol Pilihan Mode Auto-Aim (Terdekat vs Semua)
 local ModeAimBtn = Instance.new("TextButton", CombatPage)
 ModeAimBtn.Size, ModeAimBtn.Text, ModeAimBtn.Font, ModeAimBtn.TextSize = UDim2.new(1, -10, 0, 32), "Mode Aim: Terdekat", Enum.Font.GothamBold, 11
 Instance.new("UICorner", ModeAimBtn).CornerRadius = UDim.new(0, 6)
@@ -1696,7 +1688,6 @@ ModeAimBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Team Check
 CreateToggle(CombatPage, "Team Check (Abaikan Teman)", function(state)
     autoAimTeamCheck = state
 end)
@@ -1773,7 +1764,6 @@ YesButton.MouseButton1Click:Connect(function()
     KayHub:Destroy()
 end)
 
--- ENGINE LOOP JALUR CORE REPLICATOR (RUNSERVICE STEPPED)
 RS.Stepped:Connect(function()
     if not ScriptRunning then return end
     local char = LocalPlayer.Character
@@ -1852,7 +1842,6 @@ Players.PlayerRemoving:Connect(function(p)
     if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
 end)
 
--- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
 ApplyTheme("Ruby Premium")
 
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC Detector Added.")
+print("[SYSTEM] Kay Hub V9.4 Full Complete: Piggyback Visibility Fixed.")
