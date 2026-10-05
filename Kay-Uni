@@ -518,10 +518,10 @@ RS.RenderStepped:Connect(function()
     end
 end)
 
--- TAB 1: HOME PAGE
+-- TAB 1: HOME PAGE (PIGGYBACK FIXED)
 local HomePage = CreateTab("Home")
 local targetPlayerName = nil 
-local posX, posY, posZ, rotY = 0, 0, -1.5, 0
+local posX, posY, posZ, rotY = 0, 1.5, 0.8, 0
 local isAttached, autoEmoteEnabled = false, true
 local attachmentConnection, currentEmoteTrack
 local targetCharAddedConnection = nil
@@ -542,6 +542,13 @@ local function startLoop(targetChar)
     local targetHRP = targetChar:WaitForChild("HumanoidRootPart", 5)
     
     if myHRP and targetHRP and myHumanoid then
+        -- PERBAIKAN: Jangan gunakan PlatformStand agar karakter tetap terlihat hidup & tersinkronisasi di POV orang lain
+        myHumanoid.PlatformStand = false
+        
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+        
         attachmentConnection = RS.Heartbeat:Connect(function()
             if not isAttached or not targetChar or not targetChar:FindFirstChild("HumanoidRootPart") or not myChar:FindFirstChild("HumanoidRootPart") then
                 if attachmentConnection then attachmentConnection:Disconnect() end
@@ -550,13 +557,10 @@ local function startLoop(targetChar)
             
             local offset = targetHRP.CFrame * CFrame.new(posX, posY, posZ) * CFrame.Angles(0, math.rad(rotY), 0)
             
-            pcall(function()
-                sethiddenproperty(LocalPlayer, "SimulationRadius", 1000)
-            end)
-            
+            -- Setel CFrame secara langsung ke root part tanpa memblokir replikasi server
             myHRP.CFrame = offset
-            myHRP.Velocity = Vector3.new()
-            myHRP.AssemblyLinearVelocity = Vector3.new()
+            myHRP.Velocity = targetHRP.Velocity
+            myHRP.AssemblyLinearVelocity = targetHRP.AssemblyLinearVelocity
             myHRP.AssemblyAngularVelocity = Vector3.new()
             myHRP.RotVelocity = Vector3.new()
         end)
@@ -575,7 +579,7 @@ local function checkAndAttach()
             local char = LocalPlayer.Character
             if currentEmoteTrack then currentEmoteTrack:Stop() end
             local anim = Instance.new("Animation")
-            anim.AnimationId = "rbxassetid://88194589030661"
+            anim.AnimationId = "rbxassetid://107480602323379"
             pcall(function()
                 currentEmoteTrack = char:WaitForChild("Humanoid"):LoadAnimation(anim)
                 currentEmoteTrack:Play()
@@ -608,11 +612,15 @@ local function detach()
     if myChar then
         local myHumanoid = myChar:FindFirstChildOfClass("Humanoid")
         local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+        if myHumanoid then myHumanoid.PlatformStand = false end
         if myHRP then 
             myHRP.Velocity = Vector3.new(0, 0, 0) 
             myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             myHRP.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        end
+        for _, part in pairs(myChar:GetChildren()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
         end
     end
     if currentEmoteTrack then currentEmoteTrack:Stop() end
@@ -1986,22 +1994,8 @@ RS.Stepped:Connect(function()
                     high.FillColor = CurrentTheme.AccentColor
                     high.OutlineColor = Color3.fromRGB(255,255,255)
                     high.FillTransparency = 0.6
-                else
-                    if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
                 end
-            else
-                clearEspElements(tHrp)
-                if tChar:FindFirstChild("KayEsp_Highlight") then tChar.KayEsp_Highlight:Destroy() end
             end
         end
     end
 end)
-
-Players.PlayerRemoving:Connect(function(p)
-    if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then clearEspElements(p.Character.HumanoidRootPart) end
-end)
-
--- TERAPKAN TEMA DEFAULT "Ruby Premium" SAAT PERTAMA KALI DIMUAT
-ApplyTheme("Ruby Premium")
-
-print("[SYSTEM] Kay Hub V9.4 Full Complete: Monster/NPC & Item Detector Added.")
